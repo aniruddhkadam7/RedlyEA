@@ -8,7 +8,6 @@ import proxy from './proxy';
 import routes from './routes';
 
 const { UMI_ENV = 'dev' } = process.env;
-const umiExportsPath = join(__dirname, '../src/.umi/exports.ts');
 const isJest =
   process.env.UMI_SKIP_OPENAPI === '1' ||
   process.env.NODE_ENV === 'test' ||
@@ -24,16 +23,6 @@ const PUBLIC_PATH: string = '/';
 export default defineConfig({
   ...(UMI_ENV === 'dev' ? { mfsu: false } : {}),
   plugins: [join(__dirname, './ensureUmiTmpDir')],
-  alias: {
-    umi: umiExportsPath,
-    '@umijs/max': umiExportsPath,
-  },
-  chainWebpack(memo) {
-    memo.resolve.alias.set('umi', umiExportsPath);
-    memo.resolve.alias.set('@umijs/max', umiExportsPath);
-    memo.resolve.modules.add(join(__dirname, '../node_modules'));
-    memo.resolve.extensions.add('.ts').add('.tsx');
-  },
   /**
    * @name 开启 hash 模式
    * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。

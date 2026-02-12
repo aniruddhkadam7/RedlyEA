@@ -59,6 +59,11 @@ export const EXPLORER_KEYS = {
   // Level 0 — Workspace root
   root: (workspaceName: string) => `ws:${workspaceName}`,
 
+  // Visual zones (presentation-only grouping)
+  zoneSystemLayer: 'zone:system-layer',
+  zoneArchitectureLayer: 'zone:architecture-layer',
+  zoneFrameworkLayer: 'zone:framework-layer',
+
   // Level 1 — Top sections
   repository: 'section:repository',
   metamodel: 'section:metamodel',
@@ -407,6 +412,9 @@ export function getObjectTypesByMetamodelLayer(): Record<string, ObjectType[]> {
 export function getDefaultExpandedKeys(workspaceName: string, archName: string): string[] {
   return [
     EXPLORER_KEYS.root(workspaceName),
+    EXPLORER_KEYS.zoneSystemLayer,
+    EXPLORER_KEYS.zoneArchitectureLayer,
+    EXPLORER_KEYS.zoneFrameworkLayer,
     EXPLORER_KEYS.architectures,
     EXPLORER_KEYS.architecture(archName),
     EXPLORER_KEYS.archComponents(archName),

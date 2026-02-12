@@ -2847,14 +2847,6 @@ const IdeMenuBar: React.FC = () => {
         disabled={fileMenuDisabled}
       />
 
-      <div className={styles.right}>
-        <span className={styles.hint}>
-          {hasRepo
-            ? `Repository: ${metadata?.organizationName ?? 'Loaded'}`
-            : 'No repository loaded'}
-        </span>
-      </div>
-
       {/* Hidden inputs */}
       <input
         ref={openRepoInputRef}

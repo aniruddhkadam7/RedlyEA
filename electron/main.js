@@ -9,6 +9,7 @@ const userDataDir =
   process.env.ELECTRON_USER_DATA_DIR ||
   path.join(app.getPath('temp'), 'ea-app-profile');
 app.setPath('userData', userDataDir);
+app.disableHardwareAcceleration();
 
 const appIconPath = path.join(__dirname, '..', 'build', 'icons', 'app.png');
 const appIcoPath = path.join(__dirname, '..', 'build', 'icons', 'app.ico');
@@ -298,8 +299,8 @@ function createWindow() {
   const titleBarOverlay =
     process.platform === 'win32'
       ? {
-          color: '#1e1e1e',
-          symbolColor: '#cccccc',
+          color: '#1b2a55',
+          symbolColor: '#f3f6ff',
           height: 34,
         }
       : undefined;
@@ -320,8 +321,41 @@ function createWindow() {
 
   win.removeMenu();
 
+  let hasRetriedDevLoad = false;
+  const devStartUrl = process.env.ELECTRON_START_URL || 'http://localhost:8003';
+  const devFallbackUrl = devStartUrl.replace('localhost', '127.0.0.1');
+
+  win.webContents.on(
+    'did-fail-load',
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (!isMainFrame) return;
+      console.error(
+        '[EA] did-fail-load:',
+        errorCode,
+        errorDescription,
+        'url:',
+        validatedURL,
+      );
+
+      if (
+        isDev &&
+        !hasRetriedDevLoad &&
+        validatedURL?.includes('localhost') &&
+        devFallbackUrl !== validatedURL
+      ) {
+        hasRetriedDevLoad = true;
+        console.warn('[EA] Retrying renderer load with fallback URL:', devFallbackUrl);
+        void win.loadURL(devFallbackUrl);
+      }
+    },
+  );
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[EA] Renderer process terminated:', details);
+  });
+
   if (isDev) {
-    win.loadURL(process.env.ELECTRON_START_URL);
+    win.loadURL(devStartUrl);
   } else {
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }

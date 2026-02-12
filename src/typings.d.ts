@@ -113,7 +113,22 @@ declare global {
         | { ok: true; name: string; content: string }
         | { ok: false; error: string }
       >;
+      toggleDevTools: () => Promise<
+        { ok: true } | { ok: false; error: string }
+      >;
       openDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      closeDevTools: () => Promise<
+        { ok: true } | { ok: false; error: string }
+      >;
+    };
+    debugAPI?: {
+      toggleDevTools: () => Promise<
+        { ok: true } | { ok: false; error: string }
+      >;
+      openDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      closeDevTools: () => Promise<
+        { ok: true } | { ok: false; error: string }
+      >;
     };
   }
 }

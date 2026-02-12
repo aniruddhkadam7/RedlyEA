@@ -5,7 +5,7 @@ import {
   ProjectOutlined,
 } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
-import { ProDescriptions, SettingDrawer } from '@ant-design/pro-components';
+import { ProDescriptions } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { Link, useLocation } from '@umijs/max';
 import React from 'react';
@@ -49,7 +49,6 @@ import { ThemeProvider } from '@/theme/ThemeContext';
 import { ContextMenuProvider, GlobalContextMenu } from '@/components/ContextMenu';
 
 const isDev = process.env.NODE_ENV === 'development';
-const isDevOrTest = isDev || process.env.CI;
 
 const defaultLifecycleStateForFramework = (
   referenceFramework: string | null | undefined,
@@ -1164,7 +1163,6 @@ export const antd = (memo: Record<string, any>) => {
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
 export const layout: RunTimeLayoutConfig = ({
   initialState,
-  setInitialState,
 }) => {
   return {
     ...initialState?.settings,
@@ -1204,22 +1202,6 @@ export const layout: RunTimeLayoutConfig = ({
                   >
                     {children}
                   </IdeShellLayout>
-                  {isDevOrTest && (
-                    <SettingDrawer
-                      disableUrlParams
-                      enableDarkTheme={false}
-                      settings={initialState?.settings}
-                      onSettingChange={(settings) => {
-                        setInitialState((preInitialState) => ({
-                          ...preInitialState,
-                          settings: {
-                            ...settings,
-                            navTheme: 'light',
-                          },
-                        }));
-                      }}
-                    />
-                  )}
                 </>
               }
             >

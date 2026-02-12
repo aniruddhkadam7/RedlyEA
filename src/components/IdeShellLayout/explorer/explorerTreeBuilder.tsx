@@ -130,6 +130,22 @@ const iconForObjectType = (type: ObjectType): React.ReactNode => {
   return iconForLayer(def.layer);
 };
 
+const classForNodeKey = (key: string): string => {
+  if (key.startsWith('section:metamodel')) return 'explorer-node explorer-node-metamodel';
+  if (key.includes(':connections')) return 'explorer-node explorer-node-connection';
+  if (key.includes(':catalogues')) return 'explorer-node explorer-node-catalogue';
+  if (key.includes(':matrices')) return 'explorer-node explorer-node-matrix';
+  if (key.includes(':diagrams')) return 'explorer-node explorer-node-diagram';
+  if (key.startsWith('section:framework-packages')) return 'explorer-node explorer-node-framework';
+  if (key.includes(':components')) return 'explorer-node explorer-node-component';
+  if (key.startsWith('ws:') || key.startsWith('zone:') || key.startsWith('section:')) return 'explorer-node explorer-node-folder';
+  return 'explorer-node';
+};
+
+const diagramIconGlyph = React.createElement('span', { className: 'explorer-icon-diagram-glyph', 'aria-hidden': true });
+const frameworkIconGlyph = React.createElement('span', { className: 'explorer-icon-framework-glyph', 'aria-hidden': true });
+const metamodelIconGlyph = React.createElement('span', { className: 'explorer-icon-metamodel-glyph', 'aria-hidden': true });
+
 // ---------------------------------------------------------------------------
 // Leaf node factories
 // ---------------------------------------------------------------------------
@@ -147,6 +163,7 @@ function elementLeaves(
     title: nameForObject(o),
     icon: iconForObjectType(o.type),
     isLeaf: true,
+    className: `explorer-node explorer-node-component explorer-node-element explorer-node-element-${String(o.type).toLowerCase()}`,
     data: { elementId: o.id, elementType: o.type },
   }));
 }
@@ -161,8 +178,9 @@ function viewLeaf(v: ViewInstance): DataNode {
       ' ',
       React.createElement('span', { style: { color: '#8c8c8c' } }, `(${label})`),
     ),
-    icon: React.createElement(FileTextOutlined),
+    icon: diagramIconGlyph,
     isLeaf: true,
+    className: 'explorer-node explorer-node-diagram',
     data: { viewId: v.id },
   };
 }
@@ -173,6 +191,7 @@ function baselineLeaf(b: Baseline): DataNode {
     title: b.name || b.id,
     icon: React.createElement(SafetyOutlined),
     isLeaf: true,
+    className: 'explorer-node explorer-node-framework',
     data: { baselineId: b.id },
   };
 }
@@ -183,6 +202,7 @@ function plateauLeaf(p: Plateau): DataNode {
     title: p.name,
     icon: React.createElement(FundProjectionScreenOutlined),
     isLeaf: true,
+    className: 'explorer-node explorer-node-framework',
     data: { plateauId: p.id },
   };
 }
@@ -193,6 +213,7 @@ function roadmapLeaf(r: Roadmap): DataNode {
     title: r.name,
     icon: React.createElement(FundProjectionScreenOutlined),
     isLeaf: true,
+    className: 'explorer-node explorer-node-framework',
     data: { roadmapId: r.id },
   };
 }
@@ -208,12 +229,31 @@ function relationshipLeaf(rel: { id?: string; fromId: string; toId: string; type
     title: `${sourceLabel} → ${rel.type} → ${targetLabel}`,
     icon: React.createElement(BranchesOutlined),
     isLeaf: true,
+    className: 'explorer-node explorer-node-connection',
     data: { connectionType: rel.type },
   };
 }
 
 function collectionNode(key: string, title: string, icon: React.ReactNode, children: DataNode[]): DataNode {
-  return { key, title, icon, selectable: true, children };
+  return { key, title, icon, selectable: true, children, className: classForNodeKey(key) };
+}
+
+function zoneNode(
+  key: string,
+  title: string,
+  icon: React.ReactNode,
+  children: DataNode[],
+  zoneClassName: string,
+): DataNode {
+  return {
+    key,
+    title,
+    icon,
+    selectable: false,
+    className: zoneClassName,
+    children,
+    data: { visualZone: key },
+  };
 }
 
 function emptyPlaceholder(parentKey: string, message: string): DataNode {
@@ -223,6 +263,7 @@ function emptyPlaceholder(parentKey: string, message: string): DataNode {
     icon: React.createElement(FileTextOutlined),
     isLeaf: true,
     selectable: false,
+    className: 'explorer-node',
   };
 }
 
@@ -389,7 +430,7 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
   })();
 
   const metamodelNode: DataNode = collectionNode(
-    EXPLORER_KEYS.metamodel, 'Metamodel', React.createElement(GoldOutlined),
+    EXPLORER_KEYS.metamodel, 'Metamodel', metamodelIconGlyph,
     [
       { key: EXPLORER_KEYS.metamodelStandards, title: 'Standards', icon: React.createElement(BookOutlined), isLeaf: true, data: { settingKey: 'metamodel-standards' } },
       collectionNode(EXPLORER_KEYS.metamodelObjectTypes, 'Object Types', React.createElement(BlockOutlined), metamodelObjectTypeChildren),
@@ -481,7 +522,7 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
   );
 
   const componentsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archComponents(archName), 'Components', React.createElement(BlockOutlined),
+    EXPLORER_KEYS.archComponents(archName), 'Components', React.createElement(ClusterOutlined),
     [businessNode, applicationsNode, dataNode, technologyNode, securityNode, projectsNode],
   );
 
@@ -512,7 +553,7 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
 
   // Catalogues sub-tree
   const cataloguesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archCatalogues(archName), 'Catalogues', React.createElement(BookOutlined),
+    EXPLORER_KEYS.archCatalogues(archName), 'Catalogues', React.createElement(TableOutlined),
     [
       { key: EXPLORER_KEYS.catApplication(archName), title: 'Application Catalogue', icon: React.createElement(AppstoreOutlined), isLeaf: true, data: { catalogKey: 'applications' } },
       { key: EXPLORER_KEYS.catTechnology(archName), title: 'Technology Catalogue', icon: React.createElement(CloudOutlined), isLeaf: true, data: { catalogKey: 'technology' } },
@@ -539,7 +580,7 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
       catViews.length > 0 ? catViews.map(viewLeaf) : [emptyPlaceholder(key, 'No diagrams')]);
 
   const diagramsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archDiagrams(archName), 'Diagrams', React.createElement(PartitionOutlined),
+    EXPLORER_KEYS.archDiagrams(archName), 'Diagrams', diagramIconGlyph,
     [
       makeDiagramCategory(EXPLORER_KEYS.diagBusiness(archName), 'Business Diagrams', businessViews),
       makeDiagramCategory(EXPLORER_KEYS.diagApplication(archName), 'Application Diagrams', applicationViews),
@@ -590,10 +631,10 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
 
   // --- 4. Framework Packages ---
   const frameworkPackagesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.frameworkPackages, 'Framework Packages', React.createElement(ToolOutlined),
+    EXPLORER_KEYS.frameworkPackages, 'Framework Packages', frameworkIconGlyph,
     [
-      { key: EXPLORER_KEYS.frameworkIndustry, title: 'Industry Frameworks', icon: React.createElement(GlobalOutlined), isLeaf: true },
-      { key: EXPLORER_KEYS.frameworkSecurity, title: 'Security Frameworks', icon: React.createElement(LockOutlined), isLeaf: true },
+      { key: EXPLORER_KEYS.frameworkIndustry, title: 'NIST', icon: React.createElement(GlobalOutlined), isLeaf: true },
+      { key: EXPLORER_KEYS.frameworkSecurity, title: 'RBI', icon: React.createElement(LockOutlined), isLeaf: true },
       { key: EXPLORER_KEYS.frameworkCustom, title: 'Custom Frameworks', icon: React.createElement(ToolOutlined), isLeaf: true },
     ],
   );
@@ -635,10 +676,37 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
   );
 
   // --- Root ---
-  const rootNode: DataNode = collectionNode(
-    EXPLORER_KEYS.root(workspaceName), `${workspaceName}.ea`, React.createElement(FolderOutlined),
-    [repositoryNode, metamodelNode, architecturesNode, frameworkPackagesNode, baselinesNode, reportsNode, settingsNode],
+  const systemLayerNode = zoneNode(
+    EXPLORER_KEYS.zoneSystemLayer,
+    'System Layer',
+    React.createElement(ControlOutlined),
+    [metamodelNode, repositoryNode, settingsNode],
+    'explorer-zone explorer-zone-system',
   );
+
+  const architectureLayerNode = zoneNode(
+    EXPLORER_KEYS.zoneArchitectureLayer,
+    'Architecture Layer',
+    React.createElement(PartitionOutlined),
+    [architecturesNode, baselinesNode, reportsNode],
+    'explorer-zone explorer-zone-architecture',
+  );
+
+  const frameworkLayerNode = zoneNode(
+    EXPLORER_KEYS.zoneFrameworkLayer,
+    'Framework Extensions',
+    React.createElement(ToolOutlined),
+    [frameworkPackagesNode],
+    'explorer-zone explorer-zone-framework',
+  );
+
+  const rootNode: DataNode = {
+    ...collectionNode(
+      EXPLORER_KEYS.root(workspaceName), `${workspaceName}.ea`, React.createElement(FolderOutlined),
+      [systemLayerNode, architectureLayerNode, frameworkLayerNode],
+    ),
+    className: 'explorer-level-root',
+  };
 
   const treeData: DataNode[] = [rootNode];
 
