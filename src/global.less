@@ -1,0 +1,252 @@
+@font-face {
+  font-family: "AlibabaSans";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("//mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*1GSgSYDD_aIAAAAAQsAAAAgAegCCAQ/AlibabaSans-Light.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "AlibabaSans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("//mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*2zEUQqnPNesAAAAAQtAAAAgAegCCAQ/AlibabaSans-Regular.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "AlibabaSans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("//mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Medium.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "AlibabaSans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("//mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Bold.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "AlibabaSans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("//mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Heavy.woff2")
+    format("woff2");
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family:
+    AlibabaSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans',
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Root app should fill the viewport (IDE-style; no page scroll). */
+#root {
+  height: 100vh;
+}
+
+.colorWeak {
+  filter: invert(80%);
+}
+
+/* Avoid forcing min-height on nested Layouts (e.g., Copilot split pane). */
+:global(.ant-pro-layout),
+:global(.ant-pro-layout-container) {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Nested layouts should be allowed to shrink within full-height containers. */
+:global(.ant-pro-layout-content),
+:global(.ant-pro-layout-content .ant-pro-layout-content-children) {
+  min-height: 0;
+}
+
+/* IDE shell: ensure ProLayout content stretches full height */
+:global(.ant-pro-layout),
+:global(.ant-pro-layout-container),
+:global(.ant-pro-layout-content),
+:global(.ant-pro-layout-content .ant-pro-layout-content-children) {
+  height: 100%;
+}
+
+/* Prevent browser scrollbars; scroll within IDE panes instead. */
+:global(.ant-pro-layout-content),
+:global(.ant-pro-layout-content .ant-pro-layout-content-children) {
+  overflow: hidden;
+}
+.ant-pro-sider.ant-layout-sider.ant-pro-sider-fixed {
+  left: unset;
+}
+
+canvas {
+  display: block;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+@media (max-width: 768px) {
+  .ant-table {
+    width: 100%;
+    overflow-x: auto;
+    &-thead > tr,
+    &-tbody > tr {
+      > th,
+      > td {
+        white-space: pre;
+        > span {
+          display: block;
+        }
+      }
+    }
+  }
+}
+
+/* --- IDE Explorer: disable Tree selection highlight completely ---
+   Ant Design v5 uses CSS-in-JS which can override module styles depending on injection order.
+   These global rules force selected backgrounds/overlays to be transparent.
+*/
+:global(.ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected),
+:global(.ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected:hover),
+:global(.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper),
+:global(.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper:hover) {
+  background: transparent !important;
+}
+
+/* DirectoryTree paints a full-row overlay via ::before; remove it. */
+:global(.ant-tree-treenode-selected::before),
+:global(.ant-tree-directory .ant-tree-treenode-selected::before),
+:global(.ant-tree-directory .ant-tree-treenode-selected:hover::before) {
+  background: transparent !important;
+}
+
+/* Some themes also tint the treenode itself. */
+:global(.ant-tree-treenode-selected) {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════
+   Dark theme globals
+   ═══════════════════════════════════════════════ */
+[data-theme="dark"] body {
+  color-scheme: dark;
+}
+
+/* Scrollbar styling for light mode (WebKit browsers / Electron) */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-theme="light"] * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.25) transparent;
+}
+
+/* Scrollbar styling for dark mode (WebKit browsers / Electron) */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Ensure Ant Pro layout adapts in dark mode */
+[data-theme="dark"] :global(.ant-pro-layout),
+[data-theme="dark"] :global(.ant-pro-layout-container) {
+  background: inherit;
+}
+
+/* Dark mode: ensure Ant dropdown menus follow dark theme */
+[data-theme="dark"] :global(.ant-dropdown-menu) {
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] :global(.ant-dropdown-menu-item) {
+  color: #d4d4d4;
+}
+
+[data-theme="dark"] :global(.ant-dropdown-menu-item:hover) {
+  background: #2a2d2e;
+}
+
+/* Dark mode: Modal overlay */
+[data-theme="dark"] :global(.ant-modal-content) {
+  background: #252526;
+  border: 1px solid #3c3c3c;
+}
+
+[data-theme="dark"] :global(.ant-modal-header) {
+  background: #252526;
+}
+
+/* Dark mode: Drawer */
+[data-theme="dark"] :global(.ant-drawer-content) {
+  background: #252526;
+}
+
+/* Dark mode: Tooltip */
+[data-theme="dark"] :global(.ant-tooltip-inner) {
+  background: #333333;
+}
+
+/* Dark mode: Keep ant-menu horizontal backgrounds transparent in header */
+[data-theme="dark"] :global(.ant-menu-horizontal) {
+  background: transparent !important;
+  border-bottom: none !important;
+}

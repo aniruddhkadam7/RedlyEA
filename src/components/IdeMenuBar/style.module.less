@@ -1,0 +1,68 @@
+.root {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-inline: 0;
+}
+
+.menu {
+  flex: 1;
+  min-width: 0;
+  background: transparent !important;
+  border-bottom: none !important;
+  line-height: var(--ide-topbar-height, 36px);
+}
+
+/* Ensure no extra padding/margins are coming from Ant Menu itself. */
+.menu :global(.ant-menu) {
+  line-height: var(--ide-topbar-height, 36px);
+  border-bottom: none !important;
+  padding-inline: 2px;
+}
+
+.menu :global(.ant-menu-horizontal) {
+  line-height: var(--ide-topbar-height, 36px);
+}
+
+/* Horizontal menus use an overflow flex container; remove any implicit gaps. */
+.menu :global(.ant-menu-overflow) {
+  gap: 0 !important;
+}
+
+.menu :global(.ant-menu-item),
+.menu :global(.ant-menu-submenu-title) {
+  height: var(--ide-topbar-height, 36px) !important;
+  line-height: var(--ide-topbar-height, 36px) !important;
+  padding-inline: 3px;
+  margin-inline: 0 !important;
+  margin-block: 0 !important;
+  font-size: 15px;
+}
+
+:global(.desktopRoot) .menu :global(.ant-menu-item),
+:global(.desktopRoot) .menu :global(.ant-menu-submenu-title) {
+  padding-inline: 1px;
+  font-size: 12px;
+}
+
+/* Ant may wrap horizontal items in overflow containers; ensure no extra spacing. */
+.menu :global(.ant-menu-overflow-item) {
+  margin-inline: 0 !important;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-inline: 0;
+  white-space: nowrap;
+}
+
+.hint {
+  line-height: var(--ide-topbar-height, 36px);
+}
+
+.hint {
+  color: var(--ide-text-tertiary, rgba(0, 0, 0, 0.65));
+  font-size: 12px;
+}

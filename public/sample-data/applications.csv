@@ -1,0 +1,14 @@
+id,name,criticality,lifecycle
+role-ceo,CEO,high,active
+role-coo,COO,high,active
+role-cfo,CFO,high,active
+role-cto,CTO,high,active
+role-hrd,HR Director,medium,active
+role-finmgr,Finance Manager,medium,active
+role-engdir,Engineering Director,high,active
+role-pmdir,Product Director,medium,active
+role-engmgr,Engineering Manager,medium,active
+role-techlead,Tech Lead,medium,active
+role-swe1,Software Engineer I,low,active
+role-swe2,Software Engineer II,low,active
+role-designer,Product Designer,low,active
