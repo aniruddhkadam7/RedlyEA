@@ -9,60 +9,28 @@
  * - No hardcoded element types — everything flows from the metamodel
  */
 
-import {
-  ApartmentOutlined,
-  AppstoreOutlined,
-  AuditOutlined,
-  BankOutlined,
-  BarChartOutlined,
-  BlockOutlined,
-  BookOutlined,
-  BranchesOutlined,
-  BuildOutlined,
-  CloudOutlined,
-  ClusterOutlined,
-  CodeOutlined,
-  ContainerOutlined,
-  ControlOutlined,
-  DashboardOutlined,
-  DatabaseOutlined,
-  DeploymentUnitOutlined,
-  FileProtectOutlined,
-  FileTextOutlined,
-  FolderOutlined,
-  ForkOutlined,
-  FundProjectionScreenOutlined,
-  GlobalOutlined,
-  GoldOutlined,
-  LockOutlined,
-  NodeIndexOutlined,
-  PartitionOutlined,
-  ProjectOutlined,
-  SafetyOutlined,
-  SettingOutlined,
-  ShareAltOutlined,
-  SolutionOutlined,
-  TableOutlined,
-  TeamOutlined,
-  ToolOutlined,
-} from '@ant-design/icons';
-import type { DataNode } from 'antd/es/tree';
+import { FolderOutlined } from '@ant-design/icons';
+import type { DataNode as AntDataNode } from 'antd/es/tree';
 import React from 'react';
+
+type DataNode = AntDataNode & {
+  data?: Record<string, unknown>;
+  className?: string;
+};
 
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
-import type { ObjectType, RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
+import type {
+  ObjectType,
+  RelationshipType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 import {
   OBJECT_TYPE_DEFINITIONS,
   RELATIONSHIP_TYPE_DEFINITIONS,
 } from '@/pages/dependency-view/utils/eaMetaModel';
+import { isObjectTypeEnabledForFramework } from '@/repository/customFrameworkConfig';
+import { isObjectTypeAllowedForReferenceFramework } from '@/repository/referenceFrameworkPolicy';
 import type { EaRepositoryMetadata } from '@/repository/repositoryMetadata';
-import {
-  isObjectTypeEnabledForFramework,
-} from '@/repository/customFrameworkConfig';
-import {
-  isObjectTypeAllowedForReferenceFramework,
-} from '@/repository/referenceFrameworkPolicy';
 
 import type { Baseline } from '../../../../backend/baselines/Baseline';
 import type { Plateau } from '../../../../backend/roadmap/Plateau';
@@ -79,13 +47,20 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const isSoftDeleted = (attributes: Record<string, unknown> | null | undefined): boolean => {
+const isSoftDeleted = (
+  attributes: Record<string, unknown> | null | undefined,
+): boolean => {
   if ((attributes as any)?._deleted === true) return true;
-  const modelingState = String((attributes as any)?.modelingState ?? '').trim().toUpperCase();
+  const modelingState = String((attributes as any)?.modelingState ?? '')
+    .trim()
+    .toUpperCase();
   return modelingState === 'DRAFT';
 };
 
-const nameForObject = (obj: { id: string; attributes?: Record<string, unknown> }): string => {
+const nameForObject = (obj: {
+  id: string;
+  attributes?: Record<string, unknown>;
+}): string => {
   const raw = (obj.attributes as any)?.name;
   const name = typeof raw === 'string' ? raw.trim() : '';
   return name || obj.id;
@@ -93,72 +68,249 @@ const nameForObject = (obj: { id: string; attributes?: Record<string, unknown> }
 
 const titleForObjectType = (type: ObjectType): string => {
   // Derive display name from PascalCase → Title Case
-  return type.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+  return type
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
 };
+
+const iconAsset = (src: string, key?: string): React.ReactNode => {
+  const preferredSrc = src.endsWith('.svg')
+    ? src.replace(/\.svg$/i, '.png')
+    : src;
+  return React.createElement('img', {
+    src: preferredSrc,
+    alt: '',
+    'aria-hidden': true,
+    loading: 'lazy',
+    decoding: 'async',
+    onError: (event: any) => {
+      if (event?.currentTarget && event.currentTarget.src !== src) {
+        event.currentTarget.src = src;
+      }
+    },
+    className: `explorer-asset-icon${key ? ` explorer-asset-icon-${key}` : ''}`,
+  });
+};
+
+const classForNodeKey = (key: string): string => {
+  if (key.startsWith('section:metamodel'))
+    return 'explorer-node explorer-node-metamodel explorer-node-folder';
+  if (key.includes(':connections'))
+    return 'explorer-node explorer-node-connection';
+  if (key.includes(':catalogues'))
+    return 'explorer-node explorer-node-catalogue';
+  if (key.includes(':matrices')) return 'explorer-node explorer-node-matrix';
+  if (key.includes(':diagrams')) return 'explorer-node explorer-node-diagram';
+  if (key.startsWith('section:framework-packages'))
+    return 'explorer-node explorer-node-framework explorer-node-folder';
+  if (key.includes(':components'))
+    return 'explorer-node explorer-node-component explorer-node-folder';
+  if (
+    key.startsWith('ws:') ||
+    key.startsWith('zone:') ||
+    key.startsWith('section:') ||
+    key.startsWith('arch:')
+  ) {
+    return 'explorer-node explorer-node-folder';
+  }
+  return 'explorer-node';
+};
+
+const folderIcon = iconAsset('/icons/explorer/folder.svg', 'folder');
+const componentIcon = iconAsset(
+  '/icons/explorer/component-cluster.svg',
+  'component',
+);
+const catalogueIcon = iconAsset(
+  '/icons/explorer/catalogue-grid.svg',
+  'catalogue',
+);
+const matrixIcon = iconAsset('/icons/explorer/matrix-grid.svg', 'matrix');
+const diagramIcon = iconAsset('/icons/explorer/diagram-node.svg', 'diagram');
+const connectionIcon = iconAsset(
+  '/icons/explorer/connection-link.svg',
+  'connection',
+);
+const frameworkIcon = iconAsset(
+  '/icons/explorer/framework-triangle.svg',
+  'framework',
+);
+const metamodelIcon = iconAsset(
+  '/icons/explorer/metamodel-blueprint.svg',
+  'metamodel',
+);
+const reportIcon = iconAsset(
+  '/icons/explorer/metamodel-blueprint.svg',
+  'report',
+);
+const settingsIcon = iconAsset(
+  '/icons/explorer/metamodel-blueprint.svg',
+  'settings',
+);
+const fallbackGenericIcon = React.createElement(FolderOutlined);
 
 const iconForLayer = (layer: string): React.ReactNode => {
   switch (layer) {
-    case 'Business': return <BankOutlined />;
-    case 'Application': return <AppstoreOutlined />;
-    case 'Technology': return <CloudOutlined />;
-    case 'Data': return <DatabaseOutlined />;
-    case 'Implementation & Migration': return <ProjectOutlined />;
-    case 'Governance': return <SafetyOutlined />;
-    default: return <FolderOutlined />;
+    case 'Business':
+      return iconAsset(
+        '/rendering/archimate-icons/business-role.svg',
+        'business',
+      );
+    case 'Application':
+      return iconAsset(
+        '/rendering/archimate-icons/application-component.svg',
+        'application',
+      );
+    case 'Technology':
+      return iconAsset(
+        '/rendering/archimate-icons/technology-node.svg',
+        'technology',
+      );
+    case 'Data':
+      return iconAsset(
+        '/rendering/archimate-icons/application-dataobject.svg',
+        'data',
+      );
+    case 'Implementation & Migration':
+      return iconAsset(
+        '/rendering/archimate-icons/implementation-workpackage.svg',
+        'implementation',
+      );
+    case 'Governance':
+      return iconAsset(
+        '/rendering/archimate-icons/motivation-goal.svg',
+        'governance',
+      );
+    default:
+      return fallbackGenericIcon;
   }
 };
 
 const iconForObjectType = (type: ObjectType): React.ReactNode => {
   const def = OBJECT_TYPE_DEFINITIONS[type];
-  if (!def) return <FolderOutlined />;
+  if (!def) return folderIcon;
   const normalized = type.toLowerCase();
-  if (normalized.includes('enterprise')) return <BankOutlined />;
-  if (normalized.includes('capability') || normalized.includes('valuestream')) return <ApartmentOutlined />;
-  if (normalized.includes('process')) return <ForkOutlined />;
-  if (normalized.includes('department')) return <TeamOutlined />;
-  if (normalized.includes('application') && !normalized.includes('service')) return <AppstoreOutlined />;
-  if (normalized.includes('service')) return <DeploymentUnitOutlined />;
-  if (normalized.includes('interface') || normalized.includes('api')) return <CodeOutlined />;
-  if (normalized.includes('database')) return <DatabaseOutlined />;
-  if (normalized.includes('storage')) return <ContainerOutlined />;
-  if (normalized.includes('cloud')) return <CloudOutlined />;
-  if (normalized.includes('network') || normalized.includes('loadbalancer')) return <ClusterOutlined />;
-  if (normalized.includes('node') || normalized.includes('server') || normalized.includes('compute') || normalized.includes('vm') || normalized.includes('container') || normalized.includes('runtime')) return <BuildOutlined />;
-  if (normalized.includes('messagebroker') || normalized.includes('integrationplatform')) return <ShareAltOutlined />;
-  if (normalized.includes('programme') || normalized.includes('project')) return <ProjectOutlined />;
-  if (normalized.includes('principle') || normalized.includes('standard') || normalized.includes('requirement')) return <BookOutlined />;
+  if (normalized.includes('enterprise'))
+    return iconAsset(
+      '/rendering/archimate-icons/business-actor.svg',
+      'enterprise',
+    );
+  if (normalized.includes('capability'))
+    return iconAsset(
+      '/rendering/archimate-icons/strategy-capability.svg',
+      'capability',
+    );
+  if (normalized.includes('valuestream'))
+    return iconAsset(
+      '/rendering/archimate-icons/strategy-valuestream.svg',
+      'valuestream',
+    );
+  if (normalized.includes('process'))
+    return iconAsset(
+      '/rendering/archimate-icons/business-process.svg',
+      'process',
+    );
+  if (normalized.includes('department'))
+    return iconAsset(
+      '/rendering/archimate-icons/business-role.svg',
+      'department',
+    );
+  if (normalized.includes('application') && !normalized.includes('service'))
+    return iconAsset(
+      '/rendering/archimate-icons/application-component.svg',
+      'application',
+    );
+  if (normalized.includes('service'))
+    return iconAsset(
+      '/rendering/archimate-icons/application-service.svg',
+      'service',
+    );
+  if (normalized.includes('interface') || normalized.includes('api'))
+    return iconAsset(
+      '/rendering/archimate-icons/application-interface.svg',
+      'interface',
+    );
+  if (normalized.includes('database') || normalized.includes('data'))
+    return iconAsset(
+      '/rendering/archimate-icons/application-dataobject.svg',
+      'database',
+    );
+  if (normalized.includes('storage') || normalized.includes('artifact'))
+    return iconAsset(
+      '/rendering/archimate-icons/technology-artifact.svg',
+      'storage',
+    );
+  if (normalized.includes('cloud'))
+    return iconAsset(
+      '/rendering/archimate-icons/technology-service.svg',
+      'cloud',
+    );
+  if (normalized.includes('network') || normalized.includes('loadbalancer'))
+    return iconAsset(
+      '/rendering/archimate-icons/technology-communicationnetwork.svg',
+      'network',
+    );
+  if (
+    normalized.includes('node') ||
+    normalized.includes('server') ||
+    normalized.includes('compute') ||
+    normalized.includes('vm') ||
+    normalized.includes('container') ||
+    normalized.includes('runtime')
+  )
+    return iconAsset('/rendering/archimate-icons/technology-node.svg', 'node');
+  if (
+    normalized.includes('messagebroker') ||
+    normalized.includes('integrationplatform')
+  )
+    return iconAsset(
+      '/rendering/archimate-icons/application-interaction.svg',
+      'integration',
+    );
+  if (normalized.includes('programme') || normalized.includes('project'))
+    return iconAsset(
+      '/rendering/archimate-icons/implementation-workpackage.svg',
+      'project',
+    );
+  if (normalized.includes('principle'))
+    return iconAsset(
+      '/rendering/archimate-icons/motivation-principle.svg',
+      'principle',
+    );
+  if (normalized.includes('standard'))
+    return iconAsset(
+      '/rendering/archimate-icons/motivation-constraint.svg',
+      'standard',
+    );
+  if (normalized.includes('requirement'))
+    return iconAsset(
+      '/rendering/archimate-icons/motivation-requirement.svg',
+      'requirement',
+    );
   return iconForLayer(def.layer);
 };
-
-const classForNodeKey = (key: string): string => {
-  if (key.startsWith('section:metamodel')) return 'explorer-node explorer-node-metamodel';
-  if (key.includes(':connections')) return 'explorer-node explorer-node-connection';
-  if (key.includes(':catalogues')) return 'explorer-node explorer-node-catalogue';
-  if (key.includes(':matrices')) return 'explorer-node explorer-node-matrix';
-  if (key.includes(':diagrams')) return 'explorer-node explorer-node-diagram';
-  if (key.startsWith('section:framework-packages')) return 'explorer-node explorer-node-framework';
-  if (key.includes(':components')) return 'explorer-node explorer-node-component';
-  if (key.startsWith('ws:') || key.startsWith('zone:') || key.startsWith('section:')) return 'explorer-node explorer-node-folder';
-  return 'explorer-node';
-};
-
-const diagramIconGlyph = React.createElement('span', { className: 'explorer-icon-diagram-glyph', 'aria-hidden': true });
-const frameworkIconGlyph = React.createElement('span', { className: 'explorer-icon-framework-glyph', 'aria-hidden': true });
-const metamodelIconGlyph = React.createElement('span', { className: 'explorer-icon-metamodel-glyph', 'aria-hidden': true });
 
 // ---------------------------------------------------------------------------
 // Leaf node factories
 // ---------------------------------------------------------------------------
 
 function elementLeaves(
-  objectsById: Map<string, { id: string; type: ObjectType; attributes: Record<string, unknown> }>,
+  objectsById: Map<
+    string,
+    { id: string; type: ObjectType; attributes: Record<string, unknown> }
+  >,
   types: readonly ObjectType[],
 ): DataNode[] {
   const typeSet = new Set(types);
-  const items = Array.from(objectsById.values())
-    .filter(o => typeSet.has(o.type) && !isSoftDeleted(o.attributes));
-  items.sort((a, b) => nameForObject(a).localeCompare(nameForObject(b)) || a.id.localeCompare(b.id));
-  return items.map(o => ({
+  const items = Array.from(objectsById.values()).filter(
+    (o) => typeSet.has(o.type) && !isSoftDeleted(o.attributes),
+  );
+  items.sort(
+    (a, b) =>
+      nameForObject(a).localeCompare(nameForObject(b)) ||
+      a.id.localeCompare(b.id),
+  );
+  return items.map((o) => ({
     key: EXPLORER_KEYS.element(o.id),
     title: nameForObject(o),
     icon: iconForObjectType(o.type),
@@ -173,12 +325,18 @@ function viewLeaf(v: ViewInstance): DataNode {
   const label = viewpoint?.name ?? v.viewpointId;
   return {
     key: EXPLORER_KEYS.view(v.id),
-    title: React.createElement('span', null,
+    title: React.createElement(
+      'span',
+      null,
       v.name,
       ' ',
-      React.createElement('span', { style: { color: '#8c8c8c' } }, `(${label})`),
+      React.createElement(
+        'span',
+        { style: { color: '#8c8c8c' } },
+        `(${label})`,
+      ),
     ),
-    icon: diagramIconGlyph,
+    icon: diagramIcon,
     isLeaf: true,
     className: 'explorer-node explorer-node-diagram',
     data: { viewId: v.id },
@@ -189,7 +347,7 @@ function baselineLeaf(b: Baseline): DataNode {
   return {
     key: EXPLORER_KEYS.baseline(b.id),
     title: b.name || b.id,
-    icon: React.createElement(SafetyOutlined),
+    icon: frameworkIcon,
     isLeaf: true,
     className: 'explorer-node explorer-node-framework',
     data: { baselineId: b.id },
@@ -200,7 +358,7 @@ function plateauLeaf(p: Plateau): DataNode {
   return {
     key: EXPLORER_KEYS.plateau(p.id),
     title: p.name,
-    icon: React.createElement(FundProjectionScreenOutlined),
+    icon: frameworkIcon,
     isLeaf: true,
     className: 'explorer-node explorer-node-framework',
     data: { plateauId: p.id },
@@ -211,14 +369,17 @@ function roadmapLeaf(r: Roadmap): DataNode {
   return {
     key: EXPLORER_KEYS.roadmap(r.id),
     title: r.name,
-    icon: React.createElement(FundProjectionScreenOutlined),
+    icon: frameworkIcon,
     isLeaf: true,
     className: 'explorer-node explorer-node-framework',
     data: { roadmapId: r.id },
   };
 }
 
-function relationshipLeaf(rel: { id?: string; fromId: string; toId: string; type: string }, objectsById: Map<string, any>): DataNode {
+function relationshipLeaf(
+  rel: { id?: string; fromId: string; toId: string; type: string },
+  objectsById: Map<string, any>,
+): DataNode {
   const source = objectsById.get(rel.fromId);
   const target = objectsById.get(rel.toId);
   const sourceLabel = source ? nameForObject(source) : rel.fromId;
@@ -227,32 +388,26 @@ function relationshipLeaf(rel: { id?: string; fromId: string; toId: string; type
   return {
     key: EXPLORER_KEYS.relationship(id),
     title: `${sourceLabel} → ${rel.type} → ${targetLabel}`,
-    icon: React.createElement(BranchesOutlined),
+    icon: connectionIcon,
     isLeaf: true,
     className: 'explorer-node explorer-node-connection',
     data: { connectionType: rel.type },
   };
 }
 
-function collectionNode(key: string, title: string, icon: React.ReactNode, children: DataNode[]): DataNode {
-  return { key, title, icon, selectable: true, children, className: classForNodeKey(key) };
-}
-
-function zoneNode(
+function collectionNode(
   key: string,
   title: string,
   icon: React.ReactNode,
   children: DataNode[],
-  zoneClassName: string,
 ): DataNode {
   return {
     key,
     title,
     icon,
-    selectable: false,
-    className: zoneClassName,
+    selectable: true,
     children,
-    data: { visualZone: key },
+    className: classForNodeKey(key),
   };
 }
 
@@ -260,35 +415,83 @@ function emptyPlaceholder(parentKey: string, message: string): DataNode {
   return {
     key: `${parentKey}:empty`,
     title: message,
-    icon: React.createElement(FileTextOutlined),
+    icon: iconAsset('/icons/explorer/metamodel-blueprint.svg', 'placeholder'),
     isLeaf: true,
     selectable: false,
     className: 'explorer-node',
   };
 }
 
+const businessArchIcon = iconAsset(
+  '/rendering/archimate-icons/business-role.svg',
+  'business',
+);
+const appArchIcon = iconAsset(
+  '/rendering/archimate-icons/application-component.svg',
+  'application',
+);
+const techArchIcon = iconAsset(
+  '/rendering/archimate-icons/technology-node.svg',
+  'technology',
+);
+const dataArchIcon = iconAsset(
+  '/rendering/archimate-icons/application-dataobject.svg',
+  'data',
+);
+const projectArchIcon = iconAsset(
+  '/rendering/archimate-icons/implementation-workpackage.svg',
+  'project',
+);
+const securityArchIcon = iconAsset(
+  '/rendering/archimate-icons/motivation-constraint.svg',
+  'security',
+);
+const principleArchIcon = iconAsset(
+  '/rendering/archimate-icons/motivation-principle.svg',
+  'principle',
+);
+
 // ---------------------------------------------------------------------------
 // View grouping
 // ---------------------------------------------------------------------------
 
-function categorizeView(view: ViewInstance): 'business' | 'application' | 'technology' | 'strategy' {
+function categorizeView(
+  view: ViewInstance,
+): 'business' | 'application' | 'technology' | 'strategy' {
   const viewpoint = ViewpointRegistry.get(view.viewpointId);
   if (!viewpoint) return 'business';
 
   const businessTypes = new Set<ObjectType>([
-    'Enterprise', 'Department', 'CapabilityCategory', 'Capability', 'SubCapability',
-    'BusinessService', 'BusinessProcess',
+    'Enterprise',
+    'Department',
+    'CapabilityCategory',
+    'Capability',
+    'SubCapability',
+    'BusinessService',
+    'BusinessProcess',
   ]);
   const applicationTypes = new Set<ObjectType>([
-    'Application', 'ApplicationService', 'Interface',
+    'Application',
+    'ApplicationService',
+    'Interface',
   ]);
   const technologyTypes = new Set<ObjectType>([
-    'Technology', 'Node', 'Compute', 'Runtime', 'Database', 'Storage',
-    'API', 'MessageBroker', 'IntegrationPlatform', 'CloudService',
+    'Technology',
+    'Node',
+    'Compute',
+    'Runtime',
+    'Database',
+    'Storage',
+    'API',
+    'MessageBroker',
+    'IntegrationPlatform',
+    'CloudService',
   ]);
 
-  let bScore = 0, aScore = 0, tScore = 0;
-  viewpoint.allowedElementTypes.forEach(t => {
+  let bScore = 0,
+    aScore = 0,
+    tScore = 0;
+  viewpoint.allowedElementTypes.forEach((t) => {
     if (businessTypes.has(t)) bScore += 1;
     if (applicationTypes.has(t)) aScore += 1;
     if (technologyTypes.has(t)) tScore += 1;
@@ -313,9 +516,13 @@ function isObjectTypeVisible(
       ? [metadata.referenceFramework]
       : [];
   if (frameworks.length === 0) return true;
-  return frameworks.some(framework => {
+  return frameworks.some((framework) => {
     if (framework === 'Custom') {
-      return isObjectTypeEnabledForFramework('Custom', metadata?.frameworkConfig ?? undefined, type);
+      return isObjectTypeEnabledForFramework(
+        'Custom',
+        metadata?.frameworkConfig ?? undefined,
+        type,
+      );
     }
     return isObjectTypeAllowedForReferenceFramework(framework, type);
   });
@@ -326,8 +533,16 @@ function isObjectTypeVisible(
 // ---------------------------------------------------------------------------
 
 export type ExplorerTreeInput = {
-  objectsById: Map<string, { id: string; type: ObjectType; attributes: Record<string, unknown> }>;
-  relationships: ReadonlyArray<{ id?: string; fromId: string; toId: string; type: string }>;
+  objectsById: Map<
+    string,
+    { id: string; type: ObjectType; attributes: Record<string, unknown> }
+  >;
+  relationships: ReadonlyArray<{
+    id?: string;
+    fromId: string;
+    toId: string;
+    type: string;
+  }>;
   metadata: EaRepositoryMetadata | null;
   views: readonly ViewInstance[];
   baselines: readonly Baseline[];
@@ -359,32 +574,81 @@ export type ExplorerTreeResult = {
  * ├── Reports (Impact, Cost, Risk, Compliance)
  * └── Settings (Integrations, Notifications, Monitoring, System Config)
  */
-export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult {
-  const { objectsById, relationships, metadata, views, baselines, plateaus, roadmaps } = input;
+export function buildExplorerTree(
+  input: ExplorerTreeInput,
+): ExplorerTreeResult {
+  const {
+    objectsById,
+    relationships,
+    metadata,
+    views,
+    baselines,
+    plateaus,
+    roadmaps,
+  } = input;
 
-  const workspaceName = (metadata?.repositoryName ?? 'Workspace').trim() || 'Workspace';
-  const archName = resolveArchitectureName(metadata?.repositoryName, metadata?.organizationName);
+  const workspaceName =
+    (metadata?.repositoryName ?? 'Workspace').trim() || 'Workspace';
+  const archName = resolveArchitectureName(
+    metadata?.repositoryName,
+    metadata?.organizationName,
+  );
   const categories = getObjectTypesByCategory();
   const metamodelLayers = getObjectTypesByMetamodelLayer();
   const relCategories = getRelationshipTypesByCategory();
 
   // Filter types by framework visibility
-  const visibleTypes = (types: ObjectType[]) => types.filter(t => isObjectTypeVisible(t, metadata));
+  const visibleTypes = (types: ObjectType[]) =>
+    types.filter((t) => isObjectTypeVisible(t, metadata));
 
-  const savedViews = views.filter(v => v.status === 'SAVED');
-  const businessViews = savedViews.filter(v => categorizeView(v) === 'business');
-  const applicationViews = savedViews.filter(v => categorizeView(v) === 'application');
-  const technologyViews = savedViews.filter(v => categorizeView(v) === 'technology');
-  const strategyViews = savedViews.filter(v => categorizeView(v) === 'strategy');
+  const savedViews = views.filter((v) => v.status === 'SAVED');
+  const businessViews = savedViews.filter(
+    (v) => categorizeView(v) === 'business',
+  );
+  const applicationViews = savedViews.filter(
+    (v) => categorizeView(v) === 'application',
+  );
+  const technologyViews = savedViews.filter(
+    (v) => categorizeView(v) === 'technology',
+  );
+  const strategyViews = savedViews.filter(
+    (v) => categorizeView(v) === 'strategy',
+  );
 
   // --- 1. Repository ---
   const repositoryNode: DataNode = collectionNode(
-    EXPLORER_KEYS.repository, 'Repository', React.createElement(DatabaseOutlined),
+    EXPLORER_KEYS.repository,
+    'Repository',
+    metamodelIcon,
     [
-      { key: EXPLORER_KEYS.repoProperties, title: 'Properties', icon: React.createElement(FileProtectOutlined), isLeaf: true, data: { settingKey: 'repository-properties' } },
-      { key: EXPLORER_KEYS.repoAuditTrail, title: 'Audit Trail', icon: React.createElement(AuditOutlined), isLeaf: true, data: { settingKey: 'audit-trail' } },
-      { key: EXPLORER_KEYS.repoUsersRoles, title: 'Users & Roles', icon: React.createElement(TeamOutlined), isLeaf: true, data: { settingKey: 'users-roles' } },
-      { key: EXPLORER_KEYS.repoAccessControl, title: 'Access Control', icon: React.createElement(LockOutlined), isLeaf: true, data: { settingKey: 'access-control' } },
+      {
+        key: EXPLORER_KEYS.repoProperties,
+        title: 'Properties',
+        icon: metamodelIcon,
+        isLeaf: true,
+        data: { settingKey: 'repository-properties' },
+      },
+      {
+        key: EXPLORER_KEYS.repoAuditTrail,
+        title: 'Audit Trail',
+        icon: connectionIcon,
+        isLeaf: true,
+        data: { settingKey: 'audit-trail' },
+      },
+      {
+        key: EXPLORER_KEYS.repoUsersRoles,
+        title: 'Users & Roles',
+        icon: businessArchIcon,
+        isLeaf: true,
+        data: { settingKey: 'users-roles' },
+      },
+      {
+        key: EXPLORER_KEYS.repoAccessControl,
+        title: 'Access Control',
+        icon: securityArchIcon,
+        isLeaf: true,
+        data: { settingKey: 'access-control' },
+      },
     ],
   );
 
@@ -392,21 +656,40 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
   const metamodelObjectTypeChildren = (() => {
     const cats: DataNode[] = [];
     const layerEntries: [string, string, ObjectType[]][] = [
-      [EXPLORER_KEYS.objectTypeBusiness, 'Business Types', metamodelLayers.business],
-      [EXPLORER_KEYS.objectTypeApplication, 'Application Types', metamodelLayers.application],
-      [EXPLORER_KEYS.objectTypeTechnology, 'Technology Types', metamodelLayers.technology],
+      [
+        EXPLORER_KEYS.objectTypeBusiness,
+        'Business Types',
+        metamodelLayers.business,
+      ],
+      [
+        EXPLORER_KEYS.objectTypeApplication,
+        'Application Types',
+        metamodelLayers.application,
+      ],
+      [
+        EXPLORER_KEYS.objectTypeTechnology,
+        'Technology Types',
+        metamodelLayers.technology,
+      ],
       [EXPLORER_KEYS.objectTypeData, 'Data Types', metamodelLayers.data],
       [EXPLORER_KEYS.objectTypeCustom, 'Custom Types', metamodelLayers.custom],
     ];
     for (const [key, title, types] of layerEntries) {
       const visible = visibleTypes(types);
-      cats.push(collectionNode(key, title, React.createElement(GoldOutlined), visible.map(t => ({
-        key: EXPLORER_KEYS.metamodelTypeDef(t),
-        title: titleForObjectType(t),
-        icon: iconForObjectType(t),
-        isLeaf: true,
-        data: { metamodelType: t },
-      }))));
+      cats.push(
+        collectionNode(
+          key,
+          title,
+          metamodelIcon,
+          visible.map((t) => ({
+            key: EXPLORER_KEYS.metamodelTypeDef(t),
+            title: titleForObjectType(t),
+            icon: iconForObjectType(t),
+            isLeaf: true,
+            data: { metamodelType: t },
+          })),
+        ),
+      );
     }
     return cats;
   })();
@@ -419,33 +702,101 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
       [EXPLORER_KEYS.relTypeCustom, 'Custom', relCategories.custom],
     ];
     return entries.map(([key, title, types]) =>
-      collectionNode(key, title, React.createElement(BranchesOutlined), types.map(t => ({
-        key: EXPLORER_KEYS.metamodelRelDef(t),
-        title: t.replace(/_/g, ' '),
-        icon: React.createElement(BranchesOutlined),
-        isLeaf: true,
-        data: { metamodelType: t },
-      }))),
+      collectionNode(
+        key,
+        title,
+        connectionIcon,
+        types.map((t) => ({
+          key: EXPLORER_KEYS.metamodelRelDef(t),
+          title: t.replace(/_/g, ' '),
+          icon: connectionIcon,
+          isLeaf: true,
+          data: { metamodelType: t },
+        })),
+      ),
     );
   })();
 
   const metamodelNode: DataNode = collectionNode(
-    EXPLORER_KEYS.metamodel, 'Metamodel', metamodelIconGlyph,
+    EXPLORER_KEYS.metamodel,
+    'Metamodel',
+    metamodelIcon,
     [
-      { key: EXPLORER_KEYS.metamodelStandards, title: 'Standards', icon: React.createElement(BookOutlined), isLeaf: true, data: { settingKey: 'metamodel-standards' } },
-      collectionNode(EXPLORER_KEYS.metamodelObjectTypes, 'Object Types', React.createElement(BlockOutlined), metamodelObjectTypeChildren),
-      collectionNode(EXPLORER_KEYS.metamodelRelTypes, 'Relationship Types', React.createElement(BranchesOutlined), metamodelRelTypeChildren),
-      collectionNode(EXPLORER_KEYS.metamodelAttributes, 'Attributes', React.createElement(TableOutlined), [
-        { key: EXPLORER_KEYS.attributesGlobal, title: 'Global Attributes', icon: React.createElement(GlobalOutlined), isLeaf: true },
-        { key: EXPLORER_KEYS.attributesTypeSpecific, title: 'Type-Specific Attributes', icon: React.createElement(ControlOutlined), isLeaf: true },
-        { key: EXPLORER_KEYS.attributesCalculated, title: 'Calculated Attributes', icon: React.createElement(DashboardOutlined), isLeaf: true },
-      ]),
-      collectionNode(EXPLORER_KEYS.metamodelViewpoints, 'Viewpoints', React.createElement(SolutionOutlined), [
-        collectionNode(EXPLORER_KEYS.viewpointsBusiness, 'Business Views', React.createElement(BankOutlined), []),
-        collectionNode(EXPLORER_KEYS.viewpointsApplication, 'Application Views', React.createElement(AppstoreOutlined), []),
-        collectionNode(EXPLORER_KEYS.viewpointsTechnology, 'Technology Views', React.createElement(CloudOutlined), []),
-        collectionNode(EXPLORER_KEYS.viewpointsStrategy, 'Strategy Views', React.createElement(FundProjectionScreenOutlined), []),
-      ]),
+      {
+        key: EXPLORER_KEYS.metamodelStandards,
+        title: 'Standards',
+        icon: principleArchIcon,
+        isLeaf: true,
+        data: { settingKey: 'metamodel-standards' },
+      },
+      collectionNode(
+        EXPLORER_KEYS.metamodelObjectTypes,
+        'Object Types',
+        metamodelIcon,
+        metamodelObjectTypeChildren,
+      ),
+      collectionNode(
+        EXPLORER_KEYS.metamodelRelTypes,
+        'Relationship Types',
+        connectionIcon,
+        metamodelRelTypeChildren,
+      ),
+      collectionNode(
+        EXPLORER_KEYS.metamodelAttributes,
+        'Attributes',
+        catalogueIcon,
+        [
+          {
+            key: EXPLORER_KEYS.attributesGlobal,
+            title: 'Global Attributes',
+            icon: metamodelIcon,
+            isLeaf: true,
+          },
+          {
+            key: EXPLORER_KEYS.attributesTypeSpecific,
+            title: 'Type-Specific Attributes',
+            icon: metamodelIcon,
+            isLeaf: true,
+          },
+          {
+            key: EXPLORER_KEYS.attributesCalculated,
+            title: 'Calculated Attributes',
+            icon: metamodelIcon,
+            isLeaf: true,
+          },
+        ],
+      ),
+      collectionNode(
+        EXPLORER_KEYS.metamodelViewpoints,
+        'Viewpoints',
+        diagramIcon,
+        [
+          collectionNode(
+            EXPLORER_KEYS.viewpointsBusiness,
+            'Business Views',
+            businessArchIcon,
+            [],
+          ),
+          collectionNode(
+            EXPLORER_KEYS.viewpointsApplication,
+            'Application Views',
+            appArchIcon,
+            [],
+          ),
+          collectionNode(
+            EXPLORER_KEYS.viewpointsTechnology,
+            'Technology Views',
+            techArchIcon,
+            [],
+          ),
+          collectionNode(
+            EXPLORER_KEYS.viewpointsStrategy,
+            'Strategy Views',
+            diagramIcon,
+            [],
+          ),
+        ],
+      ),
     ],
   );
 
@@ -466,244 +817,573 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
 
   // Components sub-tree
   const businessNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentBusiness(archName), 'Business', React.createElement(BankOutlined),
+    EXPLORER_KEYS.componentBusiness(archName),
+    'Business',
+    businessArchIcon,
     [
-      collectionNode(EXPLORER_KEYS.businessCapabilities(archName), 'Capabilities', React.createElement(ApartmentOutlined),
-        elementLeaves(objectsById, visCapabilities)),
-      collectionNode(EXPLORER_KEYS.businessProcesses(archName), 'Processes', React.createElement(ForkOutlined),
-        elementLeaves(objectsById, visProcesses)),
-      collectionNode(EXPLORER_KEYS.businessActors(archName), 'Actors', React.createElement(TeamOutlined),
-        elementLeaves(objectsById, visActors)),
+      collectionNode(
+        EXPLORER_KEYS.businessCapabilities(archName),
+        'Capabilities',
+        iconAsset(
+          '/rendering/archimate-icons/strategy-capability.svg',
+          'capability',
+        ),
+        elementLeaves(objectsById, visCapabilities),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.businessProcesses(archName),
+        'Processes',
+        iconAsset('/rendering/archimate-icons/business-process.svg', 'process'),
+        elementLeaves(objectsById, visProcesses),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.businessActors(archName),
+        'Actors',
+        iconAsset('/rendering/archimate-icons/business-actor.svg', 'actor'),
+        elementLeaves(objectsById, visActors),
+      ),
     ],
   );
 
   const applicationsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentApplications(archName), 'Applications', React.createElement(AppstoreOutlined),
+    EXPLORER_KEYS.componentApplications(archName),
+    'Applications',
+    appArchIcon,
     [
-      collectionNode(EXPLORER_KEYS.appApplications(archName), 'Applications', React.createElement(AppstoreOutlined),
-        elementLeaves(objectsById, visApplications)),
-      collectionNode(EXPLORER_KEYS.appAPIs(archName), 'APIs', React.createElement(CodeOutlined),
-        elementLeaves(objectsById, visAPIs)),
-      collectionNode(EXPLORER_KEYS.appServices(archName), 'Services', React.createElement(DeploymentUnitOutlined),
-        elementLeaves(objectsById, visServices)),
+      collectionNode(
+        EXPLORER_KEYS.appApplications(archName),
+        'Applications',
+        appArchIcon,
+        elementLeaves(objectsById, visApplications),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.appAPIs(archName),
+        'APIs',
+        iconAsset(
+          '/rendering/archimate-icons/application-interface.svg',
+          'api',
+        ),
+        elementLeaves(objectsById, visAPIs),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.appServices(archName),
+        'Services',
+        iconAsset(
+          '/rendering/archimate-icons/application-service.svg',
+          'service',
+        ),
+        elementLeaves(objectsById, visServices),
+      ),
     ],
   );
 
   const dataNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentData(archName), 'Data', React.createElement(DatabaseOutlined),
+    EXPLORER_KEYS.componentData(archName),
+    'Data',
+    dataArchIcon,
     [
-      collectionNode(EXPLORER_KEYS.dataEntities(archName), 'Data Entities', React.createElement(TableOutlined),
-        elementLeaves(objectsById, visDataEntities)),
-      collectionNode(EXPLORER_KEYS.dataStores(archName), 'Data Stores', React.createElement(ContainerOutlined),
-        elementLeaves(objectsById, visDataStores)),
+      collectionNode(
+        EXPLORER_KEYS.dataEntities(archName),
+        'Data Entities',
+        dataArchIcon,
+        elementLeaves(objectsById, visDataEntities),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.dataStores(archName),
+        'Data Stores',
+        iconAsset(
+          '/rendering/archimate-icons/technology-artifact.svg',
+          'datastore',
+        ),
+        elementLeaves(objectsById, visDataStores),
+      ),
     ],
   );
 
   const technologyNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentTechnology(archName), 'Technology', React.createElement(CloudOutlined),
+    EXPLORER_KEYS.componentTechnology(archName),
+    'Technology',
+    techArchIcon,
     [
-      collectionNode(EXPLORER_KEYS.techInfrastructure(archName), 'Infrastructure', React.createElement(BuildOutlined),
-        elementLeaves(objectsById, visInfrastructure)),
-      collectionNode(EXPLORER_KEYS.techNetwork(archName), 'Network', React.createElement(ClusterOutlined),
-        elementLeaves(objectsById, visNetwork)),
-      collectionNode(EXPLORER_KEYS.techCloud(archName), 'Cloud Resources', React.createElement(CloudOutlined),
-        elementLeaves(objectsById, visCloud)),
+      collectionNode(
+        EXPLORER_KEYS.techInfrastructure(archName),
+        'Infrastructure',
+        techArchIcon,
+        elementLeaves(objectsById, visInfrastructure),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.techNetwork(archName),
+        'Network',
+        iconAsset(
+          '/rendering/archimate-icons/technology-communicationnetwork.svg',
+          'network',
+        ),
+        elementLeaves(objectsById, visNetwork),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.techCloud(archName),
+        'Cloud Resources',
+        iconAsset('/rendering/archimate-icons/technology-service.svg', 'cloud'),
+        elementLeaves(objectsById, visCloud),
+      ),
     ],
   );
 
   const securityNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentSecurity(archName), 'Security', React.createElement(LockOutlined),
+    EXPLORER_KEYS.componentSecurity(archName),
+    'Security',
+    securityArchIcon,
     elementLeaves(objectsById, visSecurity),
   );
 
   const projectsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.componentProjects(archName), 'Projects', React.createElement(ProjectOutlined),
+    EXPLORER_KEYS.componentProjects(archName),
+    'Projects',
+    projectArchIcon,
     elementLeaves(objectsById, visProjects),
   );
 
   const componentsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archComponents(archName), 'Components', React.createElement(ClusterOutlined),
-    [businessNode, applicationsNode, dataNode, technologyNode, securityNode, projectsNode],
+    EXPLORER_KEYS.archComponents(archName),
+    'Components',
+    componentIcon,
+    [
+      businessNode,
+      applicationsNode,
+      dataNode,
+      technologyNode,
+      securityNode,
+      projectsNode,
+    ],
   );
 
   // Connections sub-tree
   const filterRelsByTypes = (relTypes: string[]): DataNode[] => {
-    const typeSet = new Set(relTypes.map(t => t.toLowerCase()));
+    const typeSet = new Set(relTypes.map((t) => t.toLowerCase()));
     return relationships
-      .filter(r => typeSet.has(r.type.toLowerCase()))
+      .filter((r) => typeSet.has(r.type.toLowerCase()))
       .slice(0, 200) // Cap for performance
-      .map(r => relationshipLeaf(r, objectsById));
+      .map((r) => relationshipLeaf(r, objectsById));
   };
 
   const connectionsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archConnections(archName), 'Connections', React.createElement(BranchesOutlined),
+    EXPLORER_KEYS.archConnections(archName),
+    'Connections',
+    connectionIcon,
     [
-      collectionNode(EXPLORER_KEYS.connAllRelationships(archName), 'All Relationships', React.createElement(ShareAltOutlined),
-        relationships.slice(0, 200).map(r => relationshipLeaf(r, objectsById))),
-      collectionNode(EXPLORER_KEYS.connAppDependencies(archName), 'Application Dependencies', React.createElement(NodeIndexOutlined),
-        filterRelsByTypes(['DEPENDS_ON', 'USES', 'USED_BY', 'CONSUMES'])),
-      collectionNode(EXPLORER_KEYS.connDataFlows(archName), 'Data Flows', React.createElement(ForkOutlined),
-        filterRelsByTypes(['TRIGGERS', 'SERVED_BY', 'INTEGRATES_WITH', 'CONNECTS_TO'])),
-      collectionNode(EXPLORER_KEYS.connDeployments(archName), 'Deployments', React.createElement(DeploymentUnitOutlined),
-        filterRelsByTypes(['DEPLOYED_ON', 'SUPPORTED_BY'])),
-      collectionNode(EXPLORER_KEYS.connIntegrations(archName), 'Integrations', React.createElement(ShareAltOutlined),
-        filterRelsByTypes(['INTEGRATES_WITH', 'EXPOSES', 'PROVIDED_BY'])),
+      collectionNode(
+        EXPLORER_KEYS.connAllRelationships(archName),
+        'All Relationships',
+        connectionIcon,
+        relationships
+          .slice(0, 200)
+          .map((r) => relationshipLeaf(r, objectsById)),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.connAppDependencies(archName),
+        'Application Dependencies',
+        connectionIcon,
+        filterRelsByTypes(['DEPENDS_ON', 'USES', 'USED_BY', 'CONSUMES']),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.connDataFlows(archName),
+        'Data Flows',
+        connectionIcon,
+        filterRelsByTypes([
+          'TRIGGERS',
+          'SERVED_BY',
+          'INTEGRATES_WITH',
+          'CONNECTS_TO',
+        ]),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.connDeployments(archName),
+        'Deployments',
+        connectionIcon,
+        filterRelsByTypes(['DEPLOYED_ON', 'SUPPORTED_BY']),
+      ),
+      collectionNode(
+        EXPLORER_KEYS.connIntegrations(archName),
+        'Integrations',
+        connectionIcon,
+        filterRelsByTypes(['INTEGRATES_WITH', 'EXPOSES', 'PROVIDED_BY']),
+      ),
     ],
   );
 
   // Catalogues sub-tree
   const cataloguesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archCatalogues(archName), 'Catalogues', React.createElement(TableOutlined),
+    EXPLORER_KEYS.archCatalogues(archName),
+    'Catalogues',
+    catalogueIcon,
     [
-      { key: EXPLORER_KEYS.catApplication(archName), title: 'Application Catalogue', icon: React.createElement(AppstoreOutlined), isLeaf: true, data: { catalogKey: 'applications' } },
-      { key: EXPLORER_KEYS.catTechnology(archName), title: 'Technology Catalogue', icon: React.createElement(CloudOutlined), isLeaf: true, data: { catalogKey: 'technology' } },
-      { key: EXPLORER_KEYS.catRisk(archName), title: 'Risk Register', icon: React.createElement(SafetyOutlined), isLeaf: true, data: { catalogKey: 'risk' } },
-      { key: EXPLORER_KEYS.catVendor(archName), title: 'Vendor Register', icon: React.createElement(SolutionOutlined), isLeaf: true, data: { catalogKey: 'vendor' } },
-      { key: EXPLORER_KEYS.catProjectPortfolio(archName), title: 'Project Portfolio', icon: React.createElement(ProjectOutlined), isLeaf: true, data: { catalogKey: 'project-portfolio' } },
+      {
+        key: EXPLORER_KEYS.catApplication(archName),
+        title: 'Application Catalogue',
+        icon: catalogueIcon,
+        isLeaf: true,
+        data: { catalogKey: 'applications' },
+      },
+      {
+        key: EXPLORER_KEYS.catTechnology(archName),
+        title: 'Technology Catalogue',
+        icon: catalogueIcon,
+        isLeaf: true,
+        data: { catalogKey: 'technology' },
+      },
+      {
+        key: EXPLORER_KEYS.catRisk(archName),
+        title: 'Risk Register',
+        icon: catalogueIcon,
+        isLeaf: true,
+        data: { catalogKey: 'risk' },
+      },
+      {
+        key: EXPLORER_KEYS.catVendor(archName),
+        title: 'Vendor Register',
+        icon: catalogueIcon,
+        isLeaf: true,
+        data: { catalogKey: 'vendor' },
+      },
+      {
+        key: EXPLORER_KEYS.catProjectPortfolio(archName),
+        title: 'Project Portfolio',
+        icon: catalogueIcon,
+        isLeaf: true,
+        data: { catalogKey: 'project-portfolio' },
+      },
     ],
   );
 
   // Matrices sub-tree
   const matricesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archMatrices(archName), 'Matrices', React.createElement(TableOutlined),
+    EXPLORER_KEYS.archMatrices(archName),
+    'Matrices',
+    matrixIcon,
     [
-      { key: EXPLORER_KEYS.matAppVsCap(archName), title: 'App vs Capability', icon: React.createElement(TableOutlined), isLeaf: true, data: { matrixKey: 'app-vs-cap' } },
-      { key: EXPLORER_KEYS.matAppVsTech(archName), title: 'App vs Technology', icon: React.createElement(TableOutlined), isLeaf: true, data: { matrixKey: 'app-vs-tech' } },
-      { key: EXPLORER_KEYS.matCapVsProc(archName), title: 'Capability vs Process', icon: React.createElement(TableOutlined), isLeaf: true, data: { matrixKey: 'cap-vs-proc' } },
-      { key: EXPLORER_KEYS.matRiskVsApp(archName), title: 'Risk vs Application', icon: React.createElement(TableOutlined), isLeaf: true, data: { matrixKey: 'risk-vs-app' } },
+      {
+        key: EXPLORER_KEYS.matAppVsCap(archName),
+        title: 'App vs Capability',
+        icon: matrixIcon,
+        isLeaf: true,
+        data: { matrixKey: 'app-vs-cap' },
+      },
+      {
+        key: EXPLORER_KEYS.matAppVsTech(archName),
+        title: 'App vs Technology',
+        icon: matrixIcon,
+        isLeaf: true,
+        data: { matrixKey: 'app-vs-tech' },
+      },
+      {
+        key: EXPLORER_KEYS.matCapVsProc(archName),
+        title: 'Capability vs Process',
+        icon: matrixIcon,
+        isLeaf: true,
+        data: { matrixKey: 'cap-vs-proc' },
+      },
+      {
+        key: EXPLORER_KEYS.matRiskVsApp(archName),
+        title: 'Risk vs Application',
+        icon: matrixIcon,
+        isLeaf: true,
+        data: { matrixKey: 'risk-vs-app' },
+      },
     ],
   );
 
   // Diagrams sub-tree
-  const makeDiagramCategory = (key: string, title: string, catViews: ViewInstance[]): DataNode =>
-    collectionNode(key, title, React.createElement(PartitionOutlined),
-      catViews.length > 0 ? catViews.map(viewLeaf) : [emptyPlaceholder(key, 'No diagrams')]);
+  const makeDiagramCategory = (
+    key: string,
+    title: string,
+    catViews: ViewInstance[],
+  ): DataNode =>
+    collectionNode(
+      key,
+      title,
+      diagramIcon,
+      catViews.length > 0
+        ? catViews.map(viewLeaf)
+        : [emptyPlaceholder(key, 'No diagrams')],
+    );
 
   const diagramsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archDiagrams(archName), 'Diagrams', diagramIconGlyph,
+    EXPLORER_KEYS.archDiagrams(archName),
+    'Diagrams',
+    diagramIcon,
     [
-      makeDiagramCategory(EXPLORER_KEYS.diagBusiness(archName), 'Business Diagrams', businessViews),
-      makeDiagramCategory(EXPLORER_KEYS.diagApplication(archName), 'Application Diagrams', applicationViews),
-      makeDiagramCategory(EXPLORER_KEYS.diagTechnology(archName), 'Technology Diagrams', technologyViews),
-      makeDiagramCategory(EXPLORER_KEYS.diagStrategy(archName), 'Strategy Diagrams', strategyViews),
+      makeDiagramCategory(
+        EXPLORER_KEYS.diagBusiness(archName),
+        'Business Diagrams',
+        businessViews,
+      ),
+      makeDiagramCategory(
+        EXPLORER_KEYS.diagApplication(archName),
+        'Application Diagrams',
+        applicationViews,
+      ),
+      makeDiagramCategory(
+        EXPLORER_KEYS.diagTechnology(archName),
+        'Technology Diagrams',
+        technologyViews,
+      ),
+      makeDiagramCategory(
+        EXPLORER_KEYS.diagStrategy(archName),
+        'Strategy Diagrams',
+        strategyViews,
+      ),
     ],
   );
 
   // Roadmaps sub-tree
-  const currentStateRoadmaps = roadmaps.filter(r => {
+  const currentStateRoadmaps = roadmaps.filter((r) => {
     const name = (r.name ?? '').toLowerCase();
-    return name.includes('current') || name.includes('as-is') || name.includes('baseline');
+    return (
+      name.includes('current') ||
+      name.includes('as-is') ||
+      name.includes('baseline')
+    );
   });
-  const targetStateRoadmaps = roadmaps.filter(r => {
+  const targetStateRoadmaps = roadmaps.filter((r) => {
     const name = (r.name ?? '').toLowerCase();
-    return name.includes('target') || name.includes('to-be') || name.includes('future');
+    return (
+      name.includes('target') ||
+      name.includes('to-be') ||
+      name.includes('future')
+    );
   });
-  const transitionRoadmaps = roadmaps.filter(r =>
-    !currentStateRoadmaps.includes(r) && !targetStateRoadmaps.includes(r),
+  const transitionRoadmaps = roadmaps.filter(
+    (r) =>
+      !currentStateRoadmaps.includes(r) && !targetStateRoadmaps.includes(r),
   );
 
   const roadmapsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.archRoadmaps(archName), 'Roadmaps', React.createElement(FundProjectionScreenOutlined),
+    EXPLORER_KEYS.archRoadmaps(archName),
+    'Roadmaps',
+    frameworkIcon,
     [
-      collectionNode(EXPLORER_KEYS.roadmapCurrent(archName), 'Current State', React.createElement(DashboardOutlined),
-        currentStateRoadmaps.length > 0 ? currentStateRoadmaps.map(roadmapLeaf) : [emptyPlaceholder(EXPLORER_KEYS.roadmapCurrent(archName), 'No current state roadmaps')]),
-      collectionNode(EXPLORER_KEYS.roadmapTarget(archName), 'Target State', React.createElement(FundProjectionScreenOutlined),
-        targetStateRoadmaps.length > 0 ? targetStateRoadmaps.map(roadmapLeaf) : [emptyPlaceholder(EXPLORER_KEYS.roadmapTarget(archName), 'No target state roadmaps')]),
-      collectionNode(EXPLORER_KEYS.roadmapTransition(archName), 'Transition States', React.createElement(BarChartOutlined),
+      collectionNode(
+        EXPLORER_KEYS.roadmapCurrent(archName),
+        'Current State',
+        frameworkIcon,
+        currentStateRoadmaps.length > 0
+          ? currentStateRoadmaps.map(roadmapLeaf)
+          : [
+              emptyPlaceholder(
+                EXPLORER_KEYS.roadmapCurrent(archName),
+                'No current state roadmaps',
+              ),
+            ],
+      ),
+      collectionNode(
+        EXPLORER_KEYS.roadmapTarget(archName),
+        'Target State',
+        frameworkIcon,
+        targetStateRoadmaps.length > 0
+          ? targetStateRoadmaps.map(roadmapLeaf)
+          : [
+              emptyPlaceholder(
+                EXPLORER_KEYS.roadmapTarget(archName),
+                'No target state roadmaps',
+              ),
+            ],
+      ),
+      collectionNode(
+        EXPLORER_KEYS.roadmapTransition(archName),
+        'Transition States',
+        frameworkIcon,
         transitionRoadmaps.length > 0
-          ? [...transitionRoadmaps.map(roadmapLeaf), ...plateaus.map(plateauLeaf)]
+          ? [
+              ...transitionRoadmaps.map(roadmapLeaf),
+              ...plateaus.map(plateauLeaf),
+            ]
           : plateaus.length > 0
             ? plateaus.map(plateauLeaf)
-            : [emptyPlaceholder(EXPLORER_KEYS.roadmapTransition(archName), 'No transition states')]),
+            : [
+                emptyPlaceholder(
+                  EXPLORER_KEYS.roadmapTransition(archName),
+                  'No transition states',
+                ),
+              ],
+      ),
     ],
   );
 
   // The Architecture container
   const architectureNode: DataNode = collectionNode(
-    EXPLORER_KEYS.architecture(archName), archName, React.createElement(PartitionOutlined),
-    [componentsNode, connectionsNode, cataloguesNode, matricesNode, diagramsNode, roadmapsNode],
+    EXPLORER_KEYS.architecture(archName),
+    archName,
+    folderIcon,
+    [
+      componentsNode,
+      connectionsNode,
+      cataloguesNode,
+      matricesNode,
+      diagramsNode,
+      roadmapsNode,
+    ],
   );
 
   const architecturesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.architectures, 'Architectures', React.createElement(PartitionOutlined),
+    EXPLORER_KEYS.architectures,
+    'Architectures',
+    folderIcon,
     [architectureNode],
   );
 
   // --- 4. Framework Packages ---
   const frameworkPackagesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.frameworkPackages, 'Framework Packages', frameworkIconGlyph,
+    EXPLORER_KEYS.frameworkPackages,
+    'Framework Packages',
+    frameworkIcon,
     [
-      { key: EXPLORER_KEYS.frameworkIndustry, title: 'NIST', icon: React.createElement(GlobalOutlined), isLeaf: true },
-      { key: EXPLORER_KEYS.frameworkSecurity, title: 'RBI', icon: React.createElement(LockOutlined), isLeaf: true },
-      { key: EXPLORER_KEYS.frameworkCustom, title: 'Custom Frameworks', icon: React.createElement(ToolOutlined), isLeaf: true },
+      {
+        key: EXPLORER_KEYS.frameworkIndustry,
+        title: 'Industry Frameworks',
+        icon: frameworkIcon,
+        isLeaf: true,
+      },
+      {
+        key: EXPLORER_KEYS.frameworkSecurity,
+        title: 'Security Frameworks',
+        icon: frameworkIcon,
+        isLeaf: true,
+      },
+      {
+        key: EXPLORER_KEYS.frameworkCustom,
+        title: 'Custom Frameworks',
+        icon: frameworkIcon,
+        isLeaf: true,
+      },
     ],
   );
 
   // --- 5. Baselines ---
-  const activeBaselines = baselines.filter(b => !b.description?.toLowerCase().includes('archived'));
-  const archivedBaselines = baselines.filter(b => b.description?.toLowerCase().includes('archived'));
+  const activeBaselines = baselines.filter(
+    (b) => !b.description?.toLowerCase().includes('archived'),
+  );
+  const archivedBaselines = baselines.filter((b) =>
+    b.description?.toLowerCase().includes('archived'),
+  );
 
   const baselinesNode: DataNode = collectionNode(
-    EXPLORER_KEYS.baselines, 'Baselines', React.createElement(SafetyOutlined),
+    EXPLORER_KEYS.baselines,
+    'Baselines',
+    frameworkIcon,
     [
-      collectionNode(EXPLORER_KEYS.baselineSnapshots, 'Snapshots', React.createElement(FileProtectOutlined),
-        activeBaselines.length > 0 ? activeBaselines.map(baselineLeaf) : [emptyPlaceholder(EXPLORER_KEYS.baselineSnapshots, 'No snapshots')]),
-      collectionNode(EXPLORER_KEYS.baselineArchived, 'Archived States', React.createElement(ContainerOutlined),
-        archivedBaselines.length > 0 ? archivedBaselines.map(baselineLeaf) : [emptyPlaceholder(EXPLORER_KEYS.baselineArchived, 'No archived states')]),
+      collectionNode(
+        EXPLORER_KEYS.baselineSnapshots,
+        'Snapshots',
+        frameworkIcon,
+        activeBaselines.length > 0
+          ? activeBaselines.map(baselineLeaf)
+          : [emptyPlaceholder(EXPLORER_KEYS.baselineSnapshots, 'No snapshots')],
+      ),
+      collectionNode(
+        EXPLORER_KEYS.baselineArchived,
+        'Archived States',
+        frameworkIcon,
+        archivedBaselines.length > 0
+          ? archivedBaselines.map(baselineLeaf)
+          : [
+              emptyPlaceholder(
+                EXPLORER_KEYS.baselineArchived,
+                'No archived states',
+              ),
+            ],
+      ),
     ],
   );
 
   // --- 6. Reports ---
   const reportsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.reports, 'Reports', React.createElement(BarChartOutlined),
+    EXPLORER_KEYS.reports,
+    'Reports',
+    reportIcon,
     [
-      { key: EXPLORER_KEYS.reportImpact, title: 'Impact Analysis Reports', icon: React.createElement(NodeIndexOutlined), isLeaf: true, data: { reportType: 'impact' } },
-      { key: EXPLORER_KEYS.reportCost, title: 'Cost Reports', icon: React.createElement(BarChartOutlined), isLeaf: true, data: { reportType: 'cost' } },
-      { key: EXPLORER_KEYS.reportRisk, title: 'Risk Reports', icon: React.createElement(SafetyOutlined), isLeaf: true, data: { reportType: 'risk' } },
-      { key: EXPLORER_KEYS.reportCompliance, title: 'Compliance Reports', icon: React.createElement(FileProtectOutlined), isLeaf: true, data: { reportType: 'compliance' } },
+      {
+        key: EXPLORER_KEYS.reportImpact,
+        title: 'Impact Analysis Reports',
+        icon: reportIcon,
+        isLeaf: true,
+        data: { reportType: 'impact' },
+      },
+      {
+        key: EXPLORER_KEYS.reportCost,
+        title: 'Cost Reports',
+        icon: reportIcon,
+        isLeaf: true,
+        data: { reportType: 'cost' },
+      },
+      {
+        key: EXPLORER_KEYS.reportRisk,
+        title: 'Risk Reports',
+        icon: reportIcon,
+        isLeaf: true,
+        data: { reportType: 'risk' },
+      },
+      {
+        key: EXPLORER_KEYS.reportCompliance,
+        title: 'Compliance Reports',
+        icon: reportIcon,
+        isLeaf: true,
+        data: { reportType: 'compliance' },
+      },
     ],
   );
 
   // --- 7. Settings ---
   const settingsNode: DataNode = collectionNode(
-    EXPLORER_KEYS.settings, 'Settings', React.createElement(SettingOutlined),
+    EXPLORER_KEYS.settings,
+    'Settings',
+    settingsIcon,
     [
-      { key: EXPLORER_KEYS.settingsIntegrations, title: 'Integrations', icon: React.createElement(ShareAltOutlined), isLeaf: true, data: { settingKey: 'integrations' } },
-      { key: EXPLORER_KEYS.settingsNotifications, title: 'Notification Rules', icon: React.createElement(SolutionOutlined), isLeaf: true, data: { settingKey: 'notifications' } },
-      { key: EXPLORER_KEYS.settingsMonitoring, title: 'Monitoring Bindings', icon: React.createElement(DashboardOutlined), isLeaf: true, data: { settingKey: 'monitoring' } },
-      { key: EXPLORER_KEYS.settingsSystemConfig, title: 'System Configuration', icon: React.createElement(ControlOutlined), isLeaf: true, data: { settingKey: 'system-config' } },
+      {
+        key: EXPLORER_KEYS.settingsIntegrations,
+        title: 'Integrations',
+        icon: settingsIcon,
+        isLeaf: true,
+        data: { settingKey: 'integrations' },
+      },
+      {
+        key: EXPLORER_KEYS.settingsNotifications,
+        title: 'Notification Rules',
+        icon: settingsIcon,
+        isLeaf: true,
+        data: { settingKey: 'notifications' },
+      },
+      {
+        key: EXPLORER_KEYS.settingsMonitoring,
+        title: 'Monitoring Bindings',
+        icon: settingsIcon,
+        isLeaf: true,
+        data: { settingKey: 'monitoring' },
+      },
+      {
+        key: EXPLORER_KEYS.settingsSystemConfig,
+        title: 'System Configuration',
+        icon: settingsIcon,
+        isLeaf: true,
+        data: { settingKey: 'system-config' },
+      },
     ],
   );
 
   // --- Root ---
-  const systemLayerNode = zoneNode(
-    EXPLORER_KEYS.zoneSystemLayer,
-    'System Layer',
-    React.createElement(ControlOutlined),
-    [metamodelNode, repositoryNode, settingsNode],
-    'explorer-zone explorer-zone-system',
-  );
-
-  const architectureLayerNode = zoneNode(
-    EXPLORER_KEYS.zoneArchitectureLayer,
-    'Architecture Layer',
-    React.createElement(PartitionOutlined),
-    [architecturesNode, baselinesNode, reportsNode],
-    'explorer-zone explorer-zone-architecture',
-  );
-
-  const frameworkLayerNode = zoneNode(
-    EXPLORER_KEYS.zoneFrameworkLayer,
-    'Framework Extensions',
-    React.createElement(ToolOutlined),
-    [frameworkPackagesNode],
-    'explorer-zone explorer-zone-framework',
-  );
-
   const rootNode: DataNode = {
     ...collectionNode(
-      EXPLORER_KEYS.root(workspaceName), `${workspaceName}.ea`, React.createElement(FolderOutlined),
-      [systemLayerNode, architectureLayerNode, frameworkLayerNode],
+      EXPLORER_KEYS.root(workspaceName),
+      `${workspaceName}.ea`,
+      folderIcon,
+      [
+        repositoryNode,
+        metamodelNode,
+        architecturesNode,
+        frameworkPackagesNode,
+        baselinesNode,
+        reportsNode,
+        settingsNode,
+      ],
     ),
     className: 'explorer-level-root',
   };
@@ -715,7 +1395,11 @@ export function buildExplorerTree(input: ExplorerTreeInput): ExplorerTreeResult 
   const walk = (nodes: DataNode[]) => {
     for (const node of nodes) {
       const data = (node as any)?.data as { elementId?: string } | undefined;
-      if (data?.elementId && typeof node.key === 'string' && !elementKeyIndex.has(data.elementId)) {
+      if (
+        data?.elementId &&
+        typeof node.key === 'string' &&
+        !elementKeyIndex.has(data.elementId)
+      ) {
         elementKeyIndex.set(data.elementId, node.key);
       }
       if (node.children) walk(node.children);

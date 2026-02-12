@@ -8,10 +8,8 @@ import {
   DoubleLeftOutlined,
   FolderOpenOutlined,
   FundOutlined,
-  MoonOutlined,
   NodeIndexOutlined,
   SettingOutlined,
-  SunOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
@@ -131,7 +129,7 @@ const ThemeToggleButton: React.FC = () => {
           } as React.CSSProperties
         }
       >
-        {isDark ? <SunOutlined /> : <MoonOutlined />}
+        {isDark ? '☀️' : '🌙'}
       </button>
     </Tooltip>
   );
@@ -562,10 +560,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const userRole: RepositoryRole = 'Owner';
   const canModel = true;
   const canEditView = true;
-  const statusLeftText = React.useMemo(() => {
-    const platformLabel = isDesktop ? 'Desktop' : 'Web';
-    return `${repositoryName} • ${userRole} • ${platformLabel} • ${currentUserLabel}`;
-  }, [currentUserLabel, isDesktop, repositoryName, userRole]);
   const cssVars = React.useMemo(() => {
     const baseVars: Record<string, string> = {
       '--ide-bg-layout': token.colorBgLayout,
@@ -595,15 +589,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       '--ide-tree-text': token.colorText,
       '--ide-tree-muted': token.colorTextTertiary,
       '--ide-tree-accent': token.colorTextSecondary,
-      '--ide-tree-line': (token as any).colorTextQuaternary ?? token.colorBorder,
+      '--ide-tree-line': token.colorBorder,
       '--ide-tree-icon-folder': token.colorWarning,
       '--ide-tree-icon-component': token.colorError,
       '--ide-tree-icon-catalogue': token.colorWarningText,
       '--ide-tree-icon-matrix': token.colorInfo,
-      '--ide-tree-icon-diagram': token.colorPrimary,
+      '--ide-tree-icon-diagram':
+        (token as any).colorGeekblue ?? token.colorPrimary,
       '--ide-tree-icon-connection': token.colorInfo,
       '--ide-tree-icon-framework': token.colorSuccess,
-      '--ide-tree-icon-metamodel': (token as any).colorGeekblue ?? token.colorPrimary,
+      '--ide-tree-icon-metamodel':
+        (token as any).colorGeekblue ?? token.colorPrimary,
       '--ide-text': token.colorText,
       '--ide-text-secondary': token.colorTextSecondary,
       '--ide-text-tertiary': token.colorTextTertiary,
@@ -639,14 +635,14 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         '--ide-text': '#1f2937',
         '--ide-text-secondary': '#6b7280',
         '--ide-text-tertiary': '#94a3b8',
-        '--ide-tree-icon-folder': token.colorWarning,
-        '--ide-tree-icon-component': token.colorError,
-        '--ide-tree-icon-catalogue': token.colorWarningText,
-        '--ide-tree-icon-matrix': token.colorInfo,
-        '--ide-tree-icon-diagram': token.colorPrimary,
-        '--ide-tree-icon-connection': token.colorInfo,
-        '--ide-tree-icon-framework': token.colorSuccess,
-        '--ide-tree-icon-metamodel': (token as any).colorGeekblue ?? token.colorPrimary,
+        '--ide-tree-icon-folder': '#c9a227',
+        '--ide-tree-icon-component': '#c45151',
+        '--ide-tree-icon-catalogue': '#b88343',
+        '--ide-tree-icon-matrix': '#4d84d6',
+        '--ide-tree-icon-diagram': '#5f7fc9',
+        '--ide-tree-icon-connection': '#3f7ed1',
+        '--ide-tree-icon-framework': '#5a9a74',
+        '--ide-tree-icon-metamodel': '#5f77a8',
       };
     }
 
@@ -1675,40 +1671,26 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     <PlaceholderPanel title="Settings" />
   );
 
-  const sidebarBody = (
-    <>
-      <div
-        style={{ display: activeSidebarKey === 'catalog' ? 'block' : 'none' }}
-      >
-        {catalogBody}
-      </div>
-      <div
-        style={{ display: activeSidebarKey === 'explorer' ? 'block' : 'none' }}
-      >
-        {explorerBody}
-      </div>
-      <div
-        style={{ display: activeSidebarKey === 'diagrams' ? 'block' : 'none' }}
-      >
-        {diagramsBody}
-      </div>
-      <div
-        style={{ display: activeSidebarKey === 'analysis' ? 'block' : 'none' }}
-      >
-        {analysisBody}
-      </div>
-      <div
-        style={{ display: activeSidebarKey === 'metamodel' ? 'block' : 'none' }}
-      >
-        {metamodelBody}
-      </div>
-      <div
-        style={{ display: activeSidebarKey === 'settings' ? 'block' : 'none' }}
-      >
-        {settingsBody}
-      </div>
-    </>
-  );
+  const sidebarBody =
+    activeSidebarKey === 'catalog' ? (
+      <div className={styles.sidebarPanelSection}>{catalogBody}</div>
+    ) : activeSidebarKey === 'explorer' ? (
+      <div className={styles.sidebarPanelSectionExplorer}>{explorerBody}</div>
+    ) : activeSidebarKey === 'diagrams' ? (
+      <div className={styles.sidebarPanelSection}>{diagramsBody}</div>
+    ) : activeSidebarKey === 'analysis' ? (
+      <div className={styles.sidebarPanelSection}>{analysisBody}</div>
+    ) : activeSidebarKey === 'metamodel' ? (
+      <div className={styles.sidebarPanelSection}>{metamodelBody}</div>
+    ) : (
+      <div className={styles.sidebarPanelSection}>{settingsBody}</div>
+    );
+
+  const statusLeftText = project?.name
+    ? `Project: ${project.name}${metadata?.repositoryName ? ` • Repository: ${metadata.repositoryName}` : ''}`
+    : metadata?.repositoryName
+      ? `Repository: ${metadata.repositoryName}`
+      : 'No project/repository loaded';
 
   const shouldRenderDesktopHeader = isDesktop;
   const shouldRenderWebHeader = !isDesktop;
@@ -1816,6 +1798,15 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
           }}
         >
           <ThemeToggleButton />
+          {isDesktop && (
+            <Typography.Text
+              type="secondary"
+              className={styles.titleBarRepo}
+              title={statusLeftText}
+            >
+              {statusLeftText}
+            </Typography.Text>
+          )}
           <Typography.Text
             type="secondary"
             className={styles.titleBarUser}
@@ -2076,25 +2067,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       );
 
     return (
-      <div className={styles.bottomPanelBody}>
-        <div
-          className={styles.bottomPanelScrollable}
-          style={{ display: panelMode === 'properties' ? 'block' : 'none' }}
-        >
-          {propertiesBody}
-        </div>
-        <div
-          className={styles.bottomPanelScrollable}
-          style={{ display: panelMode === 'agent' ? 'block' : 'none' }}
-        >
-          <ArchitectureAgentPanel />
-        </div>
+      <div
+        className={`${styles.bottomPanelBody} ${panelMode === 'properties' ? styles.bottomPanelBodyStatic : ''}`}
+      >
         <div
           className={styles.bottomPanelScrollable}
           style={{ display: panelMode === 'console' ? 'block' : 'none' }}
         >
           <EAConsolePanel />
         </div>
+        {panelMode === 'properties' ? propertiesBody : null}
+        {panelMode === 'agent' ? <ArchitectureAgentPanel /> : null}
       </div>
     );
   }, [
@@ -2344,22 +2327,24 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   <Tooltip title="Profile" placement="right">
                     <Button
                       type="text"
-                      className={styles.activityButton}
                       aria-label="Profile"
                       style={{
                         width: activityHitSize,
                         height: activityHitSize,
                         minWidth: activityHitSize,
                         padding: 0,
-                        color: 'var(--ide-rail-icon)',
-                        border: '1px solid transparent',
+                        display: 'grid',
+                        placeItems: 'center',
                       }}
-                      icon={
-                        <UserOutlined
-                          style={{ fontSize: activityIconSize }}
-                        />
-                      }
                     >
+                      <Avatar
+                        size={isDesktop ? 22 : 28}
+                        icon={
+                          <UserOutlined
+                            style={{ fontSize: isDesktop ? 14 : 18 }}
+                          />
+                        }
+                      />
                     </Button>
                   </Tooltip>
 
@@ -2434,7 +2419,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               <div
                 style={{
                   height: 32,
-                  flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   paddingInline: token.paddingSM,
@@ -2706,40 +2690,59 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                         }}
                       >
                         <div className={styles.bottomPanelHeader}>
-                          <div className={styles.panelTabs}>
-                            <button
-                              type="button"
-                              className={
-                                panelMode === 'properties'
-                                  ? styles.panelTabActive
-                                  : styles.panelTab
-                              }
-                              onClick={() => setPanelMode('properties')}
-                            >
-                              Properties
-                            </button>
-                            <button
-                              type="button"
-                              className={
-                                panelMode === 'agent'
-                                  ? styles.panelTabActive
-                                  : styles.panelTab
-                              }
-                              onClick={() => setPanelMode('agent')}
-                            >
-                              Architecture Agent
-                            </button>
-                            <button
-                              type="button"
-                              className={
-                                panelMode === 'console'
-                                  ? styles.panelTabActive
-                                  : styles.panelTab
-                              }
-                              onClick={() => setPanelMode('console')}
-                            >
-                              EA Console
-                            </button>
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 2,
+                            }}
+                          >
+                            <div className={styles.panelTabs}>
+                              <button
+                                type="button"
+                                className={
+                                  panelMode === 'properties'
+                                    ? styles.panelTabActive
+                                    : styles.panelTab
+                                }
+                                onClick={() => setPanelMode('properties')}
+                              >
+                                Properties
+                              </button>
+                              <button
+                                type="button"
+                                className={
+                                  panelMode === 'agent'
+                                    ? styles.panelTabActive
+                                    : styles.panelTab
+                                }
+                                onClick={() => setPanelMode('agent')}
+                              >
+                                Architecture Agent
+                              </button>
+                              <button
+                                type="button"
+                                className={
+                                  panelMode === 'console'
+                                    ? styles.panelTabActive
+                                    : styles.panelTab
+                                }
+                                onClick={() => setPanelMode('console')}
+                              >
+                                EA Console
+                              </button>
+                            </div>
+                            {panelMode === 'properties' && (
+                              <div className={styles.panelMeta}>
+                                <span>
+                                  Selected:{' '}
+                                  {activeElementId
+                                    ? activeElementName || activeElementId
+                                    : 'None'}
+                                </span>
+                                <span>Type: {activeElementType || '-'}</span>
+                              </div>
+                            )}
                           </div>
                           <div
                             style={{

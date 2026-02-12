@@ -10,8 +10,14 @@
  * 6. Explorer reflects real-time repository state.
  */
 
-import type { ObjectType, EaLayer } from '@/pages/dependency-view/utils/eaMetaModel';
-import { OBJECT_TYPE_DEFINITIONS, RELATIONSHIP_TYPE_DEFINITIONS } from '@/pages/dependency-view/utils/eaMetaModel';
+import type {
+  EaLayer,
+  ObjectType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
+import {
+  OBJECT_TYPE_DEFINITIONS,
+  RELATIONSHIP_TYPE_DEFINITIONS,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,21 +26,21 @@ import { OBJECT_TYPE_DEFINITIONS, RELATIONSHIP_TYPE_DEFINITIONS } from '@/pages/
 /** Describes a structural category node in the explorer tree. */
 export type ExplorerNodeKind =
   | 'workspace-root'
-  | 'section'          // e.g. Repository, Metamodel, Architectures, etc.
-  | 'sub-section'      // e.g. Object Types, Relationship Types
-  | 'category'         // e.g. Business Types, Application Types
-  | 'collection'       // e.g. Capabilities, Processes — dynamic from metamodel
-  | 'element-leaf'     // individual EA element from repository
-  | 'view-leaf'        // saved view
-  | 'baseline-leaf'    // baseline snapshot
-  | 'roadmap-leaf'     // roadmap
-  | 'plateau-leaf'     // plateau
-  | 'report-leaf'      // report
-  | 'setting-leaf'     // setting entry
-  | 'metamodel-type'   // metamodel type definition
-  | 'relationship-leaf'// relationship record
-  | 'cta'              // call to action (e.g. "initialize enterprise")
-  | 'placeholder';     // empty-state placeholder
+  | 'section' // e.g. Repository, Metamodel, Architectures, etc.
+  | 'sub-section' // e.g. Object Types, Relationship Types
+  | 'category' // e.g. Business Types, Application Types
+  | 'collection' // e.g. Capabilities, Processes — dynamic from metamodel
+  | 'element-leaf' // individual EA element from repository
+  | 'view-leaf' // saved view
+  | 'baseline-leaf' // baseline snapshot
+  | 'roadmap-leaf' // roadmap
+  | 'plateau-leaf' // plateau
+  | 'report-leaf' // report
+  | 'setting-leaf' // setting entry
+  | 'metamodel-type' // metamodel type definition
+  | 'relationship-leaf' // relationship record
+  | 'cta' // call to action (e.g. "initialize enterprise")
+  | 'placeholder'; // empty-state placeholder
 
 export type ExplorerNodeData = {
   elementId?: string;
@@ -58,11 +64,6 @@ export type ExplorerNodeData = {
 export const EXPLORER_KEYS = {
   // Level 0 — Workspace root
   root: (workspaceName: string) => `ws:${workspaceName}`,
-
-  // Visual zones (presentation-only grouping)
-  zoneSystemLayer: 'zone:system-layer',
-  zoneArchitectureLayer: 'zone:architecture-layer',
-  zoneFrameworkLayer: 'zone:framework-layer',
 
   // Level 1 — Top sections
   repository: 'section:repository',
@@ -121,19 +122,23 @@ export const EXPLORER_KEYS = {
 
   // Component layer categories
   componentBusiness: (arch: string) => `arch:${arch}:components:business`,
-  componentApplications: (arch: string) => `arch:${arch}:components:applications`,
+  componentApplications: (arch: string) =>
+    `arch:${arch}:components:applications`,
   componentData: (arch: string) => `arch:${arch}:components:data`,
   componentTechnology: (arch: string) => `arch:${arch}:components:technology`,
   componentSecurity: (arch: string) => `arch:${arch}:components:security`,
   componentProjects: (arch: string) => `arch:${arch}:components:projects`,
 
   // Business component sub-collections
-  businessCapabilities: (arch: string) => `arch:${arch}:components:business:capabilities`,
-  businessProcesses: (arch: string) => `arch:${arch}:components:business:processes`,
+  businessCapabilities: (arch: string) =>
+    `arch:${arch}:components:business:capabilities`,
+  businessProcesses: (arch: string) =>
+    `arch:${arch}:components:business:processes`,
   businessActors: (arch: string) => `arch:${arch}:components:business:actors`,
 
   // Application component sub-collections
-  appApplications: (arch: string) => `arch:${arch}:components:apps:applications`,
+  appApplications: (arch: string) =>
+    `arch:${arch}:components:apps:applications`,
   appAPIs: (arch: string) => `arch:${arch}:components:apps:apis`,
   appServices: (arch: string) => `arch:${arch}:components:apps:services`,
 
@@ -142,7 +147,8 @@ export const EXPLORER_KEYS = {
   dataStores: (arch: string) => `arch:${arch}:components:data:stores`,
 
   // Technology component sub-collections
-  techInfrastructure: (arch: string) => `arch:${arch}:components:tech:infrastructure`,
+  techInfrastructure: (arch: string) =>
+    `arch:${arch}:components:tech:infrastructure`,
   techNetwork: (arch: string) => `arch:${arch}:components:tech:network`,
   techCloud: (arch: string) => `arch:${arch}:components:tech:cloud`,
 
@@ -158,7 +164,8 @@ export const EXPLORER_KEYS = {
   catTechnology: (arch: string) => `arch:${arch}:catalogues:technology`,
   catRisk: (arch: string) => `arch:${arch}:catalogues:risk`,
   catVendor: (arch: string) => `arch:${arch}:catalogues:vendor`,
-  catProjectPortfolio: (arch: string) => `arch:${arch}:catalogues:project-portfolio`,
+  catProjectPortfolio: (arch: string) =>
+    `arch:${arch}:catalogues:project-portfolio`,
 
   // Matrix sub-sections
   matAppVsCap: (arch: string) => `arch:${arch}:matrices:app-vs-cap`,
@@ -261,11 +268,19 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
 
     // Business layer classification
     if (layer === 'Business') {
-      if (normalizedType.includes('capability') || normalizedType.includes('subcapability') || normalizedType.includes('capabilitycategory') || normalizedType.includes('valuestream')) {
+      if (
+        normalizedType.includes('capability') ||
+        normalizedType.includes('subcapability') ||
+        normalizedType.includes('capabilitycategory') ||
+        normalizedType.includes('valuestream')
+      ) {
         categories.capabilities.push(type);
       } else if (normalizedType.includes('process')) {
         categories.processes.push(type);
-      } else if (normalizedType.includes('department') || normalizedType.includes('enterprise')) {
+      } else if (
+        normalizedType.includes('department') ||
+        normalizedType.includes('enterprise')
+      ) {
         categories.actors.push(type);
       } else {
         categories.processes.push(type); // fallback: business services etc.
@@ -275,7 +290,10 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
 
     // Application layer classification
     if (layer === 'Application') {
-      if (normalizedType.includes('api') || normalizedType.includes('interface')) {
+      if (
+        normalizedType.includes('api') ||
+        normalizedType.includes('interface')
+      ) {
         categories.apis.push(type);
       } else if (normalizedType.includes('service')) {
         categories.services.push(type);
@@ -287,11 +305,17 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
 
     // Technology layer classification
     if (layer === 'Technology') {
-      if (normalizedType.includes('network') || normalizedType.includes('loadbalancer')) {
+      if (
+        normalizedType.includes('network') ||
+        normalizedType.includes('loadbalancer')
+      ) {
         categories.network.push(type);
       } else if (normalizedType.includes('cloud')) {
         categories.cloud.push(type);
-      } else if (normalizedType.includes('database') || normalizedType.includes('storage')) {
+      } else if (
+        normalizedType.includes('database') ||
+        normalizedType.includes('storage')
+      ) {
         categories.dataStores.push(type);
       } else {
         categories.infrastructure.push(type);
@@ -334,7 +358,9 @@ export function getRelationshipTypesByCategory(): Record<string, string[]> {
     custom: [],
   };
 
-  const allRelTypes = Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as Array<keyof typeof RELATIONSHIP_TYPE_DEFINITIONS>;
+  const allRelTypes = Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as Array<
+    keyof typeof RELATIONSHIP_TYPE_DEFINITIONS
+  >;
   for (const relType of allRelTypes) {
     const def = RELATIONSHIP_TYPE_DEFINITIONS[relType];
     if (!def) continue;
@@ -342,9 +368,28 @@ export function getRelationshipTypesByCategory(): Record<string, string[]> {
 
     if (['decomposes_to', 'composed_of', 'owns', 'has'].includes(normalized)) {
       categories.structural.push(relType);
-    } else if (['depends_on', 'uses', 'used_by', 'consumes', 'requires', 'supports', 'supported_by'].includes(normalized)) {
+    } else if (
+      [
+        'depends_on',
+        'uses',
+        'used_by',
+        'consumes',
+        'requires',
+        'supports',
+        'supported_by',
+      ].includes(normalized)
+    ) {
       categories.dependency.push(relType);
-    } else if (['triggers', 'served_by', 'integrates_with', 'connects_to', 'exposes', 'provided_by'].includes(normalized)) {
+    } else if (
+      [
+        'triggers',
+        'served_by',
+        'integrates_with',
+        'connects_to',
+        'exposes',
+        'provided_by',
+      ].includes(normalized)
+    ) {
       categories.flow.push(relType);
     } else {
       categories.custom.push(relType);
@@ -396,8 +441,8 @@ export function getObjectTypesByMetamodelLayer(): Record<string, ObjectType[]> {
 
   // Data types derived from Technology types with data semantics
   const dataTypes = new Set(['Database', 'Storage']);
-  layers.data = layers.technology.filter(t => dataTypes.has(t));
-  layers.technology = layers.technology.filter(t => !dataTypes.has(t));
+  layers.data = layers.technology.filter((t) => dataTypes.has(t));
+  layers.technology = layers.technology.filter((t) => !dataTypes.has(t));
 
   for (const key of Object.keys(layers)) {
     layers[key].sort((a, b) => a.localeCompare(b));
@@ -409,12 +454,12 @@ export function getObjectTypesByMetamodelLayer(): Record<string, ObjectType[]> {
 /**
  * Default expanded keys for the enterprise explorer tree.
  */
-export function getDefaultExpandedKeys(workspaceName: string, archName: string): string[] {
+export function getDefaultExpandedKeys(
+  workspaceName: string,
+  archName: string,
+): string[] {
   return [
     EXPLORER_KEYS.root(workspaceName),
-    EXPLORER_KEYS.zoneSystemLayer,
-    EXPLORER_KEYS.zoneArchitectureLayer,
-    EXPLORER_KEYS.zoneFrameworkLayer,
     EXPLORER_KEYS.architectures,
     EXPLORER_KEYS.architecture(archName),
     EXPLORER_KEYS.archComponents(archName),
@@ -436,6 +481,10 @@ export function resolveArchitectureName(
   repositoryName: string | null | undefined,
   organizationName: string | null | undefined,
 ): string {
-  const name = (repositoryName ?? organizationName ?? 'Default Architecture').trim();
+  const name = (
+    repositoryName ??
+    organizationName ??
+    'Default Architecture'
+  ).trim();
   return name || 'Default Architecture';
 }

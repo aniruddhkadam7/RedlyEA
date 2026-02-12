@@ -225,8 +225,8 @@
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--ide-border);
-  background: linear-gradient(180deg, var(--ide-bg-sidebar) 0%, #dde3ea 100%);
-  box-shadow: 2px 0 10px rgba(15, 23, 42, 0.08);
+  background: var(--ide-bg-sidebar);
+  box-shadow: none;
 }
 
 .leftDockResizer {
@@ -383,26 +383,35 @@
 .sidebarBody {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--ide-bg-sidebar);
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable both-edges;
-  -webkit-overflow-scrolling: touch;
-  contain: content;
-  will-change: scroll-position;
 }
 
-.sidebarBody::-webkit-scrollbar {
+.sidebarPanelSection {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebarPanelSectionExplorer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebarPanelSection::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.sidebarBody::-webkit-scrollbar-track {
+.sidebarPanelSection::-webkit-scrollbar-track {
   background: rgba(226, 232, 240, 0.6);
 }
 
-.sidebarBody::-webkit-scrollbar-thumb {
+.sidebarPanelSection::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.45);
   border-radius: 10px;
 }
@@ -417,6 +426,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebarResizer {
@@ -1866,10 +1876,28 @@
 }
 
 .explorerTree {
-  padding: 2px 4px 4px;
+  --explorer-connector-color: color-mix(in srgb, var(--ide-tree-line) 82%, var(--ide-tree-text) 18%);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
   font-size: 12px;
   color: var(--ide-tree-text);
-  background: var(--ide-bg-sidebar);
+  background: inherit;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+.explorerTreeHeader {
+  flex: 0 0 auto;
+}
+
+.explorerTreeContainer {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Clear hierarchy: 12-14px indentation per level. */
@@ -1877,7 +1905,7 @@
   width: 14px;
 }
 
-/* Dotted hierarchy guide lines (VS Code / EA tools style). */
+/* Solid hierarchy guide lines (enterprise tree style). */
 .explorerTree :global(.ant-tree-indent-unit) {
   position: relative;
   display: inline-block;
@@ -1889,25 +1917,30 @@
   content: '';
   position: absolute;
   left: 50%;
-  top: -12px;
-  bottom: -12px;
-  border-left: 1px solid var(--ide-tree-line);
-  opacity: 0.85;
+  top: -11px;
+  bottom: -11px;
+  border-left: 1px solid var(--explorer-connector-color);
+  opacity: 1;
+}
+
+.explorerTree :global(.ant-tree-indent-unit.ant-tree-indent-unit-end)::before {
+  top: -11px;
+  bottom: 50%;
 }
 
 .explorerTree :global(.ant-tree-switcher) {
   position: relative;
 }
 
-.explorerTree :global(.ant-tree-switcher:not(.ant-tree-switcher-noop))::before {
+.explorerTree :global(.ant-tree-switcher)::before {
   content: '';
   position: absolute;
   left: -8px;
   top: 50%;
   width: 8px;
-  border-top: 1px solid var(--ide-tree-line);
+  border-top: 1px solid var(--explorer-connector-color);
   transform: translateY(-50%);
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .explorerTree :global(.ant-tree-treenode) {
@@ -1916,11 +1949,11 @@
 }
 
 .explorerTree :global(.ant-tree-node-content-wrapper) {
-  min-height: 22px;
+  min-height: 20px;
   display: inline-flex;
   align-items: center;
   width: 100%;
-  padding-inline: 4px;
+  padding-inline: 2px;
   overflow: hidden;
   color: inherit;
 }
@@ -1970,26 +2003,39 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: 4px;
+  margin-right: 3px;
   color: var(--ide-tree-muted);
-  opacity: 0.75;
+  opacity: 1;
+  line-height: 16px;
 }
 
 .explorerTree :global(.ant-tree-iconEle .anticon) {
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1;
+  stroke-width: 1.4;
+}
+
+.explorerTree :global(.ant-tree-iconEle .explorer-asset-icon) {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: saturate(0.84) contrast(1.03);
+  transform: translateY(0);
 }
 
 .explorerTree :global(.ant-tree-switcher) {
-  width: 14px;
-  height: 14px;
-  margin-right: 4px;
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
   color: var(--ide-tree-line);
 }
 
 .explorerTree :global(.ant-tree-switcher-noop) {
-  width: 14px;
-  height: 14px;
-  margin-right: 4px;
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
 }
 
 .explorerTree :global(.ant-tree-switcher) {
@@ -1999,26 +2045,57 @@
 }
 
 .explorerTree :global(.ant-tree) {
-  overflow-x: hidden;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  contain: layout paint;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.explorerTree :global(.ant-tree-list),
+.explorerTree :global(.ant-tree-list-holder),
+.explorerTree :global(.ant-tree-list-holder-inner) {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 .explorerTreeToggle {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
   line-height: 1;
-  border: 1px solid var(--ide-tree-muted);
-  color: var(--ide-tree-text);
-  background: var(--ide-bg-sidebar);
-  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--ide-tree-line) 70%, var(--ide-tree-text) 30%);
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--ide-tree-text) 88%, #000 12%);
+  background: color-mix(in srgb, var(--ide-bg-sidebar) 74%, var(--ide-tree-line) 26%);
+  transform: translateY(0);
+}
+
+.explorerTreeToggleGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-0.5px);
 }
 
 .explorerTreeSpacer {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   display: inline-block;
 }
 
@@ -2028,6 +2105,107 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 18px;
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-level-root .explorerTreeLabel),
+.explorerTree :global(.ant-tree-treenode.explorer-zone .explorerTreeLabel),
+.explorerTree :global(.ant-tree-treenode.explorer-node-folder .explorerTreeLabel) {
+  font-weight: 600;
+}
+
+.explorerTree :global(.ant-tree-treenode.ant-tree-treenode-switcher-noop .explorerTreeLabel) {
+  font-weight: 400;
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-folder .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-folder);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-component .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-catalogue .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-catalogue);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-matrix .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-matrix);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-diagram .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-diagram);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-framework .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-framework);
+}
+
+.explorerTree :global(.explorer-icon-component-glyph),
+.explorerTree :global(.explorer-icon-matrix-glyph),
+.explorerTree :global(.explorer-icon-diagram-glyph),
+.explorerTree :global(.explorer-icon-framework-glyph),
+.explorerTree :global(.explorer-icon-metamodel-glyph) {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+}
+
+.explorerTree :global(.explorer-icon-component-glyph)::before,
+.explorerTree :global(.explorer-icon-component-glyph)::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  background: var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.explorer-icon-component-glyph)::before {
+  width: 8px;
+  height: 8px;
+  left: 4px;
+  top: 4px;
+  box-shadow: -4px 0 0 var(--ide-tree-icon-component), 4px 0 0 var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.explorer-icon-matrix-glyph) {
+  border: 1px solid var(--ide-tree-icon-matrix);
+  border-radius: 2px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 0 50% / 100% 1px no-repeat,
+    transparent;
+}
+
+.explorerTree :global(.explorer-icon-diagram-glyph) {
+  background:
+    radial-gradient(circle at 26% 25%, #f5b93a 0 2px, transparent 2.2px),
+    radial-gradient(circle at 72% 28%, #4e86df 0 2px, transparent 2.2px),
+    radial-gradient(circle at 52% 73%, #d4645b 0 2px, transparent 2.2px),
+    linear-gradient(#8da3bf, #8da3bf) 32% 34% / 40% 1px no-repeat,
+    linear-gradient(#8da3bf, #8da3bf) 56% 38% / 18% 1px no-repeat,
+    linear-gradient(#8da3bf, #8da3bf) 44% 62% / 24% 1px no-repeat;
+}
+
+.explorerTree :global(.explorer-icon-framework-glyph) {
+  background:
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 14% / 10px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 45% / 12px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 76% / 14px 5px no-repeat;
+}
+
+.explorerTree :global(.explorer-icon-metamodel-glyph) {
+  border: 1px solid var(--ide-tree-icon-metamodel);
+  border-radius: 2px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 4px / 10px 1px no-repeat,
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 8px / 10px 1px no-repeat,
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 12px / 6px 1px no-repeat,
+    transparent;
 }
 
 .explorerTreeCta {
