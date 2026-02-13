@@ -319,6 +319,14 @@ function createWindow() {
     },
   });
 
+  win.once('ready-to-show', () => {
+    try {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    } catch {}
+  });
+
   win.removeMenu();
 
   let hasRetriedDevLoad = false;
@@ -344,7 +352,10 @@ function createWindow() {
         devFallbackUrl !== validatedURL
       ) {
         hasRetriedDevLoad = true;
-        console.warn('[EA] Retrying renderer load with fallback URL:', devFallbackUrl);
+        console.warn(
+          '[EA] Retrying renderer load with fallback URL:',
+          devFallbackUrl,
+        );
         void win.loadURL(devFallbackUrl);
       }
     },
@@ -771,6 +782,9 @@ app.whenReady().then(() => {
       void enqueueRepositoryImport(p);
     }
     if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.moveTop();
       mainWindow.focus();
     }
   });

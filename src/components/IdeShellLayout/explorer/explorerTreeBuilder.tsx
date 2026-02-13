@@ -74,9 +74,10 @@ const titleForObjectType = (type: ObjectType): string => {
 };
 
 const iconAsset = (src: string, key?: string): React.ReactNode => {
-  const preferredSrc = src.endsWith('.svg')
+  const preferredSrc = src;
+  const fallbackSrc = src.endsWith('.svg')
     ? src.replace(/\.svg$/i, '.png')
-    : src;
+    : undefined;
   return React.createElement('img', {
     src: preferredSrc,
     alt: '',
@@ -84,8 +85,10 @@ const iconAsset = (src: string, key?: string): React.ReactNode => {
     loading: 'lazy',
     decoding: 'async',
     onError: (event: any) => {
-      if (event?.currentTarget && event.currentTarget.src !== src) {
-        event.currentTarget.src = src;
+      if (!fallbackSrc || !event?.currentTarget) return;
+      const current = event.currentTarget.src;
+      if (current && !current.endsWith(fallbackSrc)) {
+        event.currentTarget.src = fallbackSrc;
       }
     },
     className: `explorer-asset-icon${key ? ` explorer-asset-icon-${key}` : ''}`,
@@ -116,7 +119,7 @@ const classForNodeKey = (key: string): string => {
   return 'explorer-node';
 };
 
-const folderIcon = iconAsset('/icons/explorer/folder.svg', 'folder');
+const folderIcon = iconAsset('/icons/explorer/folder-project.svg', 'folder');
 const componentIcon = iconAsset(
   '/icons/explorer/component-cluster.svg',
   'component',
@@ -132,21 +135,15 @@ const connectionIcon = iconAsset(
   'connection',
 );
 const frameworkIcon = iconAsset(
-  '/icons/explorer/framework-triangle.svg',
+  '/icons/explorer/framework-modules.svg',
   'framework',
 );
 const metamodelIcon = iconAsset(
-  '/icons/explorer/metamodel-blueprint.svg',
+  '/icons/explorer/metamodel-schema.svg',
   'metamodel',
 );
-const reportIcon = iconAsset(
-  '/icons/explorer/metamodel-blueprint.svg',
-  'report',
-);
-const settingsIcon = iconAsset(
-  '/icons/explorer/metamodel-blueprint.svg',
-  'settings',
-);
+const reportIcon = iconAsset('/icons/explorer/reports-chart.svg', 'report');
+const settingsIcon = iconAsset('/icons/explorer/settings-gear.svg', 'settings');
 const fallbackGenericIcon = React.createElement(FolderOutlined);
 
 const iconForLayer = (layer: string): React.ReactNode => {
@@ -616,10 +613,14 @@ export function buildExplorerTree(
   );
 
   // --- 1. Repository ---
+  const repositoryIcon = iconAsset(
+    '/icons/explorer/repository-db.svg',
+    'repository',
+  );
   const repositoryNode: DataNode = collectionNode(
     EXPLORER_KEYS.repository,
     'Repository',
-    metamodelIcon,
+    repositoryIcon,
     [
       {
         key: EXPLORER_KEYS.repoProperties,
@@ -1224,10 +1225,14 @@ export function buildExplorerTree(
     ],
   );
 
+  const architecturesIcon = iconAsset(
+    '/icons/explorer/architectures-layers.svg',
+    'architectures',
+  );
   const architecturesNode: DataNode = collectionNode(
     EXPLORER_KEYS.architectures,
     'Architectures',
-    folderIcon,
+    architecturesIcon,
     [architectureNode],
   );
 
@@ -1266,10 +1271,14 @@ export function buildExplorerTree(
     b.description?.toLowerCase().includes('archived'),
   );
 
+  const baselinesIcon = iconAsset(
+    '/icons/explorer/baselines-timeline.svg',
+    'baselines',
+  );
   const baselinesNode: DataNode = collectionNode(
     EXPLORER_KEYS.baselines,
     'Baselines',
-    frameworkIcon,
+    baselinesIcon,
     [
       collectionNode(
         EXPLORER_KEYS.baselineSnapshots,
@@ -1389,6 +1398,25 @@ export function buildExplorerTree(
   };
 
   const treeData: DataNode[] = [rootNode];
+
+  // --- Depth classes (explorer-depth-0, explorer-depth-1, …) ---
+  const assignDepthClasses = (nodes: DataNode[], depth: number) => {
+    for (const node of nodes) {
+      const depthClass = `explorer-depth-${Math.min(depth, 5)}`;
+      node.className = node.className
+        ? `${node.className} ${depthClass}`
+        : depthClass;
+      if (typeof window !== 'undefined') {
+        console.log('[ExplorerDepthBuild]', {
+          depth,
+          key: typeof node.key === 'string' ? node.key : String(node.key),
+          className: node.className,
+        });
+      }
+      if (node.children) assignDepthClasses(node.children, depth + 1);
+    }
+  };
+  assignDepthClasses(treeData, 0);
 
   // --- Element Key Index ---
   const elementKeyIndex = new Map<string, string>();

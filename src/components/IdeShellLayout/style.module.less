@@ -2108,13 +2108,52 @@
   line-height: 18px;
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-level-root .explorerTreeLabel),
-.explorerTree :global(.ant-tree-treenode.explorer-zone .explorerTreeLabel),
-.explorerTree :global(.ant-tree-treenode.explorer-node-folder .explorerTreeLabel) {
+.explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-1 .explorerTreeLabel) {
+  color: #2f5f96 !important;
+  letter-spacing: 0.25px;
+  font-size: 12.5px;
   font-weight: 600;
 }
 
-.explorerTree :global(.ant-tree-treenode.ant-tree-treenode-switcher-noop .explorerTreeLabel) {
+.explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-0 .explorerTreeLabel) {
+  color: #2e3a46 !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-2 .explorerTreeLabel) {
+  color: #2e3a46 !important;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-3 .explorerTreeLabel) {
+  color: #3a4653 !important;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-4 .explorerTreeLabel) {
+  color: #4a5568 !important;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-5 .explorerTreeLabel) {
+  color: #6b7785 !important;
+  font-size: 12px;
   font-weight: 400;
 }
 

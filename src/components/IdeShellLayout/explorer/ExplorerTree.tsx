@@ -502,6 +502,33 @@ const ExplorerTree: React.FC = () => {
     };
   }, [searchQuery, treeData]);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const treeNodes = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-tree-treenode'),
+    );
+    const nodesWithDepth = treeNodes.filter((node) =>
+      /explorer-depth-\d+/.test(node.className),
+    );
+    console.groupCollapsed(
+      `[ExplorerDepthDOM] treenodes=${treeNodes.length} withDepth=${nodesWithDepth.length}`,
+    );
+    if (nodesWithDepth.length === 0) {
+      console.warn(
+        '[ExplorerDepthDOM] No explorer-depth-* classes found on .ant-tree-treenode elements',
+      );
+    }
+    for (const node of nodesWithDepth) {
+      const depthMatch = node.className.match(/explorer-depth-(\d+)/);
+      console.log('[ExplorerDepthDOM]', {
+        depth: depthMatch ? Number(depthMatch[1]) : null,
+        key: node.getAttribute('data-node-key') ?? '',
+        className: node.className,
+      });
+    }
+    console.groupEnd();
+  }, [filteredTreeData, expandedKeys]);
+
   // --- Selected keys ---
   const normalizeElementKey = React.useCallback((rawKey: string) => {
     const trimmed = rawKey
