@@ -49,6 +49,14 @@ import {
   setRoadmapDragPayload,
   setViewDragPayload,
 } from '@/diagram-studio/drag-drop/DragDropConstants';
+import {
+  type CanvasState,
+  exportRedlyFile,
+  importRedlyFile,
+  RedlyViewStore,
+  serializeView,
+} from '@/diagram-studio/redly-format';
+import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
 import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
@@ -1169,6 +1177,9 @@ const ExplorerTree: React.FC = () => {
             message.error('Failed to delete view.');
             return;
           }
+          // Clean up .Redly file and layout data
+          RedlyViewStore.remove(viewId);
+          ViewLayoutStore.remove(viewId);
           auditObjectMutation({
             userId: actor,
             actionType: 'DELETE_VIEW',
@@ -1308,6 +1319,138 @@ const ExplorerTree: React.FC = () => {
     },
     [actor],
   );
+
+  // ---------------------------------------------------------------------------
+  // .Redly Export: Export view as a portable .Redly file from Explorer.
+  // ---------------------------------------------------------------------------
+  const handleExportViewRedly = React.useCallback(
+    (viewId: string) => {
+      const view = ViewStore.get(viewId);
+      if (!view) {
+        message.error('View not found.');
+        return;
+      }
+      // Try to use existing .Redly file if available
+      const existingRedly = RedlyViewStore.get(viewId);
+      if (existingRedly) {
+        exportRedlyFile(existingRedly);
+        message.success(`Exported "${view.name}" as .Redly file.`);
+        return;
+      }
+      // Fallback: build a .Redly file from ViewStore data
+      const positions = (view.layoutMetadata as any)?.positions ?? {};
+      const freeShapes = (view.layoutMetadata as any)?.freeShapes ?? [];
+      const freeConnectors = (view.layoutMetadata as any)?.freeConnectors ?? [];
+      const viewport = (view.layoutMetadata as any)?.viewport ?? {
+        zoom: 1,
+        pan: { x: 0, y: 0 },
+      };
+      const visibleElementIds =
+        (view.layoutMetadata as any)?.visibleElementIds ?? [];
+      const visibleRelationshipIds = Array.isArray(view.visibleRelationshipIds)
+        ? [...view.visibleRelationshipIds]
+        : [];
+
+      const nodes: CanvasState['nodes'] = visibleElementIds.map(
+        (id: string) => ({
+          id,
+          label: id,
+          elementType: 'Application' as any,
+          x: positions[id]?.x ?? 0,
+          y: positions[id]?.y ?? 0,
+        }),
+      );
+      freeShapes.forEach((s: any) => {
+        nodes.push({
+          id: s.id,
+          label: s.label ?? '',
+          elementType: 'Application' as any,
+          x: s.x ?? 0,
+          y: s.y ?? 0,
+          width: s.width,
+          height: s.height,
+          freeShape: true,
+          freeShapeKind: s.kind,
+        });
+      });
+
+      const edges: CanvasState['edges'] = visibleRelationshipIds.map(
+        (id: string) => ({
+          id,
+          source: '',
+          target: '',
+          relationshipType: 'INTEGRATES_WITH' as any,
+        }),
+      );
+      freeConnectors.forEach((c: any) => {
+        edges.push({
+          id: c.id,
+          source: c.source ?? '',
+          target: c.target ?? '',
+          relationshipType: 'INTEGRATES_WITH' as any,
+          freeConnector: true,
+          freeConnectorKind: c.kind,
+        });
+      });
+
+      const canvasState: CanvasState = { nodes, edges, viewport };
+      const redlyFile = serializeView({ view, canvas: canvasState, actor });
+      exportRedlyFile(redlyFile);
+      message.success(`Exported "${view.name}" as .Redly file.`);
+    },
+    [actor],
+  );
+
+  // ---------------------------------------------------------------------------
+  // .Redly Import: Import a .Redly file from Explorer context.
+  // ---------------------------------------------------------------------------
+  const handleImportRedlyInExplorer = React.useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.Redly,.redly';
+    input.style.display = 'none';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const result = await importRedlyFile(file);
+        if (!result.ok) {
+          message.error(`Import failed: ${result.errors.join(', ')}`);
+          return;
+        }
+        const { view, positions } = result.data;
+        ViewStore.save(view);
+        ViewLayoutStore.set(view.id, positions);
+        RedlyViewStore.save(view.id, result.data.redlyFile);
+        auditObjectMutation({
+          userId: actor,
+          actionType: 'IMPORT_VIEW',
+          objectId: view.id,
+          before: null,
+          after: { name: view.name, format: '.Redly' },
+        });
+        try {
+          window.dispatchEvent(new Event('ea:viewsChanged'));
+        } catch {
+          // Best-effort only.
+        }
+        setRefreshToken((x) => x + 1);
+        // Open the imported view in Studio
+        window.dispatchEvent(
+          new CustomEvent('ea:studio.view.open', {
+            detail: { viewId: view.id, openMode: 'new' },
+          }),
+        );
+        message.success(`Imported "${view.name}" successfully.`);
+      } catch (err: any) {
+        message.error(`Import failed: ${err?.message ?? 'Unknown error'}`);
+      } finally {
+        document.body.removeChild(input);
+      }
+    };
+    document.body.appendChild(input);
+    input.click();
+  }, [actor]);
 
   // --- Baseline CRUD ---
   const openCreateBaselineModal = React.useCallback(() => {
@@ -1647,6 +1790,12 @@ const ExplorerTree: React.FC = () => {
           break;
         case 'export-view':
           exportView(action.viewId, action.format);
+          break;
+        case 'export-view-redly':
+          handleExportViewRedly(action.viewId);
+          break;
+        case 'import-redly':
+          handleImportRedlyInExplorer();
           break;
         case 'rename-view':
           renameView(action.viewId);

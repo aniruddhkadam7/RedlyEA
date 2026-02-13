@@ -5,11 +5,15 @@
  * - Decide whether a view should open in a new or existing tab.
  * - Dispatch the standardised `ea:studio.view.open` event.
  * - Validate preconditions (view exists, repository loaded).
+ * - When a .Redly file exists, use it for FULL canvas state restoration.
  *
  * This service has NO UI, NO React dependency, and NO direct state mutation.
  * It communicates purely through the existing window event bus.
  */
 
+import { deserializeView } from '../redly-format/RedlyFileService';
+import { RedlyViewStore } from '../redly-format/RedlyViewStore';
+import { ViewLayoutStore } from '../view-runtime/ViewLayoutStore';
 import { ViewStore } from '../view-runtime/ViewStore';
 
 export type ViewOpenResult =
@@ -24,7 +28,11 @@ export type ViewOpenResult =
  */
 const dispatchViewOpen = (
   viewId: string,
-  opts?: { readOnly?: boolean; openMode?: 'new' | 'replace' | 'existing' },
+  opts?: {
+    readOnly?: boolean;
+    openMode?: 'new' | 'replace' | 'existing';
+    view?: any;
+  },
 ): void => {
   window.dispatchEvent(
     new CustomEvent('ea:studio.view.open', {
@@ -32,9 +40,38 @@ const dispatchViewOpen = (
         viewId,
         readOnly: opts?.readOnly,
         openMode: opts?.openMode ?? 'existing',
+        view: opts?.view,
       },
     }),
   );
+};
+
+/**
+ * Attempt to restore a view from its .Redly file.
+ * If a .Redly file exists, deserialize it and inject the full layout
+ * data into the ViewInstance so the canvas restores completely.
+ */
+const restoreFromRedlyFile = (viewId: string): any | null => {
+  const redlyFile = RedlyViewStore.get(viewId);
+  if (!redlyFile) return null;
+
+  try {
+    const deserialized = deserializeView(redlyFile);
+    // Persist the layout positions to ViewLayoutStore so
+    // buildLayoutFromView can pick them up immediately.
+    if (
+      deserialized.positions &&
+      Object.keys(deserialized.positions).length > 0
+    ) {
+      ViewLayoutStore.set(viewId, deserialized.positions);
+    }
+    // Update the ViewStore with the enriched view (positions, viewport, etc.)
+    ViewStore.save(deserialized.view);
+    return deserialized.view;
+  } catch {
+    // If .Redly deserialization fails, fall back to legacy path.
+    return null;
+  }
 };
 
 export const ViewOpenService = {
@@ -44,7 +81,8 @@ export const ViewOpenService = {
    * Flow:
    * 1. If `viewId` is falsy → return error.
    * 2. If view not found in `ViewStore` → return error.
-   * 3. Dispatch `ea:studio.view.open` with mode `'existing'`.
+   * 3. If .Redly file exists → deserialize and restore full canvas state.
+   * 4. Dispatch `ea:studio.view.open` with mode `'existing'`.
    *    - StudioShell's `ensureViewTab` handles deduplication:
    *      • If already open → activates the existing tab.
    *      • If not open → creates a new tab.
@@ -57,7 +95,10 @@ export const ViewOpenService = {
       return { outcome: 'error', viewId: '', reason: 'Missing viewId.' };
     }
 
-    const view = ViewStore.get(viewId);
+    // Try to restore from .Redly file first (full canvas state)
+    const restoredView = restoreFromRedlyFile(viewId);
+
+    const view = restoredView ?? ViewStore.get(viewId);
     if (!view) {
       return {
         outcome: 'error',
@@ -71,6 +112,7 @@ export const ViewOpenService = {
     dispatchViewOpen(viewId, {
       readOnly: opts?.readOnly,
       openMode: 'existing',
+      view: restoredView ?? undefined,
     });
 
     return { outcome: 'opened', viewId };
@@ -81,7 +123,7 @@ export const ViewOpenService = {
    */
   exists(viewId: string): boolean {
     if (!viewId) return false;
-    return ViewStore.get(viewId) != null;
+    return ViewStore.get(viewId) != null || RedlyViewStore.has(viewId);
   },
 
   /**
@@ -92,7 +134,10 @@ export const ViewOpenService = {
       return { outcome: 'error', viewId: '', reason: 'Missing viewId.' };
     }
 
-    const view = ViewStore.get(viewId);
+    // Try to restore from .Redly file first
+    const restoredView = restoreFromRedlyFile(viewId);
+
+    const view = restoredView ?? ViewStore.get(viewId);
     if (!view) {
       return {
         outcome: 'error',
@@ -104,8 +149,16 @@ export const ViewOpenService = {
     dispatchViewOpen(viewId, {
       readOnly: opts?.readOnly,
       openMode: 'new',
+      view: restoredView ?? undefined,
     });
 
     return { outcome: 'opened', viewId };
+  },
+
+  /**
+   * Check if a .Redly file exists for a view (has full canvas state).
+   */
+  hasRedlyFile(viewId: string): boolean {
+    return RedlyViewStore.has(viewId);
   },
 } as const;

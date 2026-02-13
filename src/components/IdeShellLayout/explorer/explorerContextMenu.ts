@@ -14,8 +14,8 @@
 
 import type { MenuProps } from 'antd';
 import type { RepositoryRole } from '@/repository/accessControl';
-import { canPerform, type ExplorerAction } from './explorerPermissions';
 import { EXPLORER_KEYS } from './explorerNodeRegistry';
+import { canPerform, type ExplorerAction } from './explorerPermissions';
 
 // ---------------------------------------------------------------------------
 // Action Definitions
@@ -26,30 +26,71 @@ export type ExplorerMenuAction =
   | { type: 'refresh' }
   | { type: 'noop' }
   // Folder actions
-  | { type: 'create-element'; parentKey?: string; allowedTypes?: readonly string[] }
+  | {
+      type: 'create-element';
+      parentKey?: string;
+      allowedTypes?: readonly string[];
+    }
   | { type: 'import'; parentKey?: string }
   | { type: 'paste'; parentKey?: string }
   | { type: 'sort'; parentKey?: string; direction: 'asc' | 'desc' }
   | { type: 'folder-properties'; key: string }
   // Element actions
   | { type: 'open-properties'; elementId: string; elementType: string }
-  | { type: 'rename-element'; elementId: string; elementName: string; elementType: string }
+  | {
+      type: 'rename-element';
+      elementId: string;
+      elementName: string;
+      elementType: string;
+    }
   | { type: 'duplicate-element'; elementId: string }
-  | { type: 'change-type'; elementId: string; elementType: string; elementName: string }
-  | { type: 'move-to'; elementId: string; elementType: string; elementName: string }
-  | { type: 'create-relationship'; sourceId: string; sourceName: string; sourceType: string }
-  | { type: 'add-to-view'; elementId: string; elementName: string; elementType: string }
-  | { type: 'view-dependencies'; elementId: string; elementName: string; elementType: string }
+  | {
+      type: 'change-type';
+      elementId: string;
+      elementType: string;
+      elementName: string;
+    }
+  | {
+      type: 'move-to';
+      elementId: string;
+      elementType: string;
+      elementName: string;
+    }
+  | {
+      type: 'create-relationship';
+      sourceId: string;
+      sourceName: string;
+      sourceType: string;
+    }
+  | {
+      type: 'add-to-view';
+      elementId: string;
+      elementName: string;
+      elementType: string;
+    }
+  | {
+      type: 'view-dependencies';
+      elementId: string;
+      elementName: string;
+      elementType: string;
+    }
   | { type: 'compare-baseline'; elementId: string; elementName: string }
   | { type: 'delete-element'; elementId: string }
   | { type: 'audit-trail'; objectId: string }
-  | { type: 'impact-analysis'; elementId: string; elementName: string; elementType: string }
+  | {
+      type: 'impact-analysis';
+      elementId: string;
+      elementName: string;
+      elementType: string;
+    }
   // Diagram / view actions
   | { type: 'open-view'; viewId: string }
   | { type: 'open-view-studio'; viewId: string; openMode: 'replace' | 'new' }
   | { type: 'rename-view'; viewId: string }
   | { type: 'duplicate-view'; viewId: string }
   | { type: 'export-view'; viewId: string; format: 'png' | 'json' }
+  | { type: 'export-view-redly'; viewId: string }
+  | { type: 'import-redly' }
   | { type: 'delete-view'; viewId: string }
   | { type: 'view-properties'; viewId: string }
   // Baseline
@@ -93,7 +134,7 @@ function toAntdMenu(
   role: RepositoryRole,
 ): MenuProps {
   // Filter by permission
-  const items = allItems.filter(item => {
+  const items = allItems.filter((item) => {
     if (!item.requiredAction) return true;
     return canPerform(role, item.requiredAction);
   });
@@ -109,7 +150,9 @@ function toAntdMenu(
       }
       actionMap.set(def.key, def.action);
       if (def.children) {
-        const filtered = def.children.filter(c => !c.requiredAction || canPerform(role, c.requiredAction));
+        const filtered = def.children.filter(
+          (c) => !c.requiredAction || canPerform(role, c.requiredAction),
+        );
         result.push({
           key: def.key,
           label: def.label,
@@ -144,7 +187,20 @@ function toAntdMenu(
 // Node-type classification helpers
 // ---------------------------------------------------------------------------
 
-export type ExplorerNodeKind = 'folder' | 'element' | 'diagram' | 'baseline' | 'roadmap' | 'plateau' | 'catalog' | 'matrix' | 'report' | 'setting' | 'relationship' | 'metamodel-type' | 'unknown';
+export type ExplorerNodeKind =
+  | 'folder'
+  | 'element'
+  | 'diagram'
+  | 'baseline'
+  | 'roadmap'
+  | 'plateau'
+  | 'catalog'
+  | 'matrix'
+  | 'report'
+  | 'setting'
+  | 'relationship'
+  | 'metamodel-type'
+  | 'unknown';
 
 export function classifyNodeKey(
   key: string,
@@ -156,7 +212,8 @@ export function classifyNodeKey(
   if (key.startsWith('roadmap:') && nodeData?.roadmapId) return 'roadmap';
   if (key.startsWith('plateau:')) return 'plateau';
   if (key.startsWith('relationship:')) return 'relationship';
-  if (key.startsWith('metamodel:type:') || key.startsWith('metamodel:reldef:')) return 'metamodel-type';
+  if (key.startsWith('metamodel:type:') || key.startsWith('metamodel:reldef:'))
+    return 'metamodel-type';
   if (nodeData?.catalogKey) return 'catalog';
   if (nodeData?.matrixKey) return 'matrix';
   if (nodeData?.reportType) return 'report';
@@ -169,15 +226,57 @@ export function classifyNodeKey(
 // ---------------------------------------------------------------------------
 
 function buildFolderMenu(key: string): MenuItemDef[] {
-  return [
-    { key: 'create-new', label: 'Create New…', action: { type: 'create-element', parentKey: key }, requiredAction: 'createElement' },
-    { key: 'import', label: 'Import…', action: { type: 'import', parentKey: key }, requiredAction: 'import' },
-    { key: 'paste', label: 'Paste', action: { type: 'paste', parentKey: key }, requiredAction: 'paste' },
-    { key: 'refresh', label: 'Refresh', action: { type: 'refresh' }, divider: true },
-    { key: 'sort-asc', label: 'Sort A → Z', action: { type: 'sort', parentKey: key, direction: 'asc' }, requiredAction: 'sort' },
-    { key: 'sort-desc', label: 'Sort Z → A', action: { type: 'sort', parentKey: key, direction: 'desc' }, requiredAction: 'sort' },
-    { key: 'properties', label: 'Properties', action: { type: 'folder-properties', key }, divider: true },
+  const items: MenuItemDef[] = [
+    {
+      key: 'create-new',
+      label: 'Create New…',
+      action: { type: 'create-element', parentKey: key },
+      requiredAction: 'createElement',
+    },
+    {
+      key: 'import',
+      label: 'Import…',
+      action: { type: 'import', parentKey: key },
+      requiredAction: 'import',
+    },
+    {
+      key: 'import-redly',
+      label: 'Import .Redly View',
+      action: { type: 'import-redly' },
+      requiredAction: 'import',
+    },
+    {
+      key: 'paste',
+      label: 'Paste',
+      action: { type: 'paste', parentKey: key },
+      requiredAction: 'paste',
+    },
+    {
+      key: 'refresh',
+      label: 'Refresh',
+      action: { type: 'refresh' },
+      divider: true,
+    },
+    {
+      key: 'sort-asc',
+      label: 'Sort A → Z',
+      action: { type: 'sort', parentKey: key, direction: 'asc' },
+      requiredAction: 'sort',
+    },
+    {
+      key: 'sort-desc',
+      label: 'Sort Z → A',
+      action: { type: 'sort', parentKey: key, direction: 'desc' },
+      requiredAction: 'sort',
+    },
+    {
+      key: 'properties',
+      label: 'Properties',
+      action: { type: 'folder-properties', key },
+      divider: true,
+    },
   ];
+  return items;
 }
 
 function buildElementMenu(
@@ -186,47 +285,186 @@ function buildElementMenu(
   elementName: string,
 ): MenuItemDef[] {
   return [
-    { key: 'open', label: 'Open', action: { type: 'open-properties', elementId, elementType } },
-    { key: 'rename', label: 'Rename', action: { type: 'rename-element', elementId, elementName, elementType }, requiredAction: 'renameElement' },
-    { key: 'duplicate', label: 'Duplicate', action: { type: 'duplicate-element', elementId }, requiredAction: 'duplicateElement' },
-    { key: 'change-type', label: 'Change Type…', action: { type: 'change-type', elementId, elementType, elementName }, requiredAction: 'changeType', divider: true },
-    { key: 'move-to', label: 'Move To…', action: { type: 'move-to', elementId, elementType, elementName }, requiredAction: 'moveElement' },
-    { key: 'create-rel', label: 'Create Relationship…', action: { type: 'create-relationship', sourceId: elementId, sourceName: elementName, sourceType: elementType }, requiredAction: 'createRelationship', divider: true },
-    { key: 'add-to-diagram', label: 'Add to Diagram…', action: { type: 'add-to-view', elementId, elementName, elementType }, requiredAction: 'editView' },
-    { key: 'view-deps', label: 'View Dependencies', action: { type: 'view-dependencies', elementId, elementName, elementType }, requiredAction: 'viewDependencies' },
-    { key: 'compare-baseline', label: 'Compare with Baseline', action: { type: 'compare-baseline', elementId, elementName }, requiredAction: 'compareBaseline', divider: true },
-    { key: 'delete', label: 'Delete', danger: true, action: { type: 'delete-element', elementId }, requiredAction: 'deleteElement', divider: true },
-    { key: 'audit', label: 'Audit Trail', action: { type: 'audit-trail', objectId: elementId }, requiredAction: 'auditTrail' },
-    { key: 'properties', label: 'Properties', action: { type: 'open-properties', elementId, elementType } },
+    {
+      key: 'open',
+      label: 'Open',
+      action: { type: 'open-properties', elementId, elementType },
+    },
+    {
+      key: 'rename',
+      label: 'Rename',
+      action: { type: 'rename-element', elementId, elementName, elementType },
+      requiredAction: 'renameElement',
+    },
+    {
+      key: 'duplicate',
+      label: 'Duplicate',
+      action: { type: 'duplicate-element', elementId },
+      requiredAction: 'duplicateElement',
+    },
+    {
+      key: 'change-type',
+      label: 'Change Type…',
+      action: { type: 'change-type', elementId, elementType, elementName },
+      requiredAction: 'changeType',
+      divider: true,
+    },
+    {
+      key: 'move-to',
+      label: 'Move To…',
+      action: { type: 'move-to', elementId, elementType, elementName },
+      requiredAction: 'moveElement',
+    },
+    {
+      key: 'create-rel',
+      label: 'Create Relationship…',
+      action: {
+        type: 'create-relationship',
+        sourceId: elementId,
+        sourceName: elementName,
+        sourceType: elementType,
+      },
+      requiredAction: 'createRelationship',
+      divider: true,
+    },
+    {
+      key: 'add-to-diagram',
+      label: 'Add to Diagram…',
+      action: { type: 'add-to-view', elementId, elementName, elementType },
+      requiredAction: 'editView',
+    },
+    {
+      key: 'view-deps',
+      label: 'View Dependencies',
+      action: {
+        type: 'view-dependencies',
+        elementId,
+        elementName,
+        elementType,
+      },
+      requiredAction: 'viewDependencies',
+    },
+    {
+      key: 'compare-baseline',
+      label: 'Compare with Baseline',
+      action: { type: 'compare-baseline', elementId, elementName },
+      requiredAction: 'compareBaseline',
+      divider: true,
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      danger: true,
+      action: { type: 'delete-element', elementId },
+      requiredAction: 'deleteElement',
+      divider: true,
+    },
+    {
+      key: 'audit',
+      label: 'Audit Trail',
+      action: { type: 'audit-trail', objectId: elementId },
+      requiredAction: 'auditTrail',
+    },
+    {
+      key: 'properties',
+      label: 'Properties',
+      action: { type: 'open-properties', elementId, elementType },
+    },
   ];
 }
 
 function buildDiagramMenu(viewId: string): MenuItemDef[] {
   return [
     { key: 'open', label: 'Open', action: { type: 'open-view', viewId } },
-    { key: 'open-studio', label: 'Edit in Studio', action: { type: 'open-view-studio', viewId, openMode: 'replace' }, requiredAction: 'editView' },
-    { key: 'rename', label: 'Rename', action: { type: 'rename-view', viewId }, requiredAction: 'renameView', divider: true },
-    { key: 'duplicate', label: 'Duplicate', action: { type: 'duplicate-view', viewId }, requiredAction: 'duplicateView' },
-    { key: 'export', label: 'Export', action: { type: 'noop' }, children: [
-      { key: 'export-png', label: 'Export as PNG', action: { type: 'export-view', viewId, format: 'png' }, requiredAction: 'exportView' },
-      { key: 'export-json', label: 'Export as JSON', action: { type: 'export-view', viewId, format: 'json' }, requiredAction: 'exportView' },
-    ]},
-    { key: 'delete', label: 'Delete', danger: true, action: { type: 'delete-view', viewId }, requiredAction: 'deleteView', divider: true },
-    { key: 'properties', label: 'Properties', action: { type: 'view-properties', viewId } },
+    {
+      key: 'open-studio',
+      label: 'Edit in Studio',
+      action: { type: 'open-view-studio', viewId, openMode: 'replace' },
+      requiredAction: 'editView',
+    },
+    {
+      key: 'rename',
+      label: 'Rename',
+      action: { type: 'rename-view', viewId },
+      requiredAction: 'renameView',
+      divider: true,
+    },
+    {
+      key: 'duplicate',
+      label: 'Duplicate',
+      action: { type: 'duplicate-view', viewId },
+      requiredAction: 'duplicateView',
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      action: { type: 'noop' },
+      children: [
+        {
+          key: 'export-png',
+          label: 'Export as PNG',
+          action: { type: 'export-view', viewId, format: 'png' },
+          requiredAction: 'exportView',
+        },
+        {
+          key: 'export-json',
+          label: 'Export as JSON',
+          action: { type: 'export-view', viewId, format: 'json' },
+          requiredAction: 'exportView',
+        },
+        {
+          key: 'export-redly',
+          label: 'Export as .Redly',
+          action: { type: 'export-view-redly', viewId },
+          requiredAction: 'exportView',
+        },
+      ],
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      danger: true,
+      action: { type: 'delete-view', viewId },
+      requiredAction: 'deleteView',
+      divider: true,
+    },
+    {
+      key: 'properties',
+      label: 'Properties',
+      action: { type: 'view-properties', viewId },
+    },
   ];
 }
 
 function buildBaselineMenu(baselineId: string): MenuItemDef[] {
   return [
-    { key: 'open', label: 'Open Baseline (read-only)', action: { type: 'open-baseline', baselineId } },
-    { key: 'preview', label: 'Preview Metadata', action: { type: 'preview-baseline', baselineId } },
-    { key: 'audit', label: 'Audit Trail', action: { type: 'audit-trail', objectId: baselineId }, requiredAction: 'auditTrail' },
+    {
+      key: 'open',
+      label: 'Open Baseline (read-only)',
+      action: { type: 'open-baseline', baselineId },
+    },
+    {
+      key: 'preview',
+      label: 'Preview Metadata',
+      action: { type: 'preview-baseline', baselineId },
+    },
+    {
+      key: 'audit',
+      label: 'Audit Trail',
+      action: { type: 'audit-trail', objectId: baselineId },
+      requiredAction: 'auditTrail',
+    },
   ];
 }
 
 function buildBaselineSectionMenu(): MenuItemDef[] {
   return [
-    { key: 'create-baseline', label: 'Create Baseline', action: { type: 'create-baseline' }, requiredAction: 'createBaseline' },
+    {
+      key: 'create-baseline',
+      label: 'Create Baseline',
+      action: { type: 'create-baseline' },
+      requiredAction: 'createBaseline',
+    },
     { key: 'refresh', label: 'Refresh', action: { type: 'refresh' } },
   ];
 }
@@ -244,7 +482,10 @@ export function buildContextMenu(
   nodeData: Record<string, unknown> | undefined,
   onAction: (action: ExplorerMenuAction) => void,
   options?: {
-    objectsById?: Map<string, { id: string; type: string; attributes: Record<string, unknown> }>;
+    objectsById?: Map<
+      string,
+      { id: string; type: string; attributes: Record<string, unknown> }
+    >;
     canEdit?: boolean;
     role?: RepositoryRole;
   },
@@ -261,10 +502,15 @@ export function buildContextMenu(
 
   switch (kind) {
     case 'element': {
-      const elementId = (nodeData?.elementId as string) ?? key.replace('element:', '');
+      const elementId =
+        (nodeData?.elementId as string) ?? key.replace('element:', '');
       const elementType = (nodeData?.elementType as string) ?? 'Unknown';
       const elementName = nameForElement(elementId);
-      return toAntdMenu(buildElementMenu(elementId, elementType, elementName), onAction, role);
+      return toAntdMenu(
+        buildElementMenu(elementId, elementType, elementName),
+        onAction,
+        role,
+      );
     }
 
     case 'diagram': {
@@ -273,55 +519,122 @@ export function buildContextMenu(
     }
 
     case 'baseline': {
-      const baselineId = (nodeData?.baselineId as string) ?? key.replace('baseline:', '');
+      const baselineId =
+        (nodeData?.baselineId as string) ?? key.replace('baseline:', '');
       return toAntdMenu(buildBaselineMenu(baselineId), onAction, role);
     }
 
     case 'roadmap': {
       const roadmapId = (nodeData?.roadmapId as string) ?? '';
-      return toAntdMenu([
-        { key: 'open', label: 'Open Roadmap', action: { type: 'open-roadmap', roadmapId } },
-      ], onAction, role);
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open Roadmap',
+            action: { type: 'open-roadmap', roadmapId },
+          },
+        ],
+        onAction,
+        role,
+      );
     }
 
     case 'plateau': {
-      const plateauId = (nodeData?.plateauId as string) ?? key.replace('plateau:', '');
-      return toAntdMenu([
-        { key: 'open', label: 'Open Plateau', action: { type: 'open-plateau', plateauId } },
-      ], onAction, role);
+      const plateauId =
+        (nodeData?.plateauId as string) ?? key.replace('plateau:', '');
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open Plateau',
+            action: { type: 'open-plateau', plateauId },
+          },
+        ],
+        onAction,
+        role,
+      );
     }
 
     case 'catalog':
-      return toAntdMenu([
-        { key: 'open', label: 'Open Catalogue', action: { type: 'open-catalog', catalogKey: nodeData?.catalogKey as string } },
-      ], onAction, role);
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open Catalogue',
+            action: {
+              type: 'open-catalog',
+              catalogKey: nodeData?.catalogKey as string,
+            },
+          },
+        ],
+        onAction,
+        role,
+      );
 
     case 'matrix':
-      return toAntdMenu([
-        { key: 'open', label: 'Open Matrix', action: { type: 'open-matrix', matrixKey: nodeData?.matrixKey as string } },
-      ], onAction, role);
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open Matrix',
+            action: {
+              type: 'open-matrix',
+              matrixKey: nodeData?.matrixKey as string,
+            },
+          },
+        ],
+        onAction,
+        role,
+      );
 
     case 'report':
-      return toAntdMenu([
-        { key: 'open', label: 'Open Report', action: { type: 'open-report', reportType: nodeData?.reportType as string } },
-      ], onAction, role);
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open Report',
+            action: {
+              type: 'open-report',
+              reportType: nodeData?.reportType as string,
+            },
+          },
+        ],
+        onAction,
+        role,
+      );
 
     case 'setting':
-      return toAntdMenu([
-        { key: 'open', label: 'Open', action: { type: 'open-setting', settingKey: nodeData?.settingKey as string } },
-      ], onAction, role);
+      return toAntdMenu(
+        [
+          {
+            key: 'open',
+            label: 'Open',
+            action: {
+              type: 'open-setting',
+              settingKey: nodeData?.settingKey as string,
+            },
+          },
+        ],
+        onAction,
+        role,
+      );
 
     case 'folder': {
       // Baselines section has special menu
-      if (key === EXPLORER_KEYS.baselines || key === EXPLORER_KEYS.baselineSnapshots) {
+      if (
+        key === EXPLORER_KEYS.baselines ||
+        key === EXPLORER_KEYS.baselineSnapshots
+      ) {
         return toAntdMenu(buildBaselineSectionMenu(), onAction, role);
       }
       return toAntdMenu(buildFolderMenu(key), onAction, role);
     }
 
     default:
-      return toAntdMenu([
-        { key: 'refresh', label: 'Refresh', action: { type: 'refresh' } },
-      ], onAction, role);
+      return toAntdMenu(
+        [{ key: 'refresh', label: 'Refresh', action: { type: 'refresh' } }],
+        onAction,
+        role,
+      );
   }
 }

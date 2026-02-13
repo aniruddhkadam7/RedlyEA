@@ -37,6 +37,16 @@ import {
   hasViewDragPayload,
 } from '@/diagram-studio/drag-drop/DragDropConstants';
 import { useStudioDropHandler } from '@/diagram-studio/drag-drop/useStudioDropHandler';
+import {
+  type CanvasEdgeData,
+  type CanvasNodeData,
+  type CanvasState,
+  deserializeView,
+  exportRedlyFile,
+  importRedlyFile,
+  RedlyViewStore,
+  serializeView,
+} from '@/diagram-studio/redly-format';
 import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
 import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
 import { resolveViewScope } from '@/diagram-studio/viewpoints/resolveViewScope';
@@ -4947,6 +4957,64 @@ const StudioShell: React.FC<StudioShellProps> = ({
   }, [buildLayoutFromCanvas]);
 
   // ---------------------------------------------------------------------------
+  // .Redly FORMAT: Build full canvas state for serialization into .Redly files.
+  // This captures ALL canvas data — nodes, edges, free shapes, free connectors,
+  // viewport — into a single CanvasState object for the RedlyFileService.
+  // ---------------------------------------------------------------------------
+  const buildCanvasStateForRedly = React.useCallback((): CanvasState => {
+    const layout = buildLayoutFromCanvas();
+    const freeShapes = buildFreeShapesFromCanvas();
+    const freeConnectors = buildFreeConnectorsFromCanvas();
+    const viewport = cyRef.current
+      ? { zoom: cyRef.current.zoom(), pan: cyRef.current.pan() }
+      : { zoom: 1, pan: { x: 0, y: 0 } };
+
+    const nodes: CanvasNodeData[] = [
+      ...layout.nodes.map((n) => ({
+        id: n.id,
+        label: n.label,
+        elementType: n.elementType,
+        x: n.x,
+        y: n.y,
+      })),
+      ...freeShapes.map((s) => ({
+        id: s.id,
+        label: s.label,
+        elementType: 'Application' as any, // placeholder type for free shapes
+        x: s.x,
+        y: s.y,
+        width: s.width,
+        height: s.height,
+        freeShape: true,
+        freeShapeKind: s.kind,
+      })),
+    ];
+
+    const edges: CanvasEdgeData[] = [
+      ...layout.edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        relationshipType: e.relationshipType,
+      })),
+      ...freeConnectors.map((c) => ({
+        id: c.id,
+        source: c.source,
+        target: c.target,
+        relationshipType: 'INTEGRATES_WITH' as any, // placeholder for free connectors
+        freeConnector: true,
+        freeConnectorKind: c.kind,
+      })),
+    ];
+
+    return { nodes, edges, viewport };
+  }, [
+    buildLayoutFromCanvas,
+    buildFreeShapesFromCanvas,
+    buildFreeConnectorsFromCanvas,
+  ]);
+
+  // ---------------------------------------------------------------------------
   // WRITE-THROUGH PERSISTENCE: Persist workspace state immediately on every
   // Studio mutation (node create/move/delete, edge create/delete). This ensures
   // the repository snapshot is ALWAYS up-to-date and no data is ever lost on
@@ -5139,6 +5207,18 @@ const StudioShell: React.FC<StudioShellProps> = ({
       } else {
         ViewStore.save(next);
         ViewLayoutStore.set(activeViewId, positions);
+        // Persist .Redly file for full canvas state restoration
+        try {
+          const canvasState = buildCanvasStateForRedly();
+          const redlyFile = serializeView({
+            view: next,
+            canvas: canvasState,
+            actor: actor,
+          });
+          RedlyViewStore.save(activeViewId, redlyFile);
+        } catch {
+          // Best-effort: .Redly persistence should never block autosave.
+        }
         try {
           window.dispatchEvent(new Event('ea:viewsChanged'));
         } catch {
@@ -5167,6 +5247,8 @@ const StudioShell: React.FC<StudioShellProps> = ({
       activeView,
       activeViewId,
       activeViewIsWorking,
+      actor,
+      buildCanvasStateForRedly,
       buildFreeConnectorsFromCanvas,
       buildFreeShapesFromCanvas,
       buildViewPositionsFromCanvas,
@@ -5247,6 +5329,18 @@ const StudioShell: React.FC<StudioShellProps> = ({
       // Persist the new saved view
       ViewStore.save(next);
       ViewLayoutStore.set(next.id, positions);
+      // Persist .Redly file for full canvas state restoration
+      try {
+        const canvasState = buildCanvasStateForRedly();
+        const redlyFile = serializeView({
+          view: next,
+          canvas: canvasState,
+          actor: actor,
+        });
+        RedlyViewStore.save(next.id, redlyFile);
+      } catch {
+        // Best-effort: .Redly persistence should never block save.
+      }
       try {
         window.dispatchEvent(new Event('ea:viewsChanged'));
       } catch {
@@ -5296,6 +5390,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     activeTabKey,
     activeView,
     actor,
+    buildCanvasStateForRedly,
     buildFreeConnectorsFromCanvas,
     buildFreeShapesFromCanvas,
     buildViewPositionsFromCanvas,
@@ -10464,8 +10559,6 @@ const StudioShell: React.FC<StudioShellProps> = ({
     viewReadOnly,
   ]);
 
-
-
   React.useEffect(() => {
     if (!stagedInitRef.current) {
       stagedInitRef.current = true;
@@ -11533,6 +11626,9 @@ const StudioShell: React.FC<StudioShellProps> = ({
           message.error('Delete failed. View not found.');
           return;
         }
+        // Clean up .Redly file and layout data
+        RedlyViewStore.remove(activeView.id);
+        ViewLayoutStore.remove(activeView.id);
         if (activeTabKey !== WORKSPACE_TAB_KEY) closeViewTab(activeTabKey);
         try {
           window.dispatchEvent(new Event('ea:viewsChanged'));
@@ -11570,6 +11666,69 @@ const StudioShell: React.FC<StudioShellProps> = ({
       message.error('Failed to export PNG.');
     }
   }, [activeView]);
+
+  // ---------------------------------------------------------------------------
+  // .Redly EXPORT: Export the active view as a portable .Redly file.
+  // ---------------------------------------------------------------------------
+  const handleExportActiveViewRedly = React.useCallback(() => {
+    if (!activeView) {
+      message.warning('No view to export.');
+      return;
+    }
+    try {
+      const canvasState = buildCanvasStateForRedly();
+      const redlyFile = serializeView({
+        view: activeView,
+        canvas: canvasState,
+        actor: actor,
+      });
+      exportRedlyFile(redlyFile);
+      message.success(`Exported "${activeView.name}" as .Redly file.`);
+    } catch (err: any) {
+      message.error(`Export failed: ${err?.message ?? 'Unknown error'}`);
+    }
+  }, [activeView, actor, buildCanvasStateForRedly]);
+
+  // ---------------------------------------------------------------------------
+  // .Redly IMPORT: Import a .Redly file and open it in a new tab.
+  // ---------------------------------------------------------------------------
+  const handleImportRedlyFile = React.useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.Redly,.redly';
+    input.style.display = 'none';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const result = await importRedlyFile(file);
+        if (!result.ok) {
+          message.error(`Import failed: ${result.errors.join(', ')}`);
+          return;
+        }
+        const { view, positions } = result.data;
+        // Save the imported view
+        ViewStore.save(view);
+        ViewLayoutStore.set(view.id, positions);
+        // Persist the .Redly file
+        RedlyViewStore.save(view.id, result.data.redlyFile);
+        try {
+          window.dispatchEvent(new Event('ea:viewsChanged'));
+        } catch {
+          // Best-effort only.
+        }
+        // Open in a new tab
+        ensureViewTab(view.id, { mode: 'new', view });
+        message.success(`Imported "${view.name}" successfully.`);
+      } catch (err: any) {
+        message.error(`Import failed: ${err?.message ?? 'Unknown error'}`);
+      } finally {
+        document.body.removeChild(input);
+      }
+    };
+    document.body.appendChild(input);
+    input.click();
+  }, [ensureViewTab]);
 
   const [rightPanelMode, setRightPanelMode] = React.useState<RightPanelMode>(
     RightPanelMode.STUDIO,
@@ -12452,7 +12611,6 @@ const StudioShell: React.FC<StudioShellProps> = ({
           >
             Validation: {validationCount}
           </Typography.Text>
-
         </div>
       </div>
 
@@ -14231,6 +14389,15 @@ const StudioShell: React.FC<StudioShellProps> = ({
                             onClick={handleExportActiveViewJson}
                           >
                             Export JSON
+                          </Button>
+                          <Button
+                            size="small"
+                            onClick={handleExportActiveViewRedly}
+                          >
+                            Export .Redly
+                          </Button>
+                          <Button size="small" onClick={handleImportRedlyFile}>
+                            Import .Redly
                           </Button>
                           <Button
                             size="small"
