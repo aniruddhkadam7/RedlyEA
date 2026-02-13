@@ -9,6 +9,7 @@ import {
   FolderOpenOutlined,
   FundOutlined,
   NodeIndexOutlined,
+  SearchOutlined,
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -1779,13 +1780,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
             justifyContent: 'center',
           }}
         >
-          <Input.Search
-            placeholder="Search"
-            allowClear
-            size={isDesktop ? 'small' : 'middle'}
-            className={styles.headerSearch}
-            style={{ width: 400 }}
-          />
+          <div className={styles.headerSearchWrap}>
+            <div className={styles.modernHeaderSearch}>
+              <SearchOutlined className={styles.modernHeaderSearchIcon} />
+              <input
+                type="search"
+                placeholder="Search"
+                aria-label="Search"
+                className={styles.modernHeaderSearchInput}
+              />
+            </div>
+          </div>
         </div>
         <div
           style={{

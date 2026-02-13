@@ -144,27 +144,138 @@
   font-size: 12px;
 }
 
+.headerSearchWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.headerSearchWrap::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(243, 246, 255, 0), rgba(243, 246, 255, 0.8), rgba(243, 246, 255, 0));
+  opacity: 0.75;
+}
+
+.modernHeaderSearch {
+  width: min(400px, 42vw);
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 246, 255, 0.5);
+  background: linear-gradient(180deg, rgba(48, 74, 143, 0.96), rgba(27, 42, 85, 1));
+  box-shadow: 0 1px 4px rgba(3, 10, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.modernHeaderSearch:hover,
+.modernHeaderSearch:focus-within {
+  border-color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(67, 101, 190, 0.98), rgba(36, 58, 117, 1));
+  box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.22), 0 2px 8px rgba(7, 16, 40, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.modernHeaderSearchIcon {
+  color: #f3f6ff;
+  font-size: 15px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.modernHeaderSearchInput {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.modernHeaderSearchInput::placeholder {
+  color: rgba(243, 246, 255, 0.88);
+}
+
+.modernHeaderSearchInput::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.desktopRoot .modernHeaderSearch {
+  height: 30px;
+}
+
 .headerSearch :global(.ant-input),
-.headerSearch :global(.ant-input-affix-wrapper),
-.headerSearch :global(.ant-input-search-button),
-.headerSearch :global(.ant-btn) {
+.headerSearch :global(.ant-input-affix-wrapper) {
   border-radius: 999px !important;
+}
+
+.headerSearch :global(.ant-input-affix-wrapper) {
+  border: 1px solid rgba(243, 246, 255, 0.3) !important;
+  background: linear-gradient(180deg, rgba(36, 58, 117, 0.9), rgba(27, 42, 85, 0.96)) !important;
+  box-shadow: none !important;
+  color: #f3f6ff !important;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 999px !important;
+}
+
+.headerSearch :global(.ant-input-affix-wrapper:hover),
+.headerSearch :global(.ant-input-affix-wrapper-focused) {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background: linear-gradient(180deg, rgba(48, 74, 143, 0.94), rgba(36, 58, 117, 0.98)) !important;
+  box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.15) !important;
+}
+
+.headerSearch :global(.ant-input) {
+  color: #f3f6ff !important;
+  background: transparent !important;
+}
+
+.headerSearch :global(.ant-input-prefix),
+.headerSearch :global(.ant-input-prefix .anticon),
+.headerSearch :global(.ant-input-prefix svg) {
+  color: #f3f6ff !important;
+}
+
+.headerSearch :global(.ant-input::placeholder) {
+  color: rgba(243, 246, 255, 0.78) !important;
+}
+
+.headerSearch :global(.ant-input-suffix),
+.headerSearch :global(.ant-input-clear-icon),
+.headerSearch :global(.ant-input-clear-icon .anticon),
+.headerSearch :global(.ant-input-clear-icon svg) {
+  color: #f3f6ff !important;
+  opacity: 1;
+}
+
+.headerSearch :global(.ant-input-clear-icon) {
+  background: transparent !important;
+  border: none !important;
+}
+
+.headerSearch :global(.ant-input-group-addon) {
+  background: transparent !important;
 }
 
 .desktopRoot .headerSearch :global(.ant-input),
 .desktopRoot .headerSearch :global(.ant-input-affix-wrapper) {
-  height: 24px;
-  padding-block: 0;
-}
-
-.desktopRoot .headerSearch :global(.ant-input-search-button),
-.desktopRoot .headerSearch :global(.ant-btn) {
-  height: 24px;
+  height: 26px;
   padding-block: 0;
 }
 
 .headerSearch :global(.ant-input-affix-wrapper) {
-  padding-inline: 12px;
+  padding-inline: 14px;
 }
 
 .mainRow {
