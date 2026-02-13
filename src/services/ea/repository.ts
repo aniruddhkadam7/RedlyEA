@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 import type { Application } from '../../../backend/repository/Application';
 import type { BusinessProcess } from '../../../backend/repository/BusinessProcess';

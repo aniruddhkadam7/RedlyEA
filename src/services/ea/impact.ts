@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 import type { ImpactAnalysisRequest } from '../../../backend/analysis/ImpactAnalysisRequest';
 import type { ImpactSummary } from '../../../backend/analysis/ImpactSummary';

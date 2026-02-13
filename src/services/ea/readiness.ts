@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 import type { InteroperabilityReadinessResult } from '../../../backend/interoperability';
 import type { ExportScope } from '../../../backend/interoperability/ExportScope';

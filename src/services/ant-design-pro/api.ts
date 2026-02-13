@@ -1,6 +1,6 @@
 // @ts-ignore
 /* eslint-disable */
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 /** èŽ·å–å½“å‰çš„ç”¨æˆ· GET /api/currentUser */
 export async function currentUser(options?: { [key: string]: any }) {

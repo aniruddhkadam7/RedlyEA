@@ -134,7 +134,6 @@ export default defineConfig({
    * @description 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
    * @doc https://umijs.org/docs/max/request
    */
-  request: {},
   /**
    * @name 权限插件
    * @description 基于 initialState 的权限插件，必须先打开 initialState
@@ -153,14 +152,14 @@ export default defineConfig({
     : {
         openAPI: [
           {
-            requestLibPath: "import { request } from '@umijs/max'",
+            requestLibPath: "import { request } from '@/utils/request'",
             // 或者使用在线的版本
             // schemaPath: "https://gw.alipayobjects.com/os/antfincdn/M%24jrzTTYJN/oneapi.json"
             schemaPath: join(__dirname, 'oneapi.json'),
             mock: false,
           },
           {
-            requestLibPath: "import { request } from '@umijs/max'",
+            requestLibPath: "import { request } from '@/utils/request'",
             schemaPath:
               'https://gw.alipayobjects.com/os/antfincdn/CA1dOm%2631B/openapi.json',
             projectName: 'swagger',

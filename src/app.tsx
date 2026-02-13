@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { ProDescriptions } from '@ant-design/pro-components';
-import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import type { RunTimeLayoutConfig } from '@umijs/max';
 import { Link, useLocation } from '@umijs/max';
 import React from 'react';
 import { Checkbox, Collapse, Descriptions, Drawer, Dropdown, Form, Input, Modal, Select, Tree, Typography, theme as antdTheme } from 'antd';
@@ -19,7 +19,6 @@ import AnalysisTree from '@/components/IdeShellLayout/AnalysisTree';
 import MetamodelSidebar from '@/components/IdeShellLayout/MetamodelSidebar';
 import SettingsPanel from '@/components/IdeShellLayout/SettingsPanel';
 import defaultSettings from '../config/defaultSettings';
-import { errorConfig } from './requestErrorConfig';
 import {
   EA_LAYERS,
   OBJECT_TYPE_DEFINITIONS,
@@ -1222,11 +1221,6 @@ export const layout: RunTimeLayoutConfig = ({
  * 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
  * @doc https://umijs.org/docs/max/request#配置
  */
-export const request: RequestConfig = {
-  baseURL: isDev ? '' : 'https://proapi.azurewebsites.net',
-  ...errorConfig,
-};
-
 export function rootContainer(container: React.ReactNode) {
   return (
     <ThemeProvider>

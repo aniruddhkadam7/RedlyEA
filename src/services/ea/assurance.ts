@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 import type { ArchitectureAssuranceReport } from '../../../backend/assurance/ArchitectureAssurance';
 

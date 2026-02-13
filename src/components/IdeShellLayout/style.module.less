@@ -1689,10 +1689,10 @@
 }
 
 .bottomPanelHeader {
-  height: 36px;
+  min-height: 36px;
   padding: 0 10px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   border-bottom: 1px solid var(--ide-border-subtle);
   background: var(--ide-bg-panel);
 }
@@ -1700,7 +1700,11 @@
 .panelTabs {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
 }
 
 .panelMeta {
@@ -1722,6 +1726,8 @@
   color: var(--ide-text-secondary);
   cursor: pointer;
   position: relative;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .panelTabActive {

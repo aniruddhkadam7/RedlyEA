@@ -1,7 +1,7 @@
 // ─── Import API Service ───────────────────────────────────────────────────
 // Frontend API client for the CSV import feature.
 
-import { request } from '@umijs/max';
+import { request } from '@/utils/request';
 import type {
   ColumnMapping,
   CsvParseResponse,

@@ -1,6 +1,6 @@
 // @ts-ignore
 /* eslint-disable */
-import { request } from 'umi';
+import { request } from '@/utils/request';
 
 /** å‘é€éªŒè¯ç  POST /api/login/captcha */
 export async function getFakeCaptcha(

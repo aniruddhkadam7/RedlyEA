@@ -1,5 +1,9 @@
-﻿import type { RequestOptions } from '@@/plugin-request/request';
-import type { RequestConfig } from '@umijs/max';
+﻿type RequestOptions = {
+  url?: string;
+  [key: string]: any;
+};
+
+type RequestConfig = Record<string, any>;
 import { message, notification } from '@/ea/eaConsole';
 
 // 错误处理方案： 错误类型
