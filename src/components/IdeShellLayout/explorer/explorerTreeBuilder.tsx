@@ -617,7 +617,7 @@ export function buildExplorerTree(
 
   // --- 1. Repository ---
   const repositoryIcon = iconAsset(
-    '/icons/explorer/repository-db.svg',
+    '/icons/explorer-modern/repository.png',
     'repository',
   );
   const repositoryNode: DataNode = collectionNode(
@@ -1229,7 +1229,7 @@ export function buildExplorerTree(
   );
 
   const architecturesIcon = iconAsset(
-    '/icons/explorer/architectures-layers.svg',
+    '/icons/explorer-modern/architecture.png',
     'architectures',
   );
   const architecturesNode: DataNode = collectionNode(
@@ -1275,7 +1275,7 @@ export function buildExplorerTree(
   );
 
   const baselinesIcon = iconAsset(
-    '/icons/explorer/baselines-timeline.svg',
+    '/icons/explorer-modern/baseline.png',
     'baselines',
   );
   const baselinesNode: DataNode = collectionNode(
