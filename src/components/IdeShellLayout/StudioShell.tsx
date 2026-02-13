@@ -4,7 +4,6 @@ import {
   ArrowsAltOutlined,
   CloseOutlined,
   InfoCircleOutlined,
-  LogoutOutlined,
   NodeIndexOutlined,
   PlusSquareOutlined,
   ShrinkOutlined,
@@ -10465,77 +10464,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     viewReadOnly,
   ]);
 
-  const handleExit = React.useCallback(() => {
-    if (stagedElements.length > 0 || stagedRelationships.length > 0) {
-      Modal.confirm({
-        title: 'Exit Studio with uncommitted changes?',
-        content:
-          'Choose how to handle your draft workspace before leaving Studio.',
-        okText: 'Save Workspace',
-        cancelText: 'Cancel',
-        okButtonProps: { type: 'primary' },
-        onOk: () => {
-          saveWorkspaceDraft();
-          onExit();
-        },
-        onCancel: () => {
-          // Cancel exit
-        },
-        footer: (_, { OkBtn, CancelBtn }) => (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button
-              type="primary"
-              disabled={commitDisabled}
-              onClick={() => {
-                setCommitOpen(true);
-                Modal.destroyAll();
-              }}
-            >
-              Commit Workspace
-            </Button>
-            <Button
-              danger
-              onClick={() => {
-                setDiscardOpen(true);
-                Modal.destroyAll();
-              }}
-            >
-              Discard Workspace
-            </Button>
-            <CancelBtn />
-            <OkBtn />
-          </div>
-        ),
-      });
-      return;
-    }
 
-    setPendingElementType(null);
-    setPendingElementVisualKind(null);
-    setPlacement(null);
-    setCreateModalOpen(false);
-    setAuditPreviewOpen(false);
-    setPendingElementDraft(null);
-    inlineNameHandledRef.current = true;
-    setInlineNamePrompt(null);
-    setInlineNameValue('');
-    setPendingRelationshipType(null);
-    setRelationshipSourceId(null);
-    setRelationshipTargetId(null);
-    setPlacementModeActive(false);
-    setPlacementGuide(null);
-    form.resetFields();
-    // WRITE-THROUGH: always persist workspace layout before exiting Studio
-    persistWorkspaceNow();
-    onExit();
-  }, [
-    form,
-    onExit,
-    persistWorkspaceNow,
-    saveWorkspaceDraft,
-    stagedElements.length,
-    stagedRelationships.length,
-  ]);
 
   React.useEffect(() => {
     if (!stagedInitRef.current) {
@@ -12523,16 +12452,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
           >
             Validation: {validationCount}
           </Typography.Text>
-          <Tooltip title="Exit Studio">
-            <button
-              type="button"
-              className={styles.studioExitButton}
-              aria-label="Exit Studio"
-              onClick={handleExit}
-            >
-              <LogoutOutlined />
-            </button>
-          </Tooltip>
+
         </div>
       </div>
 

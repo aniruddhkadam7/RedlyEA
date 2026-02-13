@@ -233,6 +233,27 @@ const resolveAppIcon = () => {
 let mainWindow;
 const pendingRepositoryImports = [];
 
+const resolveTitleBarOverlay = (input = {}) => {
+  const fallback = {
+    color: '#1b2a55',
+    symbolColor: '#f3f6ff',
+    height: 34,
+  };
+  const color =
+    typeof input?.color === 'string' && input.color.trim()
+      ? input.color.trim()
+      : fallback.color;
+  const symbolColor =
+    typeof input?.symbolColor === 'string' && input.symbolColor.trim()
+      ? input.symbolColor.trim()
+      : fallback.symbolColor;
+  const height =
+    Number.isFinite(input?.height) && input.height > 0
+      ? Math.round(input.height)
+      : fallback.height;
+  return { color, symbolColor, height };
+};
+
 const enqueueRepositoryImport = async (filePath) => {
   try {
     if (
@@ -298,11 +319,7 @@ const enqueueRepositoryImport = async (filePath) => {
 function createWindow() {
   const titleBarOverlay =
     process.platform === 'win32'
-      ? {
-          color: '#1b2a55',
-          symbolColor: '#f3f6ff',
-          height: 34,
-        }
+      ? resolveTitleBarOverlay()
       : undefined;
 
   const win = new BrowserWindow({
@@ -740,6 +757,25 @@ ipcMain.handle('ea:openDevTools', async () => {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err?.message || 'Failed to open dev tools.' };
+  }
+});
+
+ipcMain.handle('ea:setTitleBarTheme', async (_event, args) => {
+  try {
+    if (process.platform !== 'win32') return { ok: true };
+    if (!mainWindow || mainWindow.isDestroyed())
+      return { ok: false, error: 'No active window.' };
+    if (typeof mainWindow.setTitleBarOverlay !== 'function') {
+      return { ok: false, error: 'Title bar overlay is not supported.' };
+    }
+
+    mainWindow.setTitleBarOverlay(resolveTitleBarOverlay(args));
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err?.message || 'Failed to update title bar theme.',
+    };
   }
 });
 

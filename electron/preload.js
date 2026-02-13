@@ -24,4 +24,5 @@ contextBridge.exposeInMainWorld('eaDesktop', {
   importLegacyProjectAtPath: (filePath) =>
     ipcRenderer.invoke('ea:importLegacyProjectAtPath', { filePath }),
   openDevTools: () => ipcRenderer.invoke('ea:openDevTools'),
+  setTitleBarTheme: (args) => ipcRenderer.invoke('ea:setTitleBarTheme', args),
 });

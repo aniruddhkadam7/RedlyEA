@@ -8,9 +8,11 @@ import {
   DoubleLeftOutlined,
   FolderOpenOutlined,
   FundOutlined,
+  MoonFilled,
   NodeIndexOutlined,
   SearchOutlined,
   SettingOutlined,
+  SunFilled,
   UserOutlined,
 } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
@@ -99,6 +101,10 @@ type PanelDock = 'bottom' | 'right';
 // NOTE: This intentionally exceeds VS Code's default header height.
 const TOP_MENU_BAR_HEIGHT_WEB = 44;
 const TOP_MENU_BAR_HEIGHT_DESKTOP = 34;
+const DESKTOP_HEADER_BG_LIGHT = '#1b2a55';
+const DESKTOP_HEADER_FG_LIGHT = '#f3f6ff';
+const DESKTOP_HEADER_BG_DARK = '#111827';
+const DESKTOP_HEADER_FG_DARK = '#e5e7eb';
 const STATUS_BAR_HEIGHT = 22;
 const BOTTOM_PALETTE_HEIGHT = 320;
 
@@ -120,7 +126,7 @@ const ThemeToggleButton: React.FC = () => {
             border: 'none',
             cursor: 'pointer',
             padding: '2px 6px',
-            fontSize: 15,
+            fontSize: 14,
             lineHeight: 1,
             color: 'inherit',
             opacity: 0.85,
@@ -130,7 +136,7 @@ const ThemeToggleButton: React.FC = () => {
           } as React.CSSProperties
         }
       >
-        {isDark ? '☀️' : '🌙'}
+        {isDark ? <SunFilled /> : <MoonFilled />}
       </button>
     </Tooltip>
   );
@@ -1010,6 +1016,19 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const openWorkspaceTab = React.useCallback(
     (args: OpenWorkspaceTabArgs) => {
+      // Deactivate Studio when opening any non-studio workspace tab.
+      // Studio's unmount handler will auto-save the workspace & views.
+      if (args.type !== 'studio-view') {
+        setStudioMode(false);
+        try {
+          window.dispatchEvent(new Event('ea:repositoryChanged'));
+          window.dispatchEvent(new Event('ea:relationshipsChanged'));
+          window.dispatchEvent(new Event('ea:viewsChanged'));
+        } catch {
+          // Best-effort only.
+        }
+      }
+
       if (args.type === 'catalog') {
         if (metadata?.architectureScope === 'Programme') {
           const allowed: ReadonlySet<string> = new Set([
@@ -1353,6 +1372,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         return;
       }
 
+      // Deactivate Studio so the main content area switches to tab rendering.
+      // Studio's unmount handler will auto-save the workspace & views.
+      setStudioMode(false);
+      try {
+        window.dispatchEvent(new Event('ea:repositoryChanged'));
+        window.dispatchEvent(new Event('ea:relationshipsChanged'));
+        window.dispatchEvent(new Event('ea:viewsChanged'));
+      } catch {
+        // Best-effort only.
+      }
+
       setTabs((prev) => {
         if (prev.some((t) => t.key === key)) return prev;
         return [...prev, { key, label: titleForPath(key), kind: 'route' }];
@@ -1687,14 +1717,25 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       <div className={styles.sidebarPanelSection}>{settingsBody}</div>
     );
 
-  const statusLeftText = project?.name
+  const shouldRenderDesktopHeader = isDesktop;
+  const shouldRenderWebHeader = !isDesktop;
+  const statusBarText = project?.name
     ? `Project: ${project.name}${metadata?.repositoryName ? ` • Repository: ${metadata.repositoryName}` : ''}`
     : metadata?.repositoryName
       ? `Repository: ${metadata.repositoryName}`
       : 'No project/repository loaded';
 
-  const shouldRenderDesktopHeader = isDesktop;
-  const shouldRenderWebHeader = !isDesktop;
+  React.useEffect(() => {
+    if (!isDesktop) return;
+    const syncTitleBar = window.eaDesktop?.setTitleBarTheme;
+    if (!syncTitleBar) return;
+
+    void syncTitleBar({
+      color: isDark ? DESKTOP_HEADER_BG_DARK : DESKTOP_HEADER_BG_LIGHT,
+      symbolColor: isDark ? DESKTOP_HEADER_FG_DARK : DESKTOP_HEADER_FG_LIGHT,
+      height: TOP_MENU_BAR_HEIGHT_DESKTOP,
+    });
+  }, [isDesktop, isDark]);
 
   React.useEffect(() => {
     if (shouldRenderDesktopHeader && shouldRenderWebHeader) {
@@ -1803,15 +1844,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
           }}
         >
           <ThemeToggleButton />
-          {isDesktop && (
-            <Typography.Text
-              type="secondary"
-              className={styles.titleBarRepo}
-              title={statusLeftText}
-            >
-              {statusLeftText}
-            </Typography.Text>
-          )}
           <Typography.Text
             type="secondary"
             className={styles.titleBarUser}
@@ -2952,7 +2984,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 textOverflow: 'ellipsis',
               }}
             >
-              {statusLeftText}
+              {statusBarText}
             </Typography.Text>
 
             <div

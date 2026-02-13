@@ -117,6 +117,11 @@ declare global {
         { ok: true } | { ok: false; error: string }
       >;
       openDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      setTitleBarTheme: (args: {
+        color: string;
+        symbolColor: string;
+        height?: number;
+      }) => Promise<{ ok: true } | { ok: false; error: string }>;
       closeDevTools: () => Promise<
         { ok: true } | { ok: false; error: string }
       >;

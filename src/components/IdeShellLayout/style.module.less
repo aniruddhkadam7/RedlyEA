@@ -29,6 +29,11 @@
   color: #f3f6ff;
 }
 
+:global([data-theme='dark']) .topHeader {
+  background: #111827 !important;
+  color: #e5e7eb;
+}
+
 :global([data-theme="light"]) .topHeader {
   background: #1b2a55 !important;
   color: #f3f6ff;
@@ -170,16 +175,29 @@
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(243, 246, 255, 0.5);
-  background: linear-gradient(180deg, rgba(48, 74, 143, 0.96), rgba(27, 42, 85, 1));
+  background: linear-gradient(180deg, rgba(44, 68, 128, 0.94), rgba(27, 42, 85, 0.98));
   box-shadow: 0 1px 4px rgba(3, 10, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+:global([data-theme='dark']) .modernHeaderSearch {
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(17, 24, 39, 0.98));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .modernHeaderSearch:hover,
 .modernHeaderSearch:focus-within {
   border-color: rgba(255, 255, 255, 0.92);
-  background: linear-gradient(180deg, rgba(67, 101, 190, 0.98), rgba(36, 58, 117, 1));
+  background: linear-gradient(180deg, rgba(55, 84, 158, 0.97), rgba(31, 49, 98, 0.99));
   box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.22), 0 2px 8px rgba(7, 16, 40, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+:global([data-theme='dark']) .modernHeaderSearch:hover,
+:global([data-theme='dark']) .modernHeaderSearch:focus-within {
+  border-color: rgba(203, 213, 225, 0.6);
+  background: linear-gradient(180deg, rgba(51, 65, 85, 0.97), rgba(30, 41, 59, 0.99));
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .modernHeaderSearchIcon {
@@ -1047,23 +1065,7 @@
   flex: 0 0 auto;
 }
 
-.studioExitButton {
-  width: 24px;
-  height: 24px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ide-text-secondary);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
 
-.studioExitButton:hover {
-  background: var(--ide-control-hover);
-  border-color: var(--ide-border-subtle);
-  color: var(--ide-text);
-}
 
 
 .studioSubHeaderMeta {
