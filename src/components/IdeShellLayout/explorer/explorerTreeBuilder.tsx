@@ -119,7 +119,7 @@ const classForNodeKey = (key: string): string => {
   return 'explorer-node';
 };
 
-const folderIcon = iconAsset('/icons/explorer/folder-project.svg', 'folder');
+const folderIcon = iconAsset('/icons/explorer/folder.svg', 'folder');
 const componentIcon = iconAsset(
   '/icons/explorer/component-cluster.svg',
   'component',
@@ -135,15 +135,18 @@ const connectionIcon = iconAsset(
   'connection',
 );
 const frameworkIcon = iconAsset(
-  '/icons/explorer/framework-modules.svg',
+  '/icons/explorer/framework-triangle.svg',
   'framework',
 );
 const metamodelIcon = iconAsset(
-  '/icons/explorer/metamodel-schema.svg',
+  '/icons/explorer/metamodel-blueprint.svg',
   'metamodel',
 );
-const reportIcon = iconAsset('/icons/explorer/reports-chart.svg', 'report');
-const settingsIcon = iconAsset('/icons/explorer/settings-gear.svg', 'settings');
+const reportIcon = iconAsset('/icons/explorer-modern/report.png', 'report');
+const settingsIcon = iconAsset(
+  '/icons/explorer-modern/settings.png',
+  'settings',
+);
 const fallbackGenericIcon = React.createElement(FolderOutlined);
 
 const iconForLayer = (layer: string): React.ReactNode => {
