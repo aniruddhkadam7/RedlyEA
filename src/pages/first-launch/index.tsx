@@ -26,6 +26,7 @@ import {
   type TimeHorizon,
 } from '@/repository/repositoryMetadata';
 import { buildLegacyPayloadFromPackage } from '@/repository/repositoryPackageAdapter';
+import { parseRedlyFile } from '@/services/persistence/redlyImportService';
 import {
   listBaselines,
   replaceBaselines,
@@ -101,6 +102,7 @@ const FirstLaunch: React.FC = () => {
   const repositoryRef = React.useRef({ eaRepository, metadata });
 
   const importFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const openRepositoryInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const _readFileAsText = async (file: File) => {
     return await file.text();
@@ -438,32 +440,6 @@ const FirstLaunch: React.FC = () => {
     };
   }, [waitForRepositoryReady]);
 
-  const handleOpenProject = React.useCallback(async () => {
-    if (!window.eaDesktop?.listManagedRepositories) {
-      message.info('Open Repository is available in the desktop app.');
-      return;
-    }
-
-    const res = await window.eaDesktop.listManagedRepositories();
-    if (!res.ok) {
-      Modal.error({ title: 'Refresh Repositories failed', content: res.error });
-      return;
-    }
-
-    setRecentProjects(
-      res.items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description ?? null,
-        lastOpened: item.lastOpenedAt ?? null,
-      })),
-    );
-
-    if (!res.items.length) {
-      message.info('No repositories found. Create a new repository to begin.');
-    }
-  }, []);
-
   const handleOpenRecentProject = React.useCallback(
     async (entry: {
       id: string;
@@ -671,6 +647,157 @@ const FirstLaunch: React.FC = () => {
     }
   };
 
+  const onOpenRepositoryFileSelected = React.useCallback(
+    async (file: File | undefined) => {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.redly')) {
+        message.info('Please choose a .Redly repository file.');
+        return;
+      }
+      if (file.size === 0) {
+        Modal.error({
+          title: 'Open Repository failed',
+          content: 'The selected file is empty.',
+        });
+        return;
+      }
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const rawBytes = new Uint8Array(buffer);
+
+        if (
+          rawBytes.length < 4 ||
+          rawBytes[0] !== 0x50 ||
+          rawBytes[1] !== 0x4b
+        ) {
+          Modal.error({
+            title: 'Open Repository failed',
+            content:
+              'The selected file is not a valid .Redly archive. It does not have a ZIP header.',
+          });
+          return;
+        }
+
+        const parsed = await parseRedlyFile(rawBytes);
+        if (!parsed.ok) {
+          Modal.error({
+            title: 'Open Repository failed',
+            content: parsed.error,
+          });
+          return;
+        }
+
+        if (parsed.warnings.length > 0) {
+          message.warning(parsed.warnings[0]);
+        }
+
+        const pkg = parsed.data;
+        const snapshot = {
+          version: 1 as const,
+          metadata: pkg.repository.metadata,
+          objects: pkg.repository.objects,
+          relationships: pkg.repository.relationships,
+          views: pkg.diagrams,
+          studioState: {
+            viewLayouts: pkg.layouts,
+            designWorkspaces: pkg.repository.designWorkspaces ?? [],
+          },
+          importHistory: pkg.repository.importHistory ?? [],
+          versionHistory: pkg.repository.versionHistory ?? [],
+          updatedAt: pkg.metadata.updatedAt,
+        };
+
+        const payload = {
+          version: 1 as const,
+          meta: {
+            repositoryName:
+              (pkg.repository.metadata as any)?.repositoryName || file.name,
+            organizationName:
+              (pkg.repository.metadata as any)?.organizationName || undefined,
+          },
+          repository: {
+            metadata: pkg.repository.metadata,
+            snapshot,
+            baselines: pkg.repository.baselines ?? [],
+          },
+          baselines: pkg.repository.baselines ?? [],
+          views: { items: pkg.diagrams },
+          studioState: {
+            viewLayouts: pkg.layouts,
+            designWorkspaces: pkg.repository.designWorkspaces ?? [],
+          },
+        };
+
+        const applied = applyProjectPayload(payload);
+        if (!applied.ok) {
+          Modal.error({
+            title: 'Open Repository failed',
+            content: applied.error,
+          });
+          return;
+        }
+
+        const repositoryName =
+          (pkg.repository.metadata as any)?.repositoryName ||
+          file.name.replace(/\.redly$/i, '') ||
+          'EA Repository';
+        const description = (pkg.repository.metadata as any)?.organizationName
+          ? `${(pkg.repository.metadata as any).organizationName} EA repository`
+          : null;
+        const repositoryId = uuid();
+
+        try {
+          await createProject({
+            name: repositoryName,
+            description: description ?? '',
+          });
+        } catch {
+          // Best-effort only.
+        }
+
+        updateProjectStatus({
+          repositoryId,
+          repositoryName,
+          dirty: false,
+        });
+
+        const nextPayload = await buildProjectPayload();
+        if (window.eaDesktop?.saveManagedRepository && nextPayload) {
+          const saveRes = await window.eaDesktop.saveManagedRepository({
+            payload: nextPayload,
+            repositoryId,
+          });
+          if (!saveRes.ok) {
+            message.error(saveRes.error);
+            return;
+          }
+        }
+
+        updateRecentProjects({
+          id: repositoryId,
+          name: repositoryName,
+          description,
+        });
+        message.success('Repository opened from .Redly file.');
+        history.push('/workspace');
+      } catch (err) {
+        Modal.error({
+          title: 'Open Repository failed',
+          content:
+            err instanceof Error ? err.message : 'Failed to open .Redly file.',
+        });
+      }
+    },
+    [
+      applyProjectPayload,
+      buildProjectPayload,
+      createProject,
+      updateProjectStatus,
+      updateRecentProjects,
+    ],
+  );
+
   const readRecentProjects = React.useCallback(async () => {
     if (window.eaDesktop?.listManagedRepositories) {
       const res = await window.eaDesktop.listManagedRepositories();
@@ -786,6 +913,10 @@ const FirstLaunch: React.FC = () => {
     }
   }, [importRepositoryPackage]);
 
+  const handleOpenProject = React.useCallback(() => {
+    openRepositoryInputRef.current?.click();
+  }, []);
+
   return (
     <div className={styles.pageRoot}>
       {/* ── TOP HEADER — matches Electron titleBarOverlay height ── */}
@@ -844,6 +975,16 @@ const FirstLaunch: React.FC = () => {
             style={{ display: 'none' }}
             onChange={(e) => {
               void onImportFileSelected(e.target.files?.[0]);
+              e.currentTarget.value = '';
+            }}
+          />
+          <input
+            ref={openRepositoryInputRef}
+            type="file"
+            accept=".redly,.Redly,application/zip,application/octet-stream"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              void onOpenRepositoryFileSelected(e.target.files?.[0]);
               e.currentTarget.value = '';
             }}
           />
