@@ -933,6 +933,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     }
     return Math.min(getStudioRightPanelMaxWidth(), 360);
   });
+  const [studioRightCollapsed, setStudioRightCollapsed] = React.useState(false);
   const studioRightRafRef = React.useRef<number | null>(null);
   const studioRightPendingRef = React.useRef<number | null>(null);
   const initialViewTabRef = React.useRef<StudioViewTab | null>(null);
@@ -2139,6 +2140,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
   const [freeShapeModalOpen, setFreeShapeModalOpen] = React.useState(false);
 
   const handleOpenProperties = React.useCallback(() => {
+    setStudioRightCollapsed(false);
     propertiesOverrideRef.current = true;
     onRequestProperties?.();
     setRightPanelMode(RightPanelMode.SELECTION);
@@ -2147,9 +2149,14 @@ const StudioShell: React.FC<StudioShellProps> = ({
 
   const closeRightPanel = React.useCallback(() => {
     onRequestCloseViewSwitch?.();
-    setRightPanelMode(RightPanelMode.STUDIO);
-    setLastNonSwitchMode(RightPanelMode.STUDIO);
+    setStudioRightCollapsed(true);
   }, [onRequestCloseViewSwitch]);
+
+  React.useEffect(() => {
+    if (rightPanelMode !== RightPanelMode.STUDIO || viewSwitchPanel) {
+      setStudioRightCollapsed(false);
+    }
+  }, [rightPanelMode, viewSwitchPanel]);
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -12662,11 +12669,27 @@ const StudioShell: React.FC<StudioShellProps> = ({
       <div
         className={styles.studioColumns}
         style={{
-          gridTemplateColumns: `minmax(0, 1fr) 5px ${studioRightWidth}px`,
+          gridTemplateColumns: `minmax(0, 1fr) 5px ${studioRightCollapsed ? 0 : studioRightWidth}px`,
           columnGap: 0,
         }}
       >
         <div className={styles.studioCenter}>
+          {studioRightCollapsed ? (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 8,
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() => setStudioRightCollapsed(false)}
+              >
+                Reopen Inspector
+              </Button>
+            </div>
+          ) : null}
           <div
             className={`${styles.studioCanvas}${viewDropState.isDropTargetActive ? ` ${styles.studioCanvasDropHighlight}` : ''}`}
             style={{
@@ -13717,14 +13740,18 @@ const StudioShell: React.FC<StudioShellProps> = ({
           tabIndex={0}
           onMouseDown={(event) => {
             if (elementDragActive || relationshipDraft.dragging) return;
+            setStudioRightCollapsed(false);
             beginStudioRightResize(event);
           }}
-          onDoubleClick={() => setStudioRightWidth(360)}
+          onDoubleClick={() => {
+            setStudioRightCollapsed(false);
+            setStudioRightWidth(360);
+          }}
         />
         <div
           className={styles.studioRight}
           ref={studioRightRef}
-          style={{ width: studioRightWidth }}
+          style={{ width: studioRightCollapsed ? 0 : studioRightWidth }}
         >
           {rightPanelMode === RightPanelMode.VIEW_SWITCH ? (
             <RightPanelController
@@ -13816,7 +13843,10 @@ const StudioShell: React.FC<StudioShellProps> = ({
                       <Typography.Text strong>Properties</Typography.Text>
                       <Button
                         size="small"
-                        onClick={() => setRightPanelMode(RightPanelMode.STUDIO)}
+                        onClick={() => {
+                          setStudioRightCollapsed(false);
+                          setRightPanelMode(RightPanelMode.STUDIO);
+                        }}
                       >
                         Open Inspector
                       </Button>
