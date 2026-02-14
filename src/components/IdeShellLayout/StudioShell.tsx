@@ -1520,8 +1520,19 @@ const StudioShell: React.FC<StudioShellProps> = ({
     ) => {
       if (!viewId) return;
       if (activeTabKey && activeTabKey !== WORKSPACE_TAB_KEY) {
-        captureCanvasState(activeTabKey);
-        autosaveActiveView({ silent: true });
+        try {
+          captureCanvasState(activeTabKey);
+          autosaveActiveView({ silent: true });
+        } catch (error) {
+          eaConsole.push({
+            level: 'warn',
+            domain: 'studio',
+            message:
+              'Autosave failed while opening another view tab. Continuing without blocking tab creation.',
+            detail:
+              error instanceof Error ? error.message : String(error ?? ''),
+          });
+        }
       }
       const resolved = opts?.view ?? ViewStore.get(viewId) ?? null;
       const name = resolved?.name ?? viewId;
@@ -11554,12 +11565,23 @@ const StudioShell: React.FC<StudioShellProps> = ({
       message.warning('View editing is locked by governance policy.');
       return;
     }
-    const workingView = createWorkingView();
-    ensureViewTab(workingView.id, {
-      mode: 'new',
-      view: workingView,
-      isWorking: true,
-    });
+    try {
+      const workingView = createWorkingView();
+      ensureViewTab(workingView.id, {
+        mode: 'new',
+        view: workingView,
+        isWorking: true,
+      });
+      message.success('Working view created.');
+    } catch (error) {
+      message.error('Create View failed.');
+      eaConsole.push({
+        level: 'error',
+        domain: 'studio',
+        message: 'Create View action failed.',
+        detail: error instanceof Error ? error.message : String(error ?? ''),
+      });
+    }
   }, [createWorkingView, ensureViewTab, viewEditLocked]);
 
   const handleToggleViewLock = React.useCallback(

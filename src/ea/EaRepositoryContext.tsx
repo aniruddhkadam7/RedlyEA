@@ -432,6 +432,7 @@ const serializeRepository = (
   repo: EaRepository,
   metadata: EaRepositoryMetadata,
 ): SerializedRepository => {
+  const exported = repo.export();
   const repositoryName = metadata.repositoryName || 'default';
   const existingSnapshot = readRepositorySnapshot();
   const isSameRepository =
@@ -452,13 +453,13 @@ const serializeRepository = (
   return {
     version: 1,
     metadata,
-    objects: Array.from(repo.objects.values()).map((o) => ({
+    objects: exported.objects.map((o) => ({
       id: o.id,
       type: o.type,
       workspaceId: o.workspaceId,
       attributes: { ...(o.attributes ?? {}) },
     })),
-    relationships: repo.relationships.map((r) => ({
+    relationships: exported.relationships.map((r) => ({
       id: r.id,
       fromId: r.fromId,
       toId: r.toId,
@@ -610,10 +611,19 @@ const tryDeserializeRepository = (
       ...o,
       workspaceId: (o as any).workspaceId ?? repoWorkspaceId,
     }));
-    const repo = new EaRepository({
+    const imported = EaRepository.import({
       objects: normalizedObjects,
       relationships,
     });
+    if (!imported.ok) {
+      return {
+        ok: false,
+        error:
+          imported.errors.length > 0
+            ? `Invalid repository snapshot: ${imported.errors[0]}`
+            : imported.error,
+      };
+    }
     const snapshot: SerializedRepository = {
       version: 1,
       metadata: metaRes.metadata,
@@ -623,7 +633,7 @@ const tryDeserializeRepository = (
       studioState,
       updatedAt,
     };
-    return { ok: true, repo, metadata: metaRes.metadata, snapshot };
+    return { ok: true, repo: imported.repo, metadata: metaRes.metadata, snapshot };
   } catch (e: any) {
     return {
       ok: false,
@@ -888,6 +898,14 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       prev: EaRepository | null,
       next: EaRepository,
     ): { ok: true } | { ok: false; error: string } => {
+      const relationshipIntegrity = next.validateRelationshipIntegrity();
+      if (!relationshipIntegrity.ok) {
+        return {
+          ok: false,
+          error: `Relationship integrity violation: ${relationshipIntegrity.error}`,
+        } as const;
+      }
+
       const scope = metadata?.architectureScope ?? null;
       const framework = metadata?.referenceFramework ?? null;
       const frameworkConfig = metadata?.frameworkConfig ?? null;

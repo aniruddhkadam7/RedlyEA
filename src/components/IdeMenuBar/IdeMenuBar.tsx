@@ -53,6 +53,7 @@ import {
 } from '../../../backend/baselines/BaselineStore';
 import { buildRepositoryPackageBytes } from '../../../backend/services/repository/exportService';
 import { parseRepositoryPackageBytes } from '../../../backend/services/repository/importService';
+import { buildRedlyFile, parseRedlyFile, type RedlyExportSource } from '@/services/persistence';
 
 import styles from './style.module.less';
 
@@ -316,6 +317,7 @@ const IdeMenuBar: React.FC = () => {
   );
   const importTechnologyInputRef = React.useRef<HTMLInputElement | null>(null);
   const importProgrammesInputRef = React.useRef<HTMLInputElement | null>(null);
+  const openRedlyInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const [renameOpen, setRenameOpen] = React.useState(false);
   const [renameValue, setRenameValue] = React.useState('');
@@ -857,15 +859,17 @@ const IdeMenuBar: React.FC = () => {
   const buildPackageSource = React.useCallback(() => {
     if (!eaRepository || !metadata) return null;
 
+    const exported = eaRepository.export();
+
     const views = ViewStore.list();
     const viewLayouts = ViewLayoutStore.listAll();
     const repositoryName = metadata.repositoryName || 'default';
     const designWorkspaces = DesignWorkspaceStore.list(repositoryName);
     const snapshot = readRepositorySnapshot();
 
-    // Build element list from live UI state (canonical source)
+    // Build element list from live repository state (canonical source)
     const liveObjectsMap = new Map(
-      Array.from(eaRepository.objects.values()).map((o) => [o.id, o] as const),
+      exported.objects.map((o) => [o.id, o] as const),
     );
 
     // Cross-reference with snapshot to catch any elements only in localStorage
@@ -873,18 +877,6 @@ const IdeMenuBar: React.FC = () => {
       for (const snapshotObj of snapshot.objects) {
         if (snapshotObj?.id && !liveObjectsMap.has(snapshotObj.id)) {
           liveObjectsMap.set(snapshotObj.id, snapshotObj);
-        }
-      }
-    }
-
-    // Build relationship list — merge snapshot relationships that may be missing
-    const liveRelIds = new Set(eaRepository.relationships.map((r) => r.id));
-    const mergedRelationships = [...eaRepository.relationships];
-    if (snapshot?.relationships && Array.isArray(snapshot.relationships)) {
-      for (const snapshotRel of snapshot.relationships) {
-        if (snapshotRel?.id && !liveRelIds.has(snapshotRel.id)) {
-          mergedRelationships.push(snapshotRel);
-          liveRelIds.add(snapshotRel.id);
         }
       }
     }
@@ -922,7 +914,7 @@ const IdeMenuBar: React.FC = () => {
         workspaceId: o.workspaceId,
         attributes: { ...(o.attributes ?? {}) },
       })),
-      relationships: mergedRelationships.map((r) => ({
+      relationships: exported.relationships.map((r) => ({
         id: r.id,
         fromId: r.fromId,
         toId: r.toId,
@@ -1118,8 +1110,23 @@ const IdeMenuBar: React.FC = () => {
       }
 
       const snapshot = buildSnapshotFromPackage(parsed.data);
-      const incomingObjects = snapshot.objects ?? [];
-      const incomingRelationships = snapshot.relationships ?? [];
+      const importedIncoming = EaRepository.import({
+        objects: snapshot.objects ?? [],
+        relationships: snapshot.relationships ?? [],
+      });
+      if (!importedIncoming.ok) {
+        Modal.error({
+          title: 'Import Repository failed',
+          content:
+            'Import validation failed:\n' +
+            importedIncoming.errors.slice(0, 5).join('\n') +
+            (importedIncoming.errors.length > 5 ? '\n...' : ''),
+        });
+        return;
+      }
+      const incomingExport = importedIncoming.repo.export();
+      const incomingObjects = incomingExport.objects;
+      const incomingRelationships = incomingExport.relationships;
 
       const existingIds = new Set(eaRepository.objects.keys());
       const duplicateIds = incomingObjects
@@ -1177,29 +1184,23 @@ const IdeMenuBar: React.FC = () => {
         mergedRelationships.set(relId, rel);
       }
 
-      const nextRepo = new EaRepository();
-      const errors: string[] = [];
-      for (const obj of mergedObjects.values()) {
-        const res = nextRepo.addObject(obj);
-        if (!res.ok) errors.push(res.error);
-      }
-      for (const rel of mergedRelationships.values()) {
-        const res = nextRepo.addRelationship(rel);
-        if (!res.ok) errors.push(res.error);
-      }
+      const imported = EaRepository.import({
+        objects: mergedObjects.values(),
+        relationships: mergedRelationships.values(),
+      });
 
-      if (errors.length > 0) {
+      if (!imported.ok) {
         Modal.error({
           title: 'Import Repository failed',
           content:
             'Import validation failed:\n' +
-            errors.slice(0, 5).join('\n') +
-            (errors.length > 5 ? '\n...' : ''),
+            imported.errors.slice(0, 5).join('\n') +
+            (imported.errors.length > 5 ? '\n...' : ''),
         });
         return;
       }
 
-      const applied = trySetEaRepository(nextRepo);
+      const applied = trySetEaRepository(imported.repo);
       if (!applied.ok) {
         Modal.error({
           title: 'Import Repository failed',
@@ -1469,6 +1470,341 @@ const IdeMenuBar: React.FC = () => {
       });
     }
   }, [importRepositoryPackage]);
+
+  // -----------------------------------------------------------------------
+  // .Redly Save As
+  // -----------------------------------------------------------------------
+  const buildRedlyExportSource = React.useCallback((): RedlyExportSource | null => {
+    if (!eaRepository || !metadata) return null;
+
+    const exported = eaRepository.export();
+    const views = ViewStore.list();
+    const viewLayouts = ViewLayoutStore.listAll();
+    const repositoryName = metadata.repositoryName || 'default';
+    const designWorkspaces = DesignWorkspaceStore.list(repositoryName);
+    const snapshot = readRepositorySnapshot();
+
+    // Merge snapshot elements not yet in live repo
+    const liveObjectsMap = new Map(
+      exported.objects.map((o) => [o.id, o] as const),
+    );
+    if (snapshot?.objects && Array.isArray(snapshot.objects)) {
+      for (const snapshotObj of snapshot.objects) {
+        if (snapshotObj?.id && !liveObjectsMap.has(snapshotObj.id)) {
+          liveObjectsMap.set(snapshotObj.id, snapshotObj);
+        }
+      }
+    }
+
+    // Merge views from snapshot
+    const viewIds = new Set(views.map((v) => v.id));
+    const mergedViews = [...views];
+    if (snapshot?.views && Array.isArray(snapshot.views)) {
+      for (const snapshotView of snapshot.views) {
+        if (snapshotView?.id && !viewIds.has(snapshotView.id)) {
+          mergedViews.push(snapshotView);
+          viewIds.add(snapshotView.id);
+        }
+      }
+    }
+
+    // Merge layouts from snapshot
+    const mergedLayouts = { ...viewLayouts };
+    const snapshotLayouts = snapshot?.studioState?.viewLayouts ?? {};
+    for (const [viewId, positions] of Object.entries(snapshotLayouts)) {
+      if (!mergedLayouts[viewId] && positions) {
+        mergedLayouts[viewId] = positions as (typeof mergedLayouts)[string];
+      }
+    }
+
+    return {
+      repositoryMetadata: { ...metadata },
+      objects: Array.from(liveObjectsMap.values()).map((o) => ({
+        id: o.id,
+        type: o.type,
+        workspaceId: o.workspaceId,
+        attributes: { ...(o.attributes ?? {}) },
+      })),
+      relationships: exported.relationships.map((r) => ({
+        id: r.id,
+        fromId: r.fromId,
+        toId: r.toId,
+        type: r.type,
+        attributes: { ...(r.attributes ?? {}) },
+      })),
+      views: mergedViews.map((v) => ({
+        id: v.id,
+        name: v.name,
+        description: v.description ?? '',
+        viewpointId: v.viewpointId,
+        scope: v.scope,
+        layoutMetadata: v.layoutMetadata ?? {},
+        createdAt: v.createdAt,
+        createdBy: v.createdBy,
+        status: v.status ?? 'SAVED',
+        visibleRelationshipIds: v.visibleRelationshipIds,
+      })),
+      viewLayouts: mergedLayouts,
+      designWorkspaces,
+      baselines: listBaselines(),
+      importHistory: snapshot?.importHistory ?? [],
+      versionHistory: snapshot?.versionHistory ?? [],
+      schemaVersion: '1',
+    };
+  }, [eaRepository, metadata]);
+
+  const handleSaveAsRedly = React.useCallback(async () => {
+    console.log('[IDE] File > Save As .Redly');
+    if (!eaRepository || !metadata) return;
+
+    const source = buildRedlyExportSource();
+    if (!source) return;
+
+    const result = await buildRedlyFile(source);
+    if (!result.ok) {
+      Modal.error({
+        title: 'Save .Redly Failed',
+        content: result.error,
+      });
+      return;
+    }
+
+    const suggestedName = `${safeSlug(metadata.repositoryName)}.Redly`;
+
+    if (window.eaDesktop?.exportRepository) {
+      const res = await window.eaDesktop.exportRepository({
+        bytes: Array.from(result.bytes),
+        suggestedName,
+      });
+      if (!res.ok) {
+        message.error(res.error);
+        return;
+      }
+      if (res.canceled) return;
+      message.success('Repository saved as .Redly');
+      return;
+    }
+
+    // Browser fallback
+    downloadBytesFile(suggestedName, result.bytes);
+    message.success('Repository saved as .Redly');
+  }, [buildRedlyExportSource, eaRepository, metadata]);
+
+  // -----------------------------------------------------------------------
+  // .Redly Open
+  // -----------------------------------------------------------------------
+  const importRedlyPackage = React.useCallback(
+    async (rawBytes: Uint8Array, sourceName?: string) => {
+      const parsed = await parseRedlyFile(rawBytes);
+      if (!parsed.ok) {
+        Modal.error({
+          title: 'Open .Redly Failed',
+          content: parsed.error,
+        });
+        return;
+      }
+
+      if (parsed.warnings.length > 0) {
+        message.warning(parsed.warnings[0]);
+      }
+
+      const pkg = parsed.data;
+
+      // Build a snapshot compatible with the existing infrastructure
+      const snapshotText = JSON.stringify({
+        version: 1,
+        metadata: pkg.repository.metadata,
+        objects: pkg.repository.objects,
+        relationships: pkg.repository.relationships,
+        views: pkg.diagrams,
+        studioState: {
+          viewLayouts: pkg.layouts,
+          designWorkspaces: pkg.repository.designWorkspaces ?? [],
+        },
+        importHistory: pkg.repository.importHistory ?? [],
+        versionHistory: pkg.repository.versionHistory ?? [],
+        updatedAt: pkg.metadata.updatedAt,
+      });
+
+      const loadRes = loadRepositoryFromJsonText(snapshotText);
+      if (!loadRes.ok) {
+        Modal.error({
+          title: 'Open .Redly Failed',
+          content: loadRes.error,
+        });
+        return;
+      }
+
+      // Restore views
+      const existingViews = ViewStore.list();
+      for (const v of existingViews) {
+        ViewLayoutStore.remove(v.id);
+      }
+      ViewStore.replaceAll(pkg.diagrams);
+
+      // Restore layouts
+      for (const diagram of pkg.diagrams) {
+        const layout = pkg.layouts[diagram.id];
+        if (layout && typeof layout === 'object') {
+          ViewLayoutStore.set(diagram.id, layout as Record<string, { x: number; y: number }>);
+        } else {
+          ViewLayoutStore.remove(diagram.id);
+        }
+      }
+
+      // Restore design workspaces
+      const repositoryName =
+        (pkg.repository.metadata as any)?.repositoryName || 'default';
+      DesignWorkspaceStore.replaceAll(
+        repositoryName,
+        (pkg.repository.designWorkspaces as any[]) ?? [],
+      );
+
+      // Restore baselines
+      const baselines = Array.isArray(pkg.repository.baselines)
+        ? pkg.repository.baselines
+        : [];
+      replaceBaselines(baselines);
+
+      // Clear analysis — it will be recomputed
+      clearAnalysisResults();
+
+      // Reset UI state
+      dispatchIdeCommand({ type: 'workspace.resetTabs' });
+      dispatchIdeCommand({ type: 'studio.exit' });
+      setSelection({ kind: 'none', keys: [] });
+      dispatchIdeCommand({
+        type: 'view.showActivity',
+        activity: 'explorer',
+      });
+
+      // Update project status
+      const repoName =
+        (pkg.repository.metadata as any)?.repositoryName ||
+        sourceName ||
+        'Imported Repository';
+      const repositoryId = uuid();
+      updateProjectStatus({ repositoryId, repositoryName: repoName, dirty: false });
+
+      // Dispatch change events
+      try {
+        window.dispatchEvent(new Event('ea:repositoryChanged'));
+        window.dispatchEvent(new Event('ea:viewsChanged'));
+        window.dispatchEvent(new Event('ea:workspacesChanged'));
+      } catch {
+        // Best-effort
+      }
+
+      // Navigate to first diagram if available
+      try {
+        const views = ViewStore.list();
+        if (views.length > 0) {
+          dispatchIdeCommand({
+            type: 'navigation.openWorkspace',
+            args: { type: 'view', viewId: views[0].id },
+          });
+        }
+      } catch {
+        // Best-effort
+      }
+
+      message.success('Repository opened from .Redly file.');
+    },
+    [loadRepositoryFromJsonText, setSelection, updateProjectStatus],
+  );
+
+  const handleOpenRedly = React.useCallback(async () => {
+    console.log('[IDE] File > Open .Redly');
+
+    // Desktop: use native file dialog
+    if (window.eaDesktop?.openFileDialog) {
+      try {
+        const res = await window.eaDesktop.openFileDialog();
+        if (!res.ok) {
+          if (!res.canceled) {
+            Modal.error({
+              title: 'Open .Redly Failed',
+              content: res.error || 'Failed to open .Redly file.',
+            });
+          }
+          return;
+        }
+        if (res.canceled) return;
+
+        const bytes = base64ToBytes(res.content ?? '');
+        await importRedlyPackage(bytes, res.name);
+      } catch (err) {
+        Modal.error({
+          title: 'Open .Redly Failed',
+          content:
+            err instanceof Error ? err.message : 'Failed to open .Redly file.',
+        });
+      }
+      return;
+    }
+
+    // Browser fallback: click hidden file input
+    openRedlyInputRef.current?.click();
+  }, [importRedlyPackage]);
+
+  const handleOpenRedlyFileSelected: React.ChangeEventHandler<HTMLInputElement> =
+    React.useCallback(
+      async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        console.log('[IDE] Opening .Redly file', {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
+
+        if (!file.name.toLowerCase().endsWith('.redly')) {
+          message.warning({
+            content: 'Unsupported file type. Please choose a .Redly repository file.',
+            duration: 5,
+          });
+          return;
+        }
+
+        if (file.size === 0) {
+          message.error('The selected file is empty.');
+          return;
+        }
+
+        try {
+          const buffer = await file.arrayBuffer();
+          const fileBytes = new Uint8Array(buffer);
+
+          // Validate ZIP header
+          if (
+            fileBytes.length < 4 ||
+            fileBytes[0] !== 0x50 ||
+            fileBytes[1] !== 0x4b
+          ) {
+            Modal.error({
+              title: 'Open .Redly Failed',
+              content:
+                'The selected file is not a valid .Redly archive. ' +
+                'It does not have a ZIP header. The file may be corrupted.',
+            });
+            return;
+          }
+
+          await importRedlyPackage(fileBytes, file.name);
+        } catch (err) {
+          Modal.error({
+            title: 'Open .Redly Failed',
+            content:
+              err instanceof Error
+                ? err.message
+                : 'Failed to read .Redly file.',
+          });
+        }
+      },
+      [importRedlyPackage],
+    );
 
   const handleSaveProjectAs = React.useCallback(async () => {
     console.log('[IDE] File > Save As');
@@ -2488,6 +2824,17 @@ const IdeMenuBar: React.FC = () => {
             disabled: !hasRepo,
             onClick: handleSaveProjectAs,
           },
+          {
+            key: 'file.saveAsRedly',
+            label: 'Save As .Redly…',
+            disabled: !hasRepo,
+            onClick: handleSaveAsRedly,
+          },
+          {
+            key: 'file.openRedly',
+            label: 'Open .Redly…',
+            onClick: handleOpenRedly,
+          },
           { type: 'divider' as const },
           {
             key: 'file.close',
@@ -2793,6 +3140,8 @@ const IdeMenuBar: React.FC = () => {
       handleRenameSelectedElement,
       handleResetLayout,
       handleSaveProjectAs,
+      handleSaveAsRedly,
+      handleOpenRedly,
       handleToggleAnalysis,
       handleToggleBottomPanel,
       handleToggleDiagrams,
@@ -2854,6 +3203,14 @@ const IdeMenuBar: React.FC = () => {
         accept=".eapkg,.zip,application/zip,application/x-zip-compressed,application/octet-stream"
         style={{ display: 'none' }}
         onChange={handleOpenRepoFileSelected}
+      />
+
+      <input
+        ref={openRedlyInputRef}
+        type="file"
+        accept=".redly,.Redly,application/zip,application/octet-stream"
+        style={{ display: 'none' }}
+        onChange={handleOpenRedlyFileSelected}
       />
 
       <input

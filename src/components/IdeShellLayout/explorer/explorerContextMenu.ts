@@ -29,7 +29,9 @@ export type ExplorerMenuAction =
   | {
       type: 'create-element';
       parentKey?: string;
+      resolvedType?: string;
       allowedTypes?: readonly string[];
+      category?: string;
     }
   | { type: 'import'; parentKey?: string }
   | { type: 'paste'; parentKey?: string }
@@ -225,12 +227,61 @@ export function classifyNodeKey(
 // Menu Builders per Node Kind
 // ---------------------------------------------------------------------------
 
-function buildFolderMenu(key: string): MenuItemDef[] {
+function resolveAllowedTypesFromNodeData(
+  nodeData?: Record<string, unknown>,
+): readonly string[] | undefined {
+  if (!nodeData) return undefined;
+
+  const allowedChildren = Array.isArray(nodeData.allowedChildren)
+    ? nodeData.allowedChildren.filter((value): value is string => typeof value === 'string')
+    : [];
+
+  const fallbackType = typeof nodeData.type === 'string' ? [nodeData.type] : [];
+  const merged = Array.from(new Set([...allowedChildren, ...fallbackType]));
+  return merged.length > 0 ? merged : undefined;
+}
+
+function resolveTargetElementTypeFromNodeData(
+  nodeData?: Record<string, unknown>,
+): string | undefined {
+  if (!nodeData) return undefined;
+  if (typeof nodeData.type === 'string' && nodeData.type.trim()) {
+    return nodeData.type;
+  }
+
+  const allowedTypes = resolveAllowedTypesFromNodeData(nodeData);
+  if (allowedTypes?.length === 1) return allowedTypes[0];
+  return undefined;
+}
+
+function resolveCategoryFromNodeData(
+  nodeData?: Record<string, unknown>,
+): string | undefined {
+  if (!nodeData) return undefined;
+  const category = nodeData.category;
+  return typeof category === 'string' && category.trim().length > 0
+    ? category
+    : undefined;
+}
+
+function buildFolderMenu(
+  key: string,
+  nodeData?: Record<string, unknown>,
+): MenuItemDef[] {
+  const allowedTypes = resolveAllowedTypesFromNodeData(nodeData);
+  const resolvedType = resolveTargetElementTypeFromNodeData(nodeData);
+  const category = resolveCategoryFromNodeData(nodeData);
   const items: MenuItemDef[] = [
     {
       key: 'create-new',
       label: 'Create New…',
-      action: { type: 'create-element', parentKey: key },
+      action: {
+        type: 'create-element',
+        parentKey: key,
+        resolvedType,
+        allowedTypes,
+        category,
+      },
       requiredAction: 'createElement',
     },
     {
@@ -627,7 +678,7 @@ export function buildContextMenu(
       ) {
         return toAntdMenu(buildBaselineSectionMenu(), onAction, role);
       }
-      return toAntdMenu(buildFolderMenu(key), onAction, role);
+      return toAntdMenu(buildFolderMenu(key, nodeData), onAction, role);
     }
 
     default:

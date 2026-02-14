@@ -319,14 +319,14 @@ const WorkspacePage: React.FC = () => {
 
   return (
     <div style={{ height: '100%', padding: 24 }}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space orientation="vertical" size={16} style={{ width: '100%' }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           Workspace
         </Typography.Title>
 
         {project ? (
           <Card>
-            <Space direction="vertical" size={4}>
+            <Space orientation="vertical" size={4}>
               <Typography.Text strong>{project.name}</Typography.Text>
               {project.description ? (
                 <Typography.Text type="secondary">{project.description}</Typography.Text>
@@ -341,10 +341,10 @@ const WorkspacePage: React.FC = () => {
         ) : null}
 
         <Card>
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={12} style={{ width: '100%' }}>
             <Empty
               description={
-                <Space direction="vertical" size={0}>
+                <Space orientation="vertical" size={0}>
                   <Typography.Text strong>Repository is empty</Typography.Text>
                   <Typography.Text type="secondary">
                     Add elements from the Catalogues panel, or seed a small sample dataset.
@@ -362,7 +362,7 @@ const WorkspacePage: React.FC = () => {
         </Card>
 
         <Card title="Bulk import (CSV)">
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={12} style={{ width: '100%' }}>
             <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
               Import capabilities and applications from CSV (save Excel as CSV). Columns: type, name, description,
               capabilityLevel, parentCapabilityId, applicationCode. Rows are validated against the metamodel; invalid rows are rejected and shown below.

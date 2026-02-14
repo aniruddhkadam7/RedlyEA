@@ -1,11 +1,13 @@
 import React from 'react';
-import { Alert, Typography } from 'antd';
-import ImpactAnalysisTab from './ImpactAnalysisTab';
+import { Alert, Spin, Typography } from 'antd';
 import DependencyAnalysisWorkspaceTab from './DependencyAnalysisWorkspaceTab';
 import CoverageAnalysisWorkspaceTab from './CoverageAnalysisWorkspaceTab';
 import RoadmapWorkspaceTab from './RoadmapWorkspaceTab';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
 import { isGapAnalysisAllowedForLifecycleCoverage } from '@/repository/lifecycleCoveragePolicy';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+const LazyImpactAnalysisTab = React.lazy(() => import('./ImpactAnalysisTab'));
 
 type AnalysisKind = 'impact' | 'dependency' | 'gap' | 'roadmap';
 
@@ -20,7 +22,13 @@ const AnalysisTab: React.FC<{ kind: AnalysisKind }> = ({ kind }) => {
   const { metadata } = useEaRepository();
 
   if (kind === 'impact') {
-    return <ImpactAnalysisTab />;
+    return (
+      <ErrorBoundary>
+        <React.Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}><Spin size="large" /><Typography.Text type="secondary" style={{ marginTop: 8 }}>Loading Impact Analysis…</Typography.Text></div>}>
+          <LazyImpactAnalysisTab />
+        </React.Suspense>
+      </ErrorBoundary>
+    );
   }
 
   if (kind === 'dependency') {

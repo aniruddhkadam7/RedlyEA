@@ -588,6 +588,93 @@ describe('Reload Stress Test', () => {
     expect(restoredRepo.objects.size).toBe(20);
     expect(restoredRepo.relationships.length).toBe(repo.relationships.length);
   });
+
+  test('create 1000 elements + 5000 relationships with index integrity and persistence reload', () => {
+    const repo = new EaRepository();
+
+    for (let i = 0; i < 1000; i += 1) {
+      const id = `app-${i}`;
+      const res = repo.addObject({
+        id,
+        type: 'Application',
+        attributes: { name: `Application ${i}` },
+      });
+      expect(res.ok).toBe(true);
+    }
+
+    let created = 0;
+    for (let i = 0; i < 1000; i += 1) {
+      for (let j = 1; j <= 5; j += 1) {
+        const target = (i + j) % 1000;
+        const res = repo.addRelationship({
+          fromId: `app-${i}`,
+          toId: `app-${target}`,
+          type: 'INTEGRATES_WITH',
+          metadata: { source: 'stress-test' },
+        });
+        if (res.ok) created += 1;
+      }
+    }
+
+    expect(created).toBe(5000);
+    expect(repo.relationships.length).toBe(5000);
+
+    const integrity = repo.validateRelationshipIntegrity();
+    expect(integrity.ok).toBe(true);
+
+    expect(repo.getRelationshipsByType('INTEGRATES_WITH')).toHaveLength(5000);
+    expect(repo.getRelationshipsBySourceId('app-0')).toHaveLength(5);
+    expect(repo.getRelationshipsByTargetId('app-0')).toHaveLength(5);
+
+    const duplicateAttempt = repo.addRelationship({
+      fromId: 'app-0',
+      toId: 'app-1',
+      type: 'INTEGRATES_WITH',
+    });
+    expect(duplicateAttempt.ok).toBe(false);
+
+    const orphanAttempt = repo.addRelationship({
+      fromId: 'app-0',
+      toId: 'missing-app',
+      type: 'INTEGRATES_WITH',
+    });
+    expect(orphanAttempt.ok).toBe(false);
+
+    const firstRel = repo.getRelationshipsBySourceId('app-0')[0];
+    expect(firstRel).toBeTruthy();
+    const removeRes = repo.removeRelationshipById(firstRel!.id);
+    expect(removeRes.ok).toBe(true);
+    expect(repo.getRelationshipById(firstRel!.id)).toBeNull();
+    expect(repo.getRelationshipsBySourceId('app-0')).toHaveLength(4);
+
+    const updatedAt = new Date().toISOString();
+    const updateRes = repo.updateRelationship(repo.relationships[0]!.id, {
+      metadata: { quality: 'verified' },
+      updatedAt,
+    });
+    expect(updateRes.ok).toBe(true);
+    expect(repo.getRelationshipById(repo.relationships[0]!.id)?.updatedAt).toBe(
+      updatedAt,
+    );
+
+    const snapshot = buildSnapshot(repo);
+    writeRepositorySnapshot(snapshot);
+
+    const restored = readRepositorySnapshot();
+    expect(restored).not.toBeNull();
+    expect(restored!.objects).toHaveLength(1000);
+    expect(restored!.relationships).toHaveLength(4999);
+
+    const restoredRepo = new EaRepository({
+      objects: restored!.objects,
+      relationships: restored!.relationships,
+    });
+
+    expect(restoredRepo.validateRelationshipIntegrity().ok).toBe(true);
+    expect(restoredRepo.relationships).toHaveLength(4999);
+    expect(restoredRepo.getRelationshipsBySourceId('app-0').length).toBeGreaterThanOrEqual(3);
+    expect(restoredRepo.getRelationshipsByTargetId('app-0').length).toBeGreaterThanOrEqual(4);
+  });
 });
 
 // ===========================================================================

@@ -266,7 +266,26 @@ const ExplorerTree: React.FC = () => {
   const [selectedRelationshipType, setSelectedRelationshipType] =
     React.useState<RelationshipType | ''>('');
   const [selectedTargetId, setSelectedTargetId] = React.useState<string>('');
-  const createModalOpenRef = React.useRef(false);
+  const [createElementModalOpen, setCreateElementModalOpen] =
+    React.useState(false);
+  const [createElementModalStep, setCreateElementModalStep] = React.useState<
+    'SELECT_TYPE' | 'FORM'
+  >('SELECT_TYPE');
+  const [createElementModalAllowedTypes, setCreateElementModalAllowedTypes] =
+    React.useState<readonly ObjectType[] | undefined>(undefined);
+  const [createElementModalCategory, setCreateElementModalCategory] =
+    React.useState<string | undefined>(undefined);
+  const [createElementFormState, setCreateElementFormState] = React.useState<{
+    name: string;
+    lifecycleState: string;
+    description: string;
+    type: ObjectType | '';
+  }>({
+    name: '',
+    lifecycleState: '',
+    description: '',
+    type: '',
+  });
   const [baselinePreview, setBaselinePreview] = React.useState<Baseline | null>(
     null,
   );
@@ -670,149 +689,201 @@ const ExplorerTree: React.FC = () => {
   }, [metadata]);
 
   const createObject = React.useCallback(
-    (type: ObjectType) => {
-      if (!guardAction('createElement')) return;
+    (payload: {
+      type: ObjectType;
+      name: string;
+      description: string;
+      lifecycleState: string;
+    }): boolean => {
+      if (!guardAction('createElement')) return false;
       if (!eaRepository) {
         message.warning('No repository loaded.');
-        return;
+        return false;
       }
-      const elementId = generateElementId(type);
+
+      const elementId = generateElementId(payload.type);
       const createdAt = new Date().toISOString();
-      let name = '';
-      let description = '';
-      let lifecycleState = '';
-      const lifecycleOptions = lifecycleOptionsForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
-      const lifecyclePlaceholder = defaultLifecycleStateForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
+      const next = eaRepository.clone();
+      const attributes = {
+        name: payload.name,
+        description: payload.description,
+        elementType: payload.type,
+        createdBy: actor,
+        createdAt,
+        lastModifiedAt: createdAt,
+        lastModifiedBy: actor,
+        lifecycleState: payload.lifecycleState,
+      };
+      const res = next.addObject({ id: elementId, type: payload.type, attributes });
+      if (!res.ok) {
+        message.error(res.error);
+        return false;
+      }
 
-      if (createModalOpenRef.current) return;
-      createModalOpenRef.current = true;
+      const applied = trySetEaRepository(next);
+      if (!applied.ok) {
+        message.error('Failed to apply repository changes.');
+        return false;
+      }
 
-      Modal.confirm({
-        title: `Create ${titleForObjectType(type)}`,
-        okText: 'Create',
-        cancelText: 'Cancel',
-        afterClose: () => {
-          createModalOpenRef.current = false;
-        },
-        content: (
-          <Form layout="vertical">
-            <Form.Item label="Name" required>
-              <Input
-                placeholder="Enter name"
-                onChange={(e) => {
-                  name = e.target.value;
-                }}
-              />
-            </Form.Item>
-            <Form.Item label="Description">
-              <Input.TextArea
-                placeholder="Description (optional)"
-                autoSize={{ minRows: 3, maxRows: 6 }}
-                onChange={(e) => {
-                  description = e.target.value;
-                }}
-              />
-            </Form.Item>
-            <Form.Item label="Lifecycle State" required>
-              <Select
-                placeholder={`Select lifecycle state (suggested: ${lifecyclePlaceholder})`}
-                options={lifecycleOptions.map((v) => ({ value: v, label: v }))}
-                onChange={(v) => {
-                  lifecycleState = String(v);
-                }}
-              />
-            </Form.Item>
-          </Form>
-        ),
-        onOk: async () => {
-          const finalName = (name ?? '').trim();
-          if (!finalName) {
-            message.error('Name is required.');
-            throw new Error('Name required');
-          }
-          const finalLifecycle = (lifecycleState ?? '').trim();
-          if (!finalLifecycle) {
-            message.error('Lifecycle state is required.');
-            throw new Error('Lifecycle required');
-          }
-
-          const next = eaRepository.clone();
-          const attributes = {
-            name: finalName,
-            description: (description ?? '').trim(),
-            elementType: type,
-            createdBy: actor,
-            createdAt,
-            lastModifiedAt: createdAt,
-            lastModifiedBy: actor,
-            lifecycleState: finalLifecycle,
-          };
-          const res = next.addObject({ id: elementId, type, attributes });
-          if (!res.ok) {
-            message.error(res.error);
-            throw new Error(res.error);
-          }
-
-          const applied = trySetEaRepository(next);
-          if (!applied.ok) throw new Error('Failed to apply');
-
-          // §11 Audit
-          auditObjectMutation({
-            userId: actor,
-            actionType: 'CREATE',
-            objectId: elementId,
-            objectType: type,
-            before: null,
-            after: attributes,
-          });
-
-          // §13 Event
-          emitExplorerEvent({
-            type: 'OBJECT_CREATED',
-            objectId: elementId,
-            objectType: type,
-            timestamp: createdAt,
-            actor,
-          });
-
-          setRefreshToken((x) => x + 1);
-          // Auto-select new node
-          setSelection({
-            kind: 'repository',
-            keys: [EXPLORER_KEYS.element(elementId)],
-          });
-          setSelectedElement({ id: elementId, type, source: 'Explorer' });
-          // Open inspector
-          openPropertiesPanel({
-            elementId,
-            elementType: type,
-            dock: 'right',
-            readOnly: false,
-          });
-          message.success(`${titleForObjectType(type)} created.`);
-          createModalOpenRef.current = false;
-        },
-        onCancel: () => {
-          createModalOpenRef.current = false;
-        },
+      auditObjectMutation({
+        userId: actor,
+        actionType: 'CREATE',
+        objectId: elementId,
+        objectType: payload.type,
+        before: null,
+        after: attributes,
       });
+
+      emitExplorerEvent({
+        type: 'OBJECT_CREATED',
+        objectId: elementId,
+        objectType: payload.type,
+        timestamp: createdAt,
+        actor,
+      });
+
+      setRefreshToken((x) => x + 1);
+      setSelection({
+        kind: 'repository',
+        keys: [EXPLORER_KEYS.element(elementId)],
+      });
+      setSelectedElement({ id: elementId, type: payload.type, source: 'Explorer' });
+      openPropertiesPanel({
+        elementId,
+        elementType: payload.type,
+        dock: 'right',
+        readOnly: false,
+      });
+      message.success(`${titleForObjectType(payload.type)} created.`);
+      return true;
     },
     [
       actor,
       eaRepository,
       guardAction,
-      metadata,
       openPropertiesPanel,
       setSelectedElement,
       setSelection,
       trySetEaRepository,
     ],
+  );
+
+  const openCreateElementModal = React.useCallback(
+    (args: {
+      parentId?: string;
+      resolvedType?: ObjectType;
+      allowedTypes?: readonly ObjectType[];
+      category?: string;
+    }) => {
+      setCreateElementModalAllowedTypes(args.allowedTypes);
+      setCreateElementModalCategory(args.category);
+
+      if (args.resolvedType) {
+        setCreateElementFormState({
+          name: '',
+          lifecycleState: '',
+          description: '',
+          type: args.resolvedType,
+        });
+        setCreateElementModalStep('FORM');
+      } else {
+        setCreateElementFormState({
+          name: '',
+          lifecycleState: '',
+          description: '',
+          type: '',
+        });
+        setCreateElementModalStep('SELECT_TYPE');
+      }
+      setCreateElementModalOpen(true);
+    },
+    [],
+  );
+
+  const closeCreateElementModal = React.useCallback(() => {
+    setCreateElementModalOpen(false);
+    setCreateElementModalStep('SELECT_TYPE');
+    setCreateElementModalAllowedTypes(undefined);
+    setCreateElementModalCategory(undefined);
+    setCreateElementFormState({
+      name: '',
+      lifecycleState: '',
+      description: '',
+      type: '',
+    });
+  }, []);
+
+  const handleCreateElementModalOk = React.useCallback(() => {
+    if (createElementModalStep === 'SELECT_TYPE') {
+      if (!createElementFormState.type) {
+        message.error('Select an element type.');
+        return Promise.reject();
+      }
+      setCreateElementModalStep('FORM');
+      return Promise.reject();
+    }
+
+    const finalType = createElementFormState.type;
+    const finalName = createElementFormState.name.trim();
+    const finalLifecycle = createElementFormState.lifecycleState.trim();
+    const finalDescription = createElementFormState.description.trim();
+
+    if (!finalType) {
+      message.error('Element type is required.');
+      return Promise.reject();
+    }
+    if (!finalName) {
+      message.error('Name is required.');
+      return Promise.reject();
+    }
+    if (!finalLifecycle) {
+      message.error('Lifecycle state is required.');
+      return Promise.reject();
+    }
+
+    const ok = createObject({
+      type: finalType,
+      name: finalName,
+      description: finalDescription,
+      lifecycleState: finalLifecycle,
+    });
+    if (!ok) return Promise.reject();
+
+    closeCreateElementModal();
+    return Promise.resolve();
+  }, [
+    closeCreateElementModal,
+    createElementFormState,
+    createElementModalStep,
+    createObject,
+  ]);
+
+  const scopedCreateTypeOptions = React.useMemo(() => {
+    if (!createElementModalAllowedTypes || createElementModalAllowedTypes.length === 0) {
+      return creatableTypeOptions;
+    }
+    return creatableTypeOptions.filter((option) =>
+      createElementModalAllowedTypes.includes(option.value as ObjectType),
+    );
+  }, [creatableTypeOptions, createElementModalAllowedTypes]);
+
+  const createLifecycleOptions = React.useMemo(
+    () =>
+      lifecycleOptionsForFramework(
+        metadata?.referenceFramework,
+        metadata?.lifecycleCoverage,
+      ),
+    [metadata?.lifecycleCoverage, metadata?.referenceFramework],
+  );
+
+  const createLifecyclePlaceholder = React.useMemo(
+    () =>
+      defaultLifecycleStateForFramework(
+        metadata?.referenceFramework,
+        metadata?.lifecycleCoverage,
+      ),
+    [metadata?.lifecycleCoverage, metadata?.referenceFramework],
   );
 
   // =========================================================================
@@ -1702,35 +1773,33 @@ const ExplorerTree: React.FC = () => {
           setAuditTrailObjectId(action.objectId);
           break;
         case 'create-element': {
-          let selectedType: ObjectType | '' = '';
-          Modal.confirm({
-            title: 'Create element',
-            okText: 'Next',
-            content: (
-              <Form layout="vertical">
-                <Form.Item label="Element Type" required>
-                  <Select
-                    placeholder="Select element type"
-                    options={creatableTypeOptions}
-                    onChange={(v) => {
-                      selectedType = v as ObjectType;
-                    }}
-                  />
-                </Form.Item>
-              </Form>
-            ),
-            onOk: () => {
-              if (!selectedType) {
-                message.error('Select an element type.');
-                return Promise.reject();
-              }
-              return new Promise<void>((resolve) => {
-                setTimeout(() => {
-                  createObject(selectedType as ObjectType);
-                  resolve();
-                }, 0);
-              });
-            },
+          const creatableTypes = new Set(
+            creatableTypeOptions.map((option) => String(option.value)),
+          );
+          const resolvedType =
+            typeof action.resolvedType === 'string' &&
+            creatableTypes.has(action.resolvedType)
+              ? (action.resolvedType as ObjectType)
+              : undefined;
+          const contextTypes = (action.allowedTypes ?? []).filter(
+            (type): type is ObjectType =>
+              typeof type === 'string' && creatableTypes.has(type),
+          );
+
+          if ((action.allowedTypes?.length ?? 0) > 0 && contextTypes.length === 0) {
+            message.error(
+              'No creatable element types are available for this container in the current framework.',
+            );
+            break;
+          }
+
+          openCreateElementModal({
+            parentId: action.parentKey,
+            resolvedType:
+              resolvedType ??
+              (contextTypes.length === 1 ? contextTypes[0] : undefined),
+            allowedTypes: contextTypes.length > 1 ? contextTypes : undefined,
+            category: action.category,
           });
           break;
         }
@@ -1869,6 +1938,7 @@ const ExplorerTree: React.FC = () => {
     },
     [
       createObject,
+      openCreateElementModal,
       creatableTypeOptions,
       deleteObject,
       deleteView,
@@ -2527,6 +2597,90 @@ const ExplorerTree: React.FC = () => {
           }}
         />
       </div>
+
+      {/* Create Element Modal */}
+      <Modal
+        open={createElementModalOpen}
+        title={
+          createElementModalStep === 'SELECT_TYPE'
+            ? 'Create element'
+            : `Create ${
+                createElementFormState.type
+                  ? titleForObjectType(createElementFormState.type)
+                  : 'element'
+              }`
+        }
+        onCancel={closeCreateElementModal}
+        onOk={handleCreateElementModalOk}
+        okText={createElementModalStep === 'SELECT_TYPE' ? 'Next' : 'Create'}
+        destroyOnClose
+      >
+        {createElementModalStep === 'SELECT_TYPE' ? (
+          <Form layout="vertical">
+            <Form.Item label="Element Type" required>
+              <Select
+                placeholder={
+                  createElementModalCategory
+                    ? `Select element type in ${createElementModalCategory}`
+                    : 'Select element type'
+                }
+                options={scopedCreateTypeOptions}
+                value={createElementFormState.type || undefined}
+                onChange={(value) =>
+                  setCreateElementFormState((prev) => ({
+                    ...prev,
+                    type: value as ObjectType,
+                  }))
+                }
+              />
+            </Form.Item>
+          </Form>
+        ) : (
+          <Form layout="vertical">
+            <Form.Item label="Name" required>
+              <Input
+                value={createElementFormState.name}
+                placeholder="Enter name"
+                onChange={(e) =>
+                  setCreateElementFormState((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+            </Form.Item>
+            <Form.Item label="Description">
+              <Input.TextArea
+                value={createElementFormState.description}
+                placeholder="Description (optional)"
+                autoSize={{ minRows: 3, maxRows: 6 }}
+                onChange={(e) =>
+                  setCreateElementFormState((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+              />
+            </Form.Item>
+            <Form.Item label="Lifecycle State" required>
+              <Select
+                placeholder={`Select lifecycle state (suggested: ${createLifecyclePlaceholder})`}
+                options={createLifecycleOptions.map((v) => ({
+                  value: v,
+                  label: v,
+                }))}
+                value={createElementFormState.lifecycleState || undefined}
+                onChange={(value) =>
+                  setCreateElementFormState((prev) => ({
+                    ...prev,
+                    lifecycleState: String(value),
+                  }))
+                }
+              />
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
 
       {/* §8 Change Type Modal */}
       <Modal

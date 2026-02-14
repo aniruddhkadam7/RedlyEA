@@ -46,6 +46,7 @@ import { runtimeEnv } from '@/runtime/runtimeEnv';
 import { message } from '@/ea/eaConsole';
 import { ThemeProvider } from '@/theme/ThemeContext';
 import { ContextMenuProvider, GlobalContextMenu } from '@/components/ContextMenu';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -1223,17 +1224,19 @@ export const layout: RunTimeLayoutConfig = ({
  */
 export function rootContainer(container: React.ReactNode) {
   return (
-    <ThemeProvider>
-      <EaProjectProvider>
-        <EaRepositoryProvider>
-          <IdeSelectionProvider>
-            <ContextMenuProvider>
-              {container}
-              <GlobalContextMenu />
-            </ContextMenuProvider>
-          </IdeSelectionProvider>
-        </EaRepositoryProvider>
-      </EaProjectProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <EaProjectProvider>
+          <EaRepositoryProvider>
+            <IdeSelectionProvider>
+              <ContextMenuProvider>
+                {container}
+                <GlobalContextMenu />
+              </ContextMenuProvider>
+            </IdeSelectionProvider>
+          </EaRepositoryProvider>
+        </EaProjectProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

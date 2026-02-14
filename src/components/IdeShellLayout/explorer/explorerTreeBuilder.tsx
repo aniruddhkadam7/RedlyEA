@@ -400,6 +400,7 @@ function collectionNode(
   title: string,
   icon: React.ReactNode,
   children: DataNode[],
+  data?: Record<string, unknown>,
 ): DataNode {
   return {
     key,
@@ -408,8 +409,35 @@ function collectionNode(
     selectable: true,
     children,
     className: classForNodeKey(key),
+    data,
   };
 }
+
+const normalizeAllowedChildren = (
+  types: readonly ObjectType[],
+): ObjectType[] =>
+  Array.from(
+    new Set(
+      types.filter((type) => Boolean(OBJECT_TYPE_DEFINITIONS[type])),
+    ),
+  );
+
+const typedContainerData = (
+  types: readonly ObjectType[],
+  category?: string,
+  preferredType?: ObjectType,
+): Record<string, unknown> | undefined => {
+  const allowedChildren = normalizeAllowedChildren(types);
+  if (allowedChildren.length === 0) return undefined;
+  const resolvedType =
+    preferredType && allowedChildren.includes(preferredType)
+      ? preferredType
+      : allowedChildren.length === 1
+        ? allowedChildren[0]
+        : undefined;
+  if (resolvedType) return { type: resolvedType, allowedChildren, category };
+  return { allowedChildren, category };
+};
 
 function emptyPlaceholder(parentKey: string, message: string): DataNode {
   return {
@@ -692,6 +720,7 @@ export function buildExplorerTree(
             isLeaf: true,
             data: { metamodelType: t },
           })),
+          typedContainerData(visible, title),
         ),
       );
     }
@@ -833,20 +862,28 @@ export function buildExplorerTree(
           'capability',
         ),
         elementLeaves(objectsById, visCapabilities),
+        typedContainerData(visCapabilities, 'Business'),
       ),
       collectionNode(
         EXPLORER_KEYS.businessProcesses(archName),
         'Processes',
         iconAsset('/rendering/archimate-icons/business-process.svg', 'process'),
         elementLeaves(objectsById, visProcesses),
+        typedContainerData(visProcesses, 'Business'),
       ),
       collectionNode(
         EXPLORER_KEYS.businessActors(archName),
         'Actors',
         iconAsset('/rendering/archimate-icons/business-actor.svg', 'actor'),
         elementLeaves(objectsById, visActors),
+        typedContainerData(visActors, 'Business'),
       ),
     ],
+    typedContainerData(
+      [...visCapabilities, ...visProcesses, ...visActors],
+      'Business',
+      visCapabilities[0] ?? visProcesses[0] ?? visActors[0],
+    ),
   );
 
   const applicationsNode: DataNode = collectionNode(
@@ -859,6 +896,7 @@ export function buildExplorerTree(
         'Applications',
         appArchIcon,
         elementLeaves(objectsById, visApplications),
+        typedContainerData(visApplications, 'Application'),
       ),
       collectionNode(
         EXPLORER_KEYS.appAPIs(archName),
@@ -868,6 +906,7 @@ export function buildExplorerTree(
           'api',
         ),
         elementLeaves(objectsById, visAPIs),
+        typedContainerData(visAPIs, 'Application'),
       ),
       collectionNode(
         EXPLORER_KEYS.appServices(archName),
@@ -877,8 +916,14 @@ export function buildExplorerTree(
           'service',
         ),
         elementLeaves(objectsById, visServices),
+        typedContainerData(visServices, 'Application'),
       ),
     ],
+    typedContainerData(
+      [...visApplications, ...visAPIs, ...visServices],
+      'Application',
+      visApplications[0] ?? visServices[0] ?? visAPIs[0],
+    ),
   );
 
   const dataNode: DataNode = collectionNode(
@@ -891,6 +936,7 @@ export function buildExplorerTree(
         'Data Entities',
         dataArchIcon,
         elementLeaves(objectsById, visDataEntities),
+        typedContainerData(visDataEntities, 'Data'),
       ),
       collectionNode(
         EXPLORER_KEYS.dataStores(archName),
@@ -900,8 +946,14 @@ export function buildExplorerTree(
           'datastore',
         ),
         elementLeaves(objectsById, visDataStores),
+        typedContainerData(visDataStores, 'Data'),
       ),
     ],
+    typedContainerData(
+      [...visDataEntities, ...visDataStores],
+      'Data',
+      visDataEntities[0] ?? visDataStores[0],
+    ),
   );
 
   const technologyNode: DataNode = collectionNode(
@@ -914,6 +966,7 @@ export function buildExplorerTree(
         'Infrastructure',
         techArchIcon,
         elementLeaves(objectsById, visInfrastructure),
+        typedContainerData(visInfrastructure, 'Technology'),
       ),
       collectionNode(
         EXPLORER_KEYS.techNetwork(archName),
@@ -923,14 +976,21 @@ export function buildExplorerTree(
           'network',
         ),
         elementLeaves(objectsById, visNetwork),
+        typedContainerData(visNetwork, 'Technology'),
       ),
       collectionNode(
         EXPLORER_KEYS.techCloud(archName),
         'Cloud Resources',
         iconAsset('/rendering/archimate-icons/technology-service.svg', 'cloud'),
         elementLeaves(objectsById, visCloud),
+        typedContainerData(visCloud, 'Technology'),
       ),
     ],
+    typedContainerData(
+      [...visInfrastructure, ...visNetwork, ...visCloud],
+      'Technology',
+      visInfrastructure[0] ?? visCloud[0] ?? visNetwork[0],
+    ),
   );
 
   const securityNode: DataNode = collectionNode(
@@ -938,6 +998,7 @@ export function buildExplorerTree(
     'Security',
     securityArchIcon,
     elementLeaves(objectsById, visSecurity),
+    typedContainerData(visSecurity, 'Governance', visSecurity[0]),
   );
 
   const projectsNode: DataNode = collectionNode(
@@ -945,6 +1006,11 @@ export function buildExplorerTree(
     'Projects',
     projectArchIcon,
     elementLeaves(objectsById, visProjects),
+    typedContainerData(
+      visProjects,
+      'Implementation & Migration',
+      visProjects[0],
+    ),
   );
 
   const componentsNode: DataNode = collectionNode(
@@ -959,6 +1025,24 @@ export function buildExplorerTree(
       securityNode,
       projectsNode,
     ],
+    typedContainerData(
+      [
+        ...visCapabilities,
+        ...visProcesses,
+        ...visActors,
+        ...visApplications,
+        ...visAPIs,
+        ...visServices,
+        ...visDataEntities,
+        ...visDataStores,
+        ...visInfrastructure,
+        ...visNetwork,
+        ...visCloud,
+        ...visSecurity,
+        ...visProjects,
+      ],
+      'Components',
+    ),
   );
 
   // Connections sub-tree

@@ -51,6 +51,7 @@
     "defaults"
   ],
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^6.1.0",
     "@ant-design/pro-components": "^2.8.9",
     "ahooks": "^3.9.6",

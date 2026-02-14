@@ -13,6 +13,7 @@ import React from 'react';
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
 import { message } from '@/ea/eaConsole';
+import { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
 import { useAppTheme } from '@/theme/ThemeContext';
 import type { Baseline } from '../../../backend/baselines/Baseline';
 import {
@@ -365,9 +366,7 @@ const BaselineViewerTab: React.FC<BaselineViewerTabProps> = ({
         okText: 'Restore',
         okButtonProps: { danger: true },
         onOk: () => {
-          const snapshot = {
-            version: 1 as const,
-            metadata: baseline.snapshot.metadata as any,
+          const imported = EaRepository.import({
             objects: baseline.snapshot.elements.map((el) => ({
               id: el.id,
               type: el.type as any,
@@ -380,6 +379,28 @@ const BaselineViewerTab: React.FC<BaselineViewerTabProps> = ({
               toId: rel.targetId,
               type: rel.type as any,
               attributes: { ...(rel.properties ?? {}) },
+            })),
+          });
+          if (!imported.ok) {
+            message.error(imported.error);
+            return;
+          }
+          const exported = imported.repo.export();
+          const snapshot = {
+            version: 1 as const,
+            metadata: baseline.snapshot.metadata as any,
+            objects: exported.objects.map((el) => ({
+              id: el.id,
+              type: el.type as any,
+              workspaceId: el.workspaceId,
+              attributes: { ...(el.attributes ?? {}) },
+            })),
+            relationships: exported.relationships.map((rel) => ({
+              id: rel.id,
+              fromId: rel.fromId,
+              toId: rel.toId,
+              type: rel.type as any,
+              attributes: { ...(rel.attributes ?? {}) },
             })),
             views: baseline.snapshot.diagrams.map(toViewInstance),
             studioState: {

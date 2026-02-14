@@ -1,572 +1,147 @@
+import React from 'react';
+import { PageContainer, ProCard, ProTable } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
 import {
-  CompressOutlined,
-  MinusOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
-import {
-  Alert,
+  Badge,
   Button,
   Card,
-  Collapse,
+  Descriptions,
+  Drawer,
   Empty,
-  Form,
-  InputNumber,
+  Modal,
+  Progress,
+  Radio,
+  Row,
+  Col,
   Select,
   Space,
+  Statistic,
+  Switch,
   Tag,
+  Tabs,
+  Tooltip,
   Typography,
-  theme,
 } from 'antd';
-import cytoscape, { type Core } from 'cytoscape';
-import React from 'react';
-import { analyzeImpactLocally } from '@/analysis/localImpactAnalysis';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
-import { message } from '@/ea/eaConsole';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import {
-  type ObjectType,
-  RELATIONSHIP_TYPE_DEFINITIONS,
-  type RelationshipType,
-} from '@/pages/dependency-view/utils/eaMetaModel';
-import { getTimeHorizonWindow } from '@/repository/timeHorizonPolicy';
-import { useAppTheme } from '@/theme/ThemeContext';
-import type { ImpactAnalysisRequest } from '../../../backend/analysis/ImpactAnalysisRequest';
-import type { ImpactRankedElement } from '../../../backend/analysis/ImpactRanking';
-import type { ImpactSummary } from '../../../backend/analysis/ImpactSummary';
-import { useIdeShell } from './index';
+  ApartmentOutlined,
+  ApiOutlined,
+  BulbOutlined,
+  DashboardOutlined,
+  ExclamationCircleOutlined,
+  LinkOutlined,
+  SafetyCertificateOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 
-type ResultState = {
-  summary: ImpactSummary;
-  ranked: ImpactRankedElement[];
-} | null;
-type TreeNode = {
-  id: string;
-  name: string;
-  type: ObjectType | 'Unknown';
-  children: TreeNode[];
-  revisit?: boolean;
-};
-type Direction = 'Upstream' | 'Downstream';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
-type GraphData = {
-  rootId: string;
-  maxDepth: number;
-  nodes: Array<{
-    id: string;
-    name: string;
-    type: ObjectType | 'Unknown';
-    direction: Direction | 'Root';
-    depth: number;
-    color: string;
-  }>;
-  edges: Array<{
-    id: string;
-    from: string;
-    to: string;
-    type: RelationshipType;
-    direction: Direction;
-    color: string;
-  }>;
-};
+/* ---------- Safe chart imports ---------- */
+let Pie: React.ComponentType<any> | null = null;
+let Column: React.ComponentType<any> | null = null;
+let Area: React.ComponentType<any> | null = null;
+let Bar: React.ComponentType<any> | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const charts = require('@ant-design/charts');
+  Pie = charts.Pie ?? null;
+  Column = charts.Column ?? null;
+  Area = charts.Area ?? null;
+  Bar = charts.Bar ?? null;
+} catch {
+  // chart library failed to load — dashboards will show fallback text
+}
 
-const ImpactAnalysisTab: React.FC = () => {
-  const { eaRepository, metadata } = useEaRepository();
-  const { selection } = useIdeSelection();
-  const { openPropertiesPanel } = useIdeShell();
-  const [form] = Form.useForm();
-  const { token } = theme.useToken();
-  const { isDark } = useAppTheme();
-
-  const borderColor = token.colorBorder;
-  const sectionBg = isDark ? token.colorBgElevated : token.colorFillQuaternary;
-  const graphBorderColor = borderColor;
-  const graphTextBg = isDark ? token.colorBgContainer : '#fff';
-
-  const [_upstream, setUpstream] = React.useState<ResultState>(null);
-  const [_downstream, setDownstream] = React.useState<ResultState>(null);
-  const [running, setRunning] = React.useState(false);
-  const [downstreamTree, setDownstreamTree] = React.useState<TreeNode | null>(
-    null,
+const SafeChart: React.FC<{ Chart: React.ComponentType<any> | null; props: Record<string, any>; label: string }> = ({ Chart, props: chartProps, label }) => {
+  if (!Chart) return null;
+  return (
+    <ErrorBoundary fallback={null}>
+      <Chart {...chartProps} />
+    </ErrorBoundary>
   );
-  const [upstreamTree, setUpstreamTree] = React.useState<TreeNode | null>(null);
-  const [graphData, setGraphData] = React.useState<GraphData | null>(null);
+};
+import cytoscape, { type Core } from 'cytoscape';
+import { useEaRepository } from '@/ea/EaRepositoryContext';
+import {
+  DEFAULT_IMPACT_ANALYSIS_SECTION,
+  IMPACT_ANALYSIS_SECTION_EVENT,
+  type ImpactAnalysisSectionKey,
+} from '@/analysis/impactAnalysisMode';
+import {
+  getImpactAnalysisSnapshot,
+  simulateImpact,
+  type DashboardSystemMetrics,
+  type ImpactAnalysisSnapshot,
+  type ImpactSimulationResult,
+  type ImpactSystemMetrics,
+  type SimulationMode,
+  type RiskLevel,
+} from '@/analysis/impactDependencyEngine';
 
-  const cyContainerRef = React.useRef<HTMLDivElement | null>(null);
+type ReadOnlyImpactCanvasProps = {
+  snapshot: ImpactAnalysisSnapshot;
+  selectedId?: string;
+  impactedIds?: Set<string>;
+};
+
+const ReadOnlyImpactCanvas: React.FC<ReadOnlyImpactCanvasProps> = ({ snapshot, selectedId, impactedIds }) => {
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
   const cyRef = React.useRef<Core | null>(null);
 
-  const elements = React.useMemo(() => {
-    if (!eaRepository)
-      return [] as Array<{ id: string; name: string; type: string }>;
-    return Array.from(eaRepository.objects.values())
-      .filter((o) => (o.attributes as any)?._deleted !== true)
-      .map((o) => {
-        const n =
-          typeof o.attributes?.name === 'string' && o.attributes.name.trim()
-            ? String(o.attributes.name)
-            : o.id;
-        return { id: o.id, name: n, type: o.type };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [eaRepository]);
-
-  const defaultRoot = React.useMemo(() => {
-    if (
-      selection.selectedSource === 'ImpactAnalysis' &&
-      selection.selectedElementId
-    )
-      return selection.selectedElementId;
-    if (selection.selectedElementId) return selection.selectedElementId;
-    return elements[0]?.id ?? '';
-  }, [elements, selection.selectedElementId, selection.selectedSource]);
-
   React.useEffect(() => {
-    const depthCap = getTimeHorizonWindow(
-      metadata?.timeHorizon,
-    ).maxAnalysisDepth;
-    form.setFieldsValue({ root: defaultRoot || undefined, maxDepth: depthCap });
-  }, [defaultRoot, form, metadata?.timeHorizon]);
+    const container = containerRef.current;
+    if (!container) return undefined;
 
-  const relationshipTypes = React.useMemo(
-    () => Object.keys(RELATIONSHIP_TYPE_DEFINITIONS),
-    [],
-  );
+    const hasImpact = impactedIds && impactedIds.size > 0;
 
-  const run = React.useCallback(
-    (
-      direction: 'Upstream' | 'Downstream',
-      rootId: string,
-      maxDepth: number,
-    ) => {
-      if (!eaRepository) return null;
-      const request: ImpactAnalysisRequest = {
-        requestId: `local-${direction}-${rootId}-${maxDepth}`,
-        projectId: '',
-        requestedBy: 'analysis-tab',
-        requestedAt: new Date().toISOString(),
-        repositoryName: metadata?.repositoryName,
-        rootElementId: rootId,
-        rootElementType: eaRepository.objects.get(rootId)?.type ?? 'Unknown',
-        direction,
-        maxDepth,
-        includedElementTypes: [],
-        includedRelationshipTypes: relationshipTypes,
-        analysisIntent: 'Change',
+    const nodeElements = snapshot.graph.nodes.map((node) => {
+      const isSelected = selectedId === node.id;
+      const isImpacted = impactedIds?.has(node.id) ?? false;
+      const opacity = hasImpact && !isImpacted ? 0.25 : 1;
+      const color = isSelected ? '#ff4d4f' : isImpacted ? '#fa8c16' : '#1677ff';
+      return {
+        data: {
+          id: node.id,
+          label: `${node.name} (${node.type})`,
+          color,
+          opacity,
+        },
       };
+    });
 
-      return analyzeImpactLocally({ repository: eaRepository, request });
-    },
-    [eaRepository, metadata?.repositoryName, relationshipTypes],
-  );
-
-  const buildTree = React.useCallback(
-    (
-      direction: Direction,
-      rootId: string,
-      maxDepth: number,
-      res: ResultState,
-    ): TreeNode | null => {
-      if (!eaRepository) return null;
-      if (!res) return null;
-
-      const reachableIds = new Set<string>([
-        rootId,
-        ...(res.ranked ?? []).map((r) => r.elementId),
-      ]);
-      if (reachableIds.size === 0) return null;
-
-      const outgoing = new Map<string, string[]>();
-      const incoming = new Map<string, string[]>();
-
-      const relationshipAllowedByMetamodel = (
-        relType: RelationshipType,
-        fromType: ObjectType | undefined,
-        toType: ObjectType | undefined,
-      ) => {
-        if (!fromType || !toType) return false;
-        const def = RELATIONSHIP_TYPE_DEFINITIONS[relType];
-        if (!def) return false;
-        if (
-          Array.isArray(def.allowedEndpointPairs) &&
-          def.allowedEndpointPairs.length > 0
-        ) {
-          return def.allowedEndpointPairs.some(
-            (p) => p.from === fromType && p.to === toType,
-          );
-        }
-        return def.fromTypes.includes(fromType) && def.toTypes.includes(toType);
+    const edgeElements = snapshot.graph.edges.map((edge) => {
+      const sourceImpacted = impactedIds?.has(edge.fromId) ?? false;
+      const targetImpacted = impactedIds?.has(edge.toId) ?? false;
+      const opacity = hasImpact && !(sourceImpacted && targetImpacted) ? 0.15 : 0.8;
+      const color = sourceImpacted && targetImpacted ? '#fa8c16' : '#91caff';
+      return {
+        data: {
+          id: edge.id,
+          source: edge.fromId,
+          target: edge.toId,
+          color,
+          opacity,
+        },
       };
-
-      for (const r of eaRepository.relationships ?? []) {
-        const relType = String(
-          (r as any)?.type ?? '',
-        ).trim() as RelationshipType;
-        if (!relType) continue;
-        if (!relationshipTypes.includes(relType)) continue;
-
-        const fromId = String((r as any)?.fromId ?? '').trim();
-        const toId = String((r as any)?.toId ?? '').trim();
-        if (!fromId || !toId) continue;
-
-        if (!reachableIds.has(fromId) && !reachableIds.has(toId)) continue;
-
-        const fromObj = eaRepository.objects.get(fromId);
-        const toObj = eaRepository.objects.get(toId);
-        if (
-          !relationshipAllowedByMetamodel(relType, fromObj?.type, toObj?.type)
-        )
-          continue;
-
-        if (reachableIds.has(fromId)) {
-          if (!outgoing.has(fromId)) outgoing.set(fromId, []);
-          outgoing.get(fromId)?.push(toId);
-        }
-
-        if (reachableIds.has(toId)) {
-          if (!incoming.has(toId)) incoming.set(toId, []);
-          incoming.get(toId)?.push(fromId);
-        }
-      }
-
-      const visited = new Set<string>();
-
-      const makeNode = (
-        nodeId: string,
-        depth: number,
-        revisit = false,
-      ): TreeNode => {
-        const obj = eaRepository.objects.get(nodeId);
-        const name =
-          typeof obj?.attributes?.name === 'string' &&
-          obj.attributes.name.trim()
-            ? String(obj.attributes.name)
-            : nodeId;
-        const type = (obj?.type as ObjectType | undefined) ?? 'Unknown';
-
-        if (revisit || depth >= maxDepth) {
-          return { id: nodeId, name, type, children: [], revisit };
-        }
-
-        const neighborIds =
-          direction === 'Upstream'
-            ? (incoming.get(nodeId) ?? [])
-            : (outgoing.get(nodeId) ?? []);
-
-        const children: TreeNode[] = [];
-        for (const nId of neighborIds) {
-          if (!nId) continue;
-          if (!reachableIds.has(nId)) continue;
-          if (visited.has(nId)) {
-            children.push(makeNode(nId, depth + 1, true));
-            continue;
-          }
-          visited.add(nId);
-          children.push(makeNode(nId, depth + 1));
-        }
-
-        return { id: nodeId, name, type, children };
-      };
-
-      const trimmedRoot = String(rootId ?? '').trim();
-      if (!trimmedRoot) return null;
-      visited.add(trimmedRoot);
-      return makeNode(trimmedRoot, 0);
-    },
-    [eaRepository, relationshipTypes],
-  );
-
-  const computeDepthsAndEdges = React.useCallback(
-    (
-      direction: Direction,
-      rootId: string,
-      maxDepth: number,
-      reachableIds: Set<string>,
-    ): {
-      depths: Map<string, number>;
-      edges: Array<{ from: string; to: string; rel: RelationshipType }>;
-    } => {
-      const depths = new Map<string, number>();
-      const edges: Array<{ from: string; to: string; rel: RelationshipType }> =
-        [];
-      if (!eaRepository) return { depths, edges };
-
-      depths.set(rootId, 0);
-      const queue: Array<{ id: string; depth: number }> = [
-        { id: rootId, depth: 0 },
-      ];
-
-      const relationshipAllowedByMetamodel = (
-        relType: RelationshipType,
-        fromType: ObjectType | undefined,
-        toType: ObjectType | undefined,
-      ) => {
-        const def = RELATIONSHIP_TYPE_DEFINITIONS[relType];
-        if (!def) return false;
-        if (
-          Array.isArray(def.allowedEndpointPairs) &&
-          def.allowedEndpointPairs.length > 0
-        ) {
-          return def.allowedEndpointPairs.some(
-            (p) => p.from === fromType && p.to === toType,
-          );
-        }
-        return (
-          !!fromType &&
-          !!toType &&
-          def.fromTypes.includes(fromType) &&
-          def.toTypes.includes(toType)
-        );
-      };
-
-      while (queue.length > 0) {
-        const entry = queue.shift();
-        if (!entry) break;
-        const { id, depth } = entry;
-        if (depth >= maxDepth) continue;
-
-        for (const rel of eaRepository.relationships ?? []) {
-          const relType = String(
-            (rel as any)?.type ?? '',
-          ).trim() as RelationshipType;
-          if (!relType) continue;
-          if (!relationshipTypes.includes(relType)) continue;
-
-          const fromId = String((rel as any)?.fromId ?? '').trim();
-          const toId = String((rel as any)?.toId ?? '').trim();
-          if (!fromId || !toId) continue;
-
-          const fromObj = eaRepository.objects.get(fromId);
-          const toObj = eaRepository.objects.get(toId);
-          if (
-            !relationshipAllowedByMetamodel(relType, fromObj?.type, toObj?.type)
-          )
-            continue;
-
-          let neighbor: string | null = null;
-          if (direction === 'Downstream' && fromId === id) neighbor = toId;
-          if (direction === 'Upstream' && toId === id) neighbor = fromId;
-          if (!neighbor) continue;
-          if (!reachableIds.has(neighbor)) continue;
-
-          edges.push({ from: fromId, to: toId, rel: relType });
-
-          if (!depths.has(neighbor)) {
-            depths.set(neighbor, depth + 1);
-            queue.push({ id: neighbor, depth: depth + 1 });
-          }
-        }
-      }
-
-      return { depths, edges };
-    },
-    [eaRepository, relationshipTypes],
-  );
-
-  const execute = React.useCallback(async () => {
-    if (!eaRepository) {
-      message.warning('Load a repository first.');
-      return;
-    }
-    try {
-      setRunning(true);
-      const values = await form.validateFields();
-      const root = String(values.root ?? '').trim();
-      const maxDepth = Number(values.maxDepth) || 6;
-      if (!root) {
-        message.warning('Select a root element.');
-        return;
-      }
-
-      const downstreamResult = run('Downstream', root, maxDepth);
-      const upstreamResult = run('Upstream', root, maxDepth);
-
-      const downstreamState = downstreamResult
-        ? {
-            summary: downstreamResult.impactSummary,
-            ranked: downstreamResult.rankedImpacts,
-          }
-        : null;
-      const upstreamState = upstreamResult
-        ? {
-            summary: upstreamResult.impactSummary,
-            ranked: upstreamResult.rankedImpacts,
-          }
-        : null;
-
-      setDownstream(downstreamState);
-      setUpstream(upstreamState);
-
-      setDownstreamTree(
-        buildTree('Downstream', root, maxDepth, downstreamState),
-      );
-      setUpstreamTree(buildTree('Upstream', root, maxDepth, upstreamState));
-
-      // Build graph data for visualization (read-only).
-      const reachable = new Set<string>([root]);
-      for (const r of downstreamState?.ranked ?? []) reachable.add(r.elementId);
-      for (const r of upstreamState?.ranked ?? []) reachable.add(r.elementId);
-
-      const downstreamGraph = computeDepthsAndEdges(
-        'Downstream',
-        root,
-        maxDepth,
-        reachable,
-      );
-      const upstreamGraph = computeDepthsAndEdges(
-        'Upstream',
-        root,
-        maxDepth,
-        reachable,
-      );
-
-      const nodeMap = new Map<string, GraphData['nodes'][number]>();
-
-      const addNode = (
-        id: string,
-        direction: GraphData['nodes'][number]['direction'],
-        depth: number,
-      ) => {
-        const obj = eaRepository?.objects.get(id);
-        const name =
-          typeof obj?.attributes?.name === 'string' &&
-          obj.attributes.name.trim()
-            ? String(obj.attributes.name)
-            : id;
-        const type = (obj?.type as ObjectType | undefined) ?? 'Unknown';
-        const existing = nodeMap.get(id);
-        const color =
-          direction === 'Root'
-            ? '#fa8c16'
-            : direction === 'Downstream'
-              ? '#4b9bff'
-              : '#722ed1';
-        if (!existing || depth < existing.depth) {
-          nodeMap.set(id, { id, name, type, direction, depth, color });
-        } else if (existing && direction === 'Root') {
-          nodeMap.set(id, { ...existing, direction });
-        }
-      };
-
-      addNode(root, 'Root', 0);
-      for (const [id, d] of downstreamGraph.depths)
-        addNode(id, 'Downstream', d);
-      for (const [id, d] of upstreamGraph.depths) addNode(id, 'Upstream', d);
-
-      const edgeColor = (direction: Direction) =>
-        direction === 'Downstream' ? '#4b9bff' : '#722ed1';
-
-      const edges: GraphData['edges'] = [];
-      for (const e of downstreamGraph.edges) {
-        if (!nodeMap.has(e.from) || !nodeMap.has(e.to)) continue;
-        edges.push({
-          id: `down-${e.from}-${e.to}-${e.rel}`,
-          from: e.from,
-          to: e.to,
-          type: e.rel,
-          direction: 'Downstream',
-          color: edgeColor('Downstream'),
-        });
-      }
-      for (const e of upstreamGraph.edges) {
-        if (!nodeMap.has(e.from) || !nodeMap.has(e.to)) continue;
-        edges.push({
-          id: `up-${e.from}-${e.to}-${e.rel}`,
-          from: e.from,
-          to: e.to,
-          type: e.rel,
-          direction: 'Upstream',
-          color: edgeColor('Upstream'),
-        });
-      }
-
-      setGraphData({
-        rootId: root,
-        maxDepth,
-        nodes: Array.from(nodeMap.values()),
-        edges,
-      });
-
-      if (!downstreamResult && !upstreamResult) {
-        message.info('No relationships available for impact analysis.');
-      }
-    } finally {
-      setRunning(false);
-    }
-  }, [eaRepository, form, run]);
-
-  const lastAutoRootRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    const root = form.getFieldValue('root') as string | undefined;
-    const maxDepth = form.getFieldValue('maxDepth') as number | undefined;
-    if (!eaRepository || !root || !maxDepth) return;
-    if (lastAutoRootRef.current === root) return;
-    lastAutoRootRef.current = root;
-    void execute();
-  }, [defaultRoot, eaRepository, execute, form]);
-
-  const handleFit = React.useCallback(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.fit(undefined, 32);
-  }, []);
-
-  const handleZoom = React.useCallback((direction: 'in' | 'out') => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    const factor = direction === 'in' ? 1.2 : 1 / 1.2;
-    const current = cy.zoom();
-    cy.zoom({ level: current * factor, renderedPosition: cy.renderedCenter() });
-  }, []);
-
-  React.useEffect(() => {
-    const container = cyContainerRef.current;
-    if (!container || !graphData || graphData.nodes.length === 0) {
-      cyRef.current?.destroy();
-      cyRef.current = null;
-      return undefined;
-    }
-
-    const nodes = graphData.nodes.map((n) => ({
-      data: {
-        id: n.id,
-        label: `${n.name} (${n.type})`,
-        elementType: n.type,
-        color: n.color,
-        depth: n.depth,
-        direction: n.direction,
-      },
-    }));
-
-    const edges = graphData.edges.map((e) => ({
-      data: {
-        id: e.id,
-        source: e.from,
-        target: e.to,
-        relationshipType: e.type,
-        color: e.color,
-        direction: e.direction,
-      },
-    }));
+    });
 
     cyRef.current?.destroy();
     cyRef.current = cytoscape({
       container,
-      elements: { nodes, edges },
-      layout: { name: 'breadthfirst', directed: true, padding: 10 },
+      elements: [...nodeElements, ...edgeElements],
+      layout: { name: 'breadthfirst', directed: true, padding: 24, roots: selectedId ? `#${selectedId}` : undefined } as any,
       style: [
         {
           selector: 'node',
           style: {
-            'background-color': 'data(color)',
             label: 'data(label)',
-            color: isDark ? '#e0e0e0' : '#fff',
-            'font-size': 10,
             'text-wrap': 'wrap',
-            'text-max-width': '160px',
-            'border-width': 2,
-            'border-color': isDark ? '#8899aa' : '#162447',
-            width: (ele: any) => (ele.data('depth') === 0 ? 36 : 28),
-            height: (ele: any) => (ele.data('depth') === 0 ? 36 : 28),
+            'text-max-width': '140px',
+            'font-size': 10,
+            'background-color': 'data(color)',
+            color: '#ffffff',
+            opacity: 'data(opacity)' as any,
+            width: 44,
+            height: 44,
           },
         },
         {
@@ -575,750 +150,771 @@ const ImpactAnalysisTab: React.FC = () => {
             width: 2,
             'line-color': 'data(color)',
             'target-arrow-color': 'data(color)',
-            'target-arrow-shape': 'vee',
+            'target-arrow-shape': 'triangle',
             'curve-style': 'bezier',
-            label: 'data(relationshipType)',
-            'font-size': 8,
-            'text-background-color': graphTextBg,
-            'text-background-opacity': 0.7,
-            'text-rotation': 'autorotate',
-          },
-        },
-        {
-          selector: '[depth > 0]',
-          style: {
-            'border-color': '#52c41a',
+            opacity: 'data(opacity)' as any,
           },
         },
       ],
       userZoomingEnabled: true,
       userPanningEnabled: true,
-      boxSelectionEnabled: false,
-      autounselectify: true,
       autoungrabify: true,
+      autounselectify: true,
+      boxSelectionEnabled: false,
     });
 
-    cyRef.current.ready(() => {
-      cyRef.current?.fit(undefined, 32);
-    });
-
-    cyRef.current.nodes().forEach((n) => {
-      n.lock();
-      n.ungrabify();
-    });
-    for (const e of cyRef.current.edges()) e.ungrabify();
-    cyRef.current.autoungrabify(true);
-    cyRef.current.autounselectify(true);
-
-    cyRef.current.on('tap', 'node', (evt) => {
-      const node = evt.target;
-      const id = node.id();
-      const type = node.data('elementType');
-      openPropertiesPanel({
-        elementId: id,
-        elementType: type,
-        dock: 'right',
-        readOnly: true,
-      });
-    });
+    cyRef.current.fit(undefined, 24);
 
     return () => {
       cyRef.current?.destroy();
       cyRef.current = null;
     };
-  }, [graphData, openPropertiesPanel, isDark, graphTextBg]);
+  }, [snapshot, selectedId, impactedIds]);
 
-  const _renderList = (res: ResultState, title: string) => {
-    if (!res) return <Empty description={`No ${title.toLowerCase()} yet`} />;
-    if (res.ranked.length === 0) {
-      return <Empty description={`No ${title.toLowerCase()} found`} />;
-    }
+  return <div ref={containerRef} style={{ height: 460, border: '1px solid var(--ant-color-border)', borderRadius: 6 }} />;
+};
 
-    return null;
-  };
+const ImpactAnalysisTab: React.FC = () => {
+  const { eaRepository } = useEaRepository();
 
-  const renderTree = (node: TreeNode | null) => {
-    if (!node || node.children.length === 0)
-      return <Empty description="No impacts found for this element." />;
+  const [section, setSection] = React.useState<ImpactAnalysisSectionKey>(DEFAULT_IMPACT_ANALYSIS_SECTION);
+  const [fragilityDrawer, setFragilityDrawer] = React.useState<ImpactSystemMetrics | null>(null);
+  const [simulationMode, setSimulationMode] = React.useState<SimulationMode>('outbound');
+  const [explorerMode, setExplorerMode] = React.useState<SimulationMode>('full');
+  const [showExplorerIndicators, setShowExplorerIndicators] = React.useState(true);
+  const [longChainThreshold, setLongChainThreshold] = React.useState(4);
+  const [overviewRiskFilter, setOverviewRiskFilter] = React.useState<RiskLevel | 'All'>('All');
+  const [overviewDepthFilter, setOverviewDepthFilter] = React.useState<number | null>(null);
+  const [overviewSystemFilter, setOverviewSystemFilter] = React.useState<string | null>(null);
+  const [warningDrawer, setWarningDrawer] = React.useState<{ key: string; label: string; systemIds: string[] } | null>(null);
+  const [heatDrawerSystem, setHeatDrawerSystem] = React.useState<DashboardSystemMetrics | null>(null);
 
-    const renderNode = (n: TreeNode): React.ReactNode => {
-      return (
-        <li
-          key={n.id}
-          style={{
-            margin: '4px 0',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            paddingBottom: 4,
-          }}
-        >
-          <div>
-            <Typography.Text
-              strong
-              style={{ cursor: 'pointer' }}
-              onClick={() =>
-                openPropertiesPanel({
-                  elementId: n.id,
-                  elementType: n.type,
-                  dock: 'right',
-                  readOnly: true,
-                })
-              }
-            >
-              {n.name}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-              {n.type}
-              {n.revisit ? ' (already visited)' : ''}
-            </Typography.Text>
-          </div>
-          {n.children.length > 0 ? (
-            <ul style={{ marginLeft: 16, paddingLeft: 12, listStyle: 'none' }}>
-              {n.children.map((c) => renderNode(c))}
-            </ul>
-          ) : null}
-        </li>
-      );
+  const snapshot = React.useMemo(() => (eaRepository ? getImpactAnalysisSnapshot(eaRepository) : null), [eaRepository]);
+
+  const [selectedSystemId, setSelectedSystemId] = React.useState<string>('');
+
+  React.useEffect(() => {
+    if (!snapshot) return;
+    if (selectedSystemId && snapshot.graph.nodes.some((node) => node.id === selectedSystemId)) return;
+    setSelectedSystemId(snapshot.topImpactfulSystems[0]?.systemId ?? snapshot.graph.nodes[0]?.id ?? '');
+  }, [snapshot, selectedSystemId]);
+
+  React.useEffect(() => {
+    const onSectionChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ section?: ImpactAnalysisSectionKey }>;
+      const nextSection = customEvent.detail?.section;
+      if (!nextSection) return;
+      setSection(nextSection);
     };
 
-    return (
-      <ul style={{ paddingLeft: 0, listStyle: 'none' }}>{renderNode(node)}</ul>
-    );
-  };
+    window.addEventListener(IMPACT_ANALYSIS_SECTION_EVENT, onSectionChange as EventListener);
+    return () => window.removeEventListener(IMPACT_ANALYSIS_SECTION_EVENT, onSectionChange as EventListener);
+  }, []);
 
-  if (!eaRepository) {
+  const simulationResult = React.useMemo<ImpactSimulationResult | null>(() => {
+    if (!snapshot || !selectedSystemId) return null;
+    return simulateImpact(snapshot, selectedSystemId, simulationMode);
+  }, [snapshot, selectedSystemId, simulationMode]);
+
+  const explorerResult = React.useMemo<ImpactSimulationResult | null>(() => {
+    if (!snapshot || !selectedSystemId) return null;
+    return simulateImpact(snapshot, selectedSystemId, explorerMode);
+  }, [snapshot, selectedSystemId, explorerMode]);
+
+  const systemOptions = React.useMemo(
+    () =>
+      (snapshot?.systems ?? []).map((system) => ({
+        value: system.systemId,
+        label: `${system.systemName} (${system.systemType})`,
+      })),
+    [snapshot],
+  );
+
+  const fragilityColumns = React.useMemo<ProColumns<ImpactSystemMetrics>[]>(
+    () => [
+      { title: 'System Name', dataIndex: 'systemName' },
+      { title: 'Impact Score', dataIndex: 'impactScore', width: 120 },
+      { title: 'Inbound Dependencies', dataIndex: 'inboundDependencies', width: 170 },
+      { title: 'Outbound Dependencies', dataIndex: 'outboundDependencies', width: 180 },
+      { title: 'Dependency Depth', dataIndex: 'dependencyDepth', width: 140 },
+      {
+        title: 'Redundancy Status',
+        dataIndex: 'redundancyStatus',
+        width: 150,
+        render: (_, row) =>
+          row.redundancyStatus === 'Single Path' ? <Badge status="error" text="Single Path" /> : <Badge status="success" text="Redundant" />,
+      },
+    ],
+    [],
+  );
+
+  const exportImpactReport = React.useCallback(() => {
+    if (!snapshot || !simulationResult) return;
+
+    const csvRows = [
+      'SystemId,SystemName,Impacted,ImpactScore,DependencyDepth',
+      ...snapshot.systems.map((system) => {
+        const impacted = simulationResult.affectedIds.has(system.systemId) ? 'Yes' : 'No';
+        return [
+          system.systemId,
+          JSON.stringify(system.systemName),
+          impacted,
+          String(system.impactScore),
+          String(system.dependencyDepth),
+        ].join(',');
+      }),
+    ];
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `impact-report-${simulationResult.rootId}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+
+    Modal.success({
+      title: 'Impact report exported',
+      content: 'CSV export completed for the current simulation scope.',
+    });
+  }, [simulationResult, snapshot]);
+
+  if (!snapshot) {
     return (
-      <div style={{ padding: 12 }}>
-        <Typography.Title level={5} style={{ marginTop: 0 }}>
-          Impact Analysis
-        </Typography.Title>
-        <Alert
-          type="warning"
-          showIcon
-          message="Load a repository"
-          description="Impact analysis runs entirely on repository data. Load a repository and select a root element."
-        />
-      </div>
+      <PageContainer title="Impact Analysis Mode" ghost>
+        <Empty description="Load a repository to run dependency-based impact analysis." />
+      </PageContainer>
     );
   }
 
-  return (
-    <div style={{ padding: 12 }}>
-      <Typography.Title level={5} style={{ marginTop: 0 }}>
-        Impact Analysis (read-only)
-      </Typography.Title>
-      <Alert
-        type="info"
-        showIcon
-        message="What breaks if this changes?"
-        description="Runs upstream and downstream impact using repository relationships only. No diagrams, no edits."
-        style={{ marginBottom: 12 }}
-      />
+  const RISK_TAG_COLORS: Record<RiskLevel, string> = {
+    Critical: 'red',
+    High: 'volcano',
+    Medium: 'gold',
+    Low: 'green',
+  };
 
-      <Card
-        size="small"
-        title="Scope"
-        style={{
-          marginBottom: 12,
-          border: `1px solid ${borderColor}`,
-          background: sectionBg,
-        }}
+  const concentrationData = snapshot.dashboard.top10ImpactfulSystems.slice(0, 8).map((item) => ({
+    system: item.systemName.length > 14 ? `${item.systemName.slice(0, 12)}…` : item.systemName,
+    systemId: item.systemId,
+    impact: item.impactScore,
+    reachPercent: item.reachPercent,
+    depth: item.dependencyDepth,
+  }));
+
+  const blastRadiusData = snapshot.dashboard.blastRadiusDistribution.map((item) => ({
+    severity: item.severity,
+    value: item.count,
+    percentage: item.percentage,
+  }));
+
+  const depthData = snapshot.dashboard.depthDistribution.map((item) => ({
+    depthLabel: `D${item.depth}`,
+    depth: item.depth,
+    systems: item.count,
+    zone: item.depth >= 4 ? 'Deep' : 'Normal',
+  }));
+
+  const filteredHeatTableData = snapshot.dashboard.riskSystems
+    .filter((item) => (overviewRiskFilter === 'All' ? true : item.riskLevel === overviewRiskFilter))
+    .filter((item) => (overviewDepthFilter === null ? true : item.dependencyDepth === overviewDepthFilter))
+    .filter((item) => (overviewSystemFilter === null ? true : item.systemId === overviewSystemFilter))
+    .slice(0, 8);
+
+  const heatDrawerSimulation = React.useMemo(() => {
+    if (!heatDrawerSystem) return null;
+    return simulateImpact(snapshot, heatDrawerSystem.systemId, 'outbound');
+  }, [snapshot, heatDrawerSystem]);
+
+  const warningImpactedIds = React.useMemo(
+    () => new Set(warningDrawer?.systemIds ?? []),
+    [warningDrawer],
+  );
+
+  const openSimulationFromSystem = React.useCallback((systemId: string) => {
+    setSelectedSystemId(systemId);
+    setSection('simulation');
+  }, []);
+
+  const overviewContent = (
+    <Space
+      direction="vertical"
+      size={8}
+      style={{ width: '100%', background: '#eef2f6', padding: '0 10px 10px 10px', borderRadius: 6, boxSizing: 'border-box', overflowX: 'hidden', display: 'flex' }}
+    >
+      <ProCard
+        ghost
+        gutter={[12, 12]}
+        wrap
+        title={<span style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Health Strip</span>}
+        style={{ background: '#fff', border: '1px solid #d6dde6', borderRadius: 6, boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)', marginBottom: 12, overflowX: 'hidden' }}
+        headStyle={{ borderBottom: '1px solid #d6dde6' }}
+        bodyStyle={{ padding: 10 }}
       >
-        <Form form={form} layout="vertical">
-          <Space align="end" wrap size={16}>
-            <Form.Item
-              label="Root element"
-              name="root"
-              rules={[{ required: true, message: 'Select a root element' }]}
-              style={{ minWidth: 360 }}
-            >
-              <Select
-                showSearch
-                optionFilterProp="label"
-                placeholder="Select element"
-                options={elements.map((e) => ({
-                  value: e.id,
-                  label: `${e.name} · ${e.type} · ${e.id}`,
-                }))}
-              />
-            </Form.Item>
-            <Form.Item
-              label="Max depth"
-              name="maxDepth"
-              rules={[{ required: true }]}
-              style={{ width: 140 }}
-            >
-              <InputNumber min={1} max={25} />
-            </Form.Item>
-            <Form.Item label=" " colon={false}>
-              <Button
-                type="primary"
-                onClick={() => void execute()}
-                loading={running}
-              >
-                Analyze
-              </Button>
-            </Form.Item>
-          </Space>
-        </Form>
-      </Card>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><DashboardOutlined /> Stability</>} value={snapshot.dashboard.stabilityScore} suffix="%" styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+            <Progress type="circle" percent={snapshot.dashboard.stabilityScore} size={46} strokeColor={snapshot.dashboard.stabilityScore >= 75 ? '#52c41a' : snapshot.dashboard.stabilityScore >= 50 ? '#faad14' : '#ff4d4f'} showInfo={false} />
+          </Card>
+        </ProCard>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><SafetyCertificateOutlined /> Concentration</>} value={snapshot.dashboard.concentrationRiskPercent} suffix="%" styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+            <Progress percent={snapshot.dashboard.concentrationRiskPercent} size="small" strokeColor="#91caff" showInfo={false} />
+          </Card>
+        </ProCard>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><ExclamationCircleOutlined /> Cascade</>} value={snapshot.dashboard.cascadeRiskIndex} suffix="idx" styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+            <Badge
+              status={snapshot.dashboard.cascadeRiskLevel === 'High' ? 'error' : snapshot.dashboard.cascadeRiskLevel === 'Medium' ? 'warning' : 'success'}
+              text={snapshot.dashboard.cascadeRiskLevel}
+            />
+          </Card>
+        </ProCard>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><LinkOutlined /> Chain</>} value={snapshot.overview.longestDependencyChain} suffix="L" styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+          </Card>
+        </ProCard>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><WarningOutlined /> SPoF</>} value={snapshot.overview.singlePointsOfFailure} styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+          </Card>
+        </ProCard>
+        <ProCard colSpan={{ xs: 24, sm: 12, lg: 4 }}>
+          <Card
+            size="small"
+            bordered
+            hoverable
+            style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}
+            styles={{ body: { padding: 6 } }}
+          >
+            <Statistic title={<><ApiOutlined /> Density</>} value={snapshot.dashboard.graphDensityRatio} suffix="r/s" precision={2} styles={{ content: { fontSize: 20, fontWeight: 700 } }} />
+          </Card>
+        </ProCard>
+      </ProCard>
 
-      <Collapse
-        defaultActiveKey={['downstream']}
-        bordered
-        expandIconPosition="end"
-        style={{ border: `1px solid ${borderColor}` }}
+      <ProCard
+        ghost
+        gutter={[12, 12]}
+        wrap
+        title={<span style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Visual Risk Intelligence</span>}
+        style={{ background: '#fff', border: '1px solid #d6dde6', borderRadius: 6, boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)', marginBottom: 12, overflowX: 'hidden' }}
+        headStyle={{ borderBottom: '1px solid #d6dde6' }}
+        bodyStyle={{ padding: 10 }}
       >
-        <Collapse.Panel
-          key="downstream"
-          header={
-            <div>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                Downstream Impact
-              </Typography.Title>
-              <Typography.Paragraph
-                type="secondary"
-                style={{ margin: '4px 0 0' }}
-              >
-                Elements supported by or dependent on the source (outgoing).
-              </Typography.Paragraph>
-            </div>
-          }
-        >
-          {renderTree(downstreamTree)}
-        </Collapse.Panel>
+        <ProCard colSpan={{ xs: 24, lg: 8 }} title="Concentration" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}>
+          <SafeChart
+            Chart={Column}
+            label="Concentration"
+            props={{
+              data: concentrationData,
+              xField: 'system',
+              yField: 'impact',
+              axis: { x: { labelAutoHide: true }, y: { title: false } },
+              style: { fill: '#91caff', radiusTopLeft: 4, radiusTopRight: 4 },
+              tooltip: {
+                title: 'system',
+                items: [
+                  { field: 'impact', name: 'Impact' },
+                  { field: 'reachPercent', name: 'Reach %' },
+                  { field: 'depth', name: 'Depth' },
+                ],
+              },
+              onReady: (plot: any) => {
+                plot.on('element:click', (evt: any) => {
+                  const datum = evt?.data?.data;
+                  if (datum?.systemId) setOverviewSystemFilter(datum.systemId);
+                });
+              },
+              height: 140,
+              autoFit: true,
+            }}
+          />
+        </ProCard>
 
-        <Collapse.Panel
-          key="upstream"
-          header={
-            <div>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                Upstream Impact
-              </Typography.Title>
-              <Typography.Paragraph
-                type="secondary"
-                style={{ margin: '4px 0 0' }}
-              >
-                Elements that depend on or influence the source (incoming).
-              </Typography.Paragraph>
-            </div>
-          }
-        >
-          {renderTree(upstreamTree)}
-        </Collapse.Panel>
-      </Collapse>
+        <ProCard colSpan={{ xs: 24, lg: 8 }} title="Blast Radius" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}>
+          <SafeChart
+            Chart={Pie}
+            label="Blast Radius"
+            props={{
+              data: blastRadiusData,
+              angleField: 'value',
+              colorField: 'severity',
+              innerRadius: 0.6,
+              style: {
+                fill: ({ severity }: { severity: RiskLevel }) =>
+                  severity === 'Critical' ? '#ff4d4f' : severity === 'High' ? '#ff9c6e' : severity === 'Medium' ? '#ffd666' : '#95de64',
+              },
+              tooltip: {
+                title: 'severity',
+                items: [
+                  { field: 'value', name: 'Systems' },
+                  { field: 'percentage', name: 'Share %' },
+                ],
+              },
+              onReady: (plot: any) => {
+                plot.on('element:click', (evt: any) => {
+                  const datum = evt?.data?.data;
+                  if (datum?.severity) {
+                    setOverviewRiskFilter(datum.severity);
+                    setOverviewSystemFilter(null);
+                  }
+                });
+              },
+              height: 140,
+              autoFit: true,
+            }}
+          />
+        </ProCard>
 
-      <Card
-        title="Impact graph"
-        style={{ marginTop: 16, border: `1px solid ${borderColor}` }}
+        <ProCard colSpan={{ xs: 24, lg: 8 }} title="Depth" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}>
+          <SafeChart
+            Chart={Area}
+            label="Depth"
+            props={{
+              data: depthData,
+              xField: 'depthLabel',
+              yField: 'systems',
+              colorField: 'zone',
+              style: {
+                fill: ({ zone }: { zone: string }) =>
+                  zone === 'Deep' ? 'rgba(255,77,79,0.25)' : 'rgba(145,202,255,0.25)',
+                stroke: ({ zone }: { zone: string }) => (zone === 'Deep' ? '#ff4d4f' : '#1677ff'),
+                lineWidth: 2,
+              },
+              tooltip: {
+                title: 'depthLabel',
+                items: [{ field: 'systems', name: 'Systems' }],
+              },
+              onReady: (plot: any) => {
+                plot.on('element:click', (evt: any) => {
+                  const datum = evt?.data?.data;
+                  if (typeof datum?.depth === 'number') {
+                    setOverviewDepthFilter(datum.depth);
+                    setOverviewSystemFilter(null);
+                  }
+                });
+              },
+              height: 140,
+              autoFit: true,
+            }}
+          />
+        </ProCard>
+      </ProCard>
+
+      <ProCard
+        ghost
+        split="vertical"
+        gutter={12}
+        title={<span style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Structural Warnings + Impact Heat</span>}
+        style={{ background: '#fff', border: '1px solid #d6dde6', borderRadius: 6, boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)', marginBottom: 12, overflowX: 'hidden' }}
+        headStyle={{ borderBottom: '1px solid #d6dde6' }}
+        bodyStyle={{ padding: 10 }}
+      >
+        <ProCard colSpan="40%" title="Warnings" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}>
+          <Card
+            size="small"
+            bordered
+            style={{ borderColor: '#d6dde6', background: '#f2f6fb', borderRadius: 6 }}
+            styles={{ body: { padding: 8 } }}
+          >
+            <Space size={[8, 8]} wrap>
+              {snapshot.dashboard.warningPanel.map((warning) => (
+                <Tag
+                  key={warning.key}
+                  color={warning.severity === 'error' ? 'red' : warning.severity === 'warning' ? 'gold' : warning.severity === 'processing' ? 'blue' : 'green'}
+                  onClick={() => setWarningDrawer({ key: warning.key, label: warning.label, systemIds: warning.systemIds })}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {warning.label} {warning.count}
+                </Tag>
+              ))}
+            </Space>
+          </Card>
+          <div style={{ marginTop: 6 }}>
+            <Badge status="processing" text={`Filter: ${overviewRiskFilter}`} />
+            <Badge style={{ marginLeft: 8 }} status="processing" text={`Depth: ${overviewDepthFilter === null ? 'All' : `D${overviewDepthFilter}`}`} />
+            <Badge
+              style={{ marginLeft: 8 }}
+              status="processing"
+              text={`System: ${overviewSystemFilter ? concentrationData.find((item) => item.systemId === overviewSystemFilter)?.system ?? '-' : 'All'}`}
+            />
+            <Button
+              size="small"
+              type="link"
+              onClick={() => {
+                setOverviewRiskFilter('All');
+                setOverviewDepthFilter(null);
+                setOverviewSystemFilter(null);
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+        </ProCard>
+
+        <ProCard colSpan="60%" title="Impact Heat" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6, boxShadow: '0 1px 2px rgba(15,23,42,0.02)' }}>
+          <Card size="small" bordered style={{ borderColor: '#d0d7e2', borderRadius: 6 }} styles={{ body: { padding: 4 } }}>
+            <ProTable<DashboardSystemMetrics>
+              rowKey="systemId"
+              size="small"
+              search={false}
+              options={false}
+              pagination={false}
+              tableStyle={{ background: '#fff' }}
+              dataSource={filteredHeatTableData}
+              columns={[
+              {
+                title: 'System',
+                dataIndex: 'systemName',
+                onHeaderCell: () => ({ style: { background: '#eef3f8' } }),
+                ellipsis: true,
+                onCell: () => ({ style: { paddingTop: 6, paddingBottom: 6 } }),
+                render: (_, row) => (
+                  <Button
+                    type="link"
+                    size="small"
+                    style={{ paddingInline: 0 }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openSimulationFromSystem(row.systemId);
+                    }}
+                  >
+                    {row.systemName}
+                  </Button>
+                ),
+              },
+              { title: 'Impact', dataIndex: 'impactScore', width: 80, onHeaderCell: () => ({ style: { background: '#eef3f8' } }), onCell: () => ({ style: { paddingTop: 6, paddingBottom: 6 } }) },
+              { title: 'Reach %', dataIndex: 'reachPercent', width: 80, onHeaderCell: () => ({ style: { background: '#eef3f8' } }), onCell: () => ({ style: { paddingTop: 6, paddingBottom: 6 } }) },
+              { title: 'Depth', dataIndex: 'dependencyDepth', width: 70, onHeaderCell: () => ({ style: { background: '#eef3f8' } }), onCell: () => ({ style: { paddingTop: 6, paddingBottom: 6 } }) },
+              {
+                title: 'Risk',
+                dataIndex: 'riskLevel',
+                width: 90,
+                onHeaderCell: () => ({ style: { background: '#eef3f8' } }),
+                onCell: () => ({ style: { paddingTop: 6, paddingBottom: 6 } }),
+                render: (_, row) => <Tag color={RISK_TAG_COLORS[row.riskLevel]}>{row.riskLevel}</Tag>,
+              },
+            ]}
+            onRow={(record) => ({
+              onClick: () => {
+                setHeatDrawerSystem(record);
+              },
+              style: { cursor: 'pointer', transition: 'background-color 0.2s' },
+              onMouseEnter: (event) => {
+                event.currentTarget.style.backgroundColor = '#f8fafc';
+              },
+              onMouseLeave: (event) => {
+                event.currentTarget.style.backgroundColor = '';
+              },
+            })}
+            />
+          </Card>
+        </ProCard>
+      </ProCard>
+
+      <Drawer
+        title={warningDrawer ? `Warning ${warningDrawer.label}` : 'Warning'}
+        width={560}
+        open={Boolean(warningDrawer)}
+        onClose={() => setWarningDrawer(null)}
+      >
+        {warningDrawer ? (
+          <ReadOnlyImpactCanvas
+            snapshot={snapshot}
+            selectedId={warningDrawer.systemIds[0]}
+            impactedIds={warningImpactedIds}
+          />
+        ) : null}
+      </Drawer>
+
+      <Drawer
+        title={heatDrawerSystem ? heatDrawerSystem.systemName : 'System'}
+        width={620}
+        open={Boolean(heatDrawerSystem)}
+        onClose={() => setHeatDrawerSystem(null)}
         extra={
-          <Space>
-            <Button
-              size="small"
-              icon={<CompressOutlined />}
-              onClick={handleFit}
-              disabled={!graphData}
-            >
-              Fit
+          heatDrawerSystem ? (
+            <Button size="small" type="primary" onClick={() => openSimulationFromSystem(heatDrawerSystem.systemId)}>
+              Simulate
             </Button>
-            <Button
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={() => handleZoom('in')}
-              disabled={!graphData}
-            >
-              Zoom in
-            </Button>
-            <Button
-              size="small"
-              icon={<MinusOutlined />}
-              onClick={() => handleZoom('out')}
-              disabled={!graphData}
-            >
-              Zoom out
-            </Button>
-          </Space>
+          ) : null
         }
       >
-        {!graphData && (
-          <Alert
-            type="info"
-            message="Run analysis to render the impact graph."
-            showIcon
+        {heatDrawerSystem ? (
+          <Tabs
+            size="small"
+            items={[
+              {
+                key: 'graph',
+                label: 'Graph',
+                children: (
+                  <ReadOnlyImpactCanvas
+                    snapshot={snapshot}
+                    selectedId={heatDrawerSystem.systemId}
+                    impactedIds={heatDrawerSimulation?.affectedIds}
+                  />
+                ),
+              },
+              {
+                key: 'downstream',
+                label: 'Downstream',
+                children: (
+                  <ProTable<{ id: string; name: string }>
+                    rowKey="id"
+                    size="small"
+                    search={false}
+                    options={false}
+                    pagination={false}
+                    dataSource={snapshot.graph.nodes
+                      .filter((node) => heatDrawerSimulation?.affectedIds.has(node.id) && node.id !== heatDrawerSystem.systemId)
+                      .slice(0, 20)
+                      .map((node) => ({ id: node.id, name: node.name }))}
+                    columns={[{ title: 'System', dataIndex: 'name' }]}
+                  />
+                ),
+              },
+              {
+                key: 'depth',
+                label: 'Chain',
+                children: (
+                  <SafeChart
+                    Chart={Bar}
+                    label="Chain"
+                    props={{
+                      data: [
+                        { metric: 'Depth', value: heatDrawerSystem.dependencyDepth },
+                        { metric: 'Reach %', value: heatDrawerSystem.reachPercent },
+                        { metric: 'Central %', value: heatDrawerSystem.centralizationPercent },
+                      ],
+                      xField: 'metric',
+                      yField: 'value',
+                      style: { fill: '#b7eb8f' },
+                      axis: { y: { title: false } },
+                      height: 150,
+                      autoFit: true,
+                    }}
+                  />
+                ),
+              },
+            ]}
           />
-        )}
-        {graphData && graphData.nodes.length === 0 && (
-          <Alert
-            type="warning"
-            message="No impacted elements found"
-            description="Adjust depth or relationships and run again."
-            showIcon
+        ) : null}
+      </Drawer>
+    </Space>
+  );
+
+  const fragilityContent = (
+    <>
+      <ProTable<ImpactSystemMetrics>
+        rowKey="systemId"
+        search={false}
+        columns={fragilityColumns}
+        dataSource={[...snapshot.systems].sort((a, b) => b.impactScore - a.impactScore)}
+        onRow={(record) => ({
+          onClick: () => setFragilityDrawer(record),
+        })}
+      />
+      <Drawer title="Impact Breakdown" width={460} open={Boolean(fragilityDrawer)} onClose={() => setFragilityDrawer(null)}>
+        {fragilityDrawer ? (
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label="System Name">{fragilityDrawer.systemName}</Descriptions.Item>
+            <Descriptions.Item label="Impact Score">{fragilityDrawer.impactScore}</Descriptions.Item>
+            <Descriptions.Item label="Inbound Dependencies">{fragilityDrawer.inboundDependencies}</Descriptions.Item>
+            <Descriptions.Item label="Outbound Dependencies">{fragilityDrawer.outboundDependencies}</Descriptions.Item>
+            <Descriptions.Item label="Dependency Depth">{fragilityDrawer.dependencyDepth}</Descriptions.Item>
+            <Descriptions.Item label="Downstream Reach">{fragilityDrawer.downstreamReach}</Descriptions.Item>
+            <Descriptions.Item label="Redundancy Status">{fragilityDrawer.redundancyStatus}</Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Drawer>
+    </>
+  );
+
+  const simulationContent = (
+    <Row gutter={12}>
+      <Col xs={24} md={6}>
+        <ProCard title="Select System">
+          <Select style={{ width: '100%' }} value={selectedSystemId} options={systemOptions} onChange={setSelectedSystemId} showSearch optionFilterProp="label" />
+          <Radio.Group
+            style={{ marginTop: 12 }}
+            value={simulationMode}
+            onChange={(event) => setSimulationMode(event.target.value)}
+            options={[
+              { label: 'Outbound', value: 'outbound' },
+              { label: 'Inbound', value: 'inbound' },
+              { label: 'Full Chain', value: 'full' },
+            ]}
           />
-        )}
-        {graphData && graphData.nodes.length > 0 && (
+        </ProCard>
+      </Col>
+
+      <Col xs={24} md={12}>
+        <ProCard title="Graph Canvas">
+          <ReadOnlyImpactCanvas snapshot={snapshot} selectedId={selectedSystemId} impactedIds={simulationResult?.affectedIds} />
+        </ProCard>
+      </Col>
+
+      <Col xs={24} md={6}>
+        <ProCard title="Summary Panel">
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Typography.Paragraph style={{ marginBottom: 8 }}>
-              Root <Typography.Text code>{graphData.rootId}</Typography.Text> ·
-              Max depth {graphData.maxDepth}
-            </Typography.Paragraph>
-            <Space wrap>
-              <Alert
-                type="info"
-                showIcon
-                message="Legend"
-                description={
-                  <Space wrap>
-                    <Tag color="#fa8c16">Root</Tag>
-                    <Tag color="#4b9bff">Downstream</Tag>
-                    <Tag color="#722ed1">Upstream</Tag>
-                    <Tag color="#52c41a">Impacted (depth &gt; 0)</Tag>
-                  </Space>
-                }
-              />
-            </Space>
-            <div
-              role="img"
-              ref={cyContainerRef}
-              style={{
-                height: 520,
-                border: `1px solid ${graphBorderColor}`,
-                borderRadius: 4,
-              }}
-              aria-label="Impact graph"
-            />
+            <Statistic title="Total systems affected" value={Math.max(0, (simulationResult?.affectedIds.size ?? 1) - 1)} />
+            <Statistic title="Maximum depth" value={simulationResult?.maxDepth ?? 0} />
+            <Statistic title="Cascading level" value={simulationResult?.cascadingLevel ?? 0} />
+            <div>
+              Severity{' '}
+              <Tag color={simulationResult?.severity === 'High' ? 'red' : simulationResult?.severity === 'Medium' ? 'orange' : 'green'}>
+                {simulationResult?.severity ?? 'Low'}
+              </Tag>
+            </div>
+            <Button type="primary" onClick={exportImpactReport}>Export Impact Report</Button>
           </Space>
-        )}
-      </Card>
-    </div>
+        </ProCard>
+      </Col>
+    </Row>
+  );
+
+  const dependencyExplorerContent = (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <ProCard>
+        <Space wrap>
+          <Select style={{ minWidth: 340 }} value={selectedSystemId} options={systemOptions} onChange={setSelectedSystemId} showSearch optionFilterProp="label" />
+          <Radio.Group
+            value={explorerMode}
+            onChange={(event) => setExplorerMode(event.target.value)}
+            options={[
+              { label: 'Inbound only', value: 'inbound' },
+              { label: 'Outbound only', value: 'outbound' },
+              { label: 'Full chain', value: 'full' },
+            ]}
+          />
+          <Switch checked={showExplorerIndicators} onChange={setShowExplorerIndicators} checkedChildren="Indicators" unCheckedChildren="Indicators" />
+        </Space>
+      </ProCard>
+
+      {showExplorerIndicators ? (
+        <ProCard>
+          <Space wrap>
+            <Badge status={snapshot.cycleNodeCount > 0 ? 'error' : 'success'} text={`Circular dependencies: ${snapshot.cycleNodeCount}`} />
+            <Badge status={snapshot.systems.filter((s) => s.dependencyDepth >= longChainThreshold).length > 0 ? 'warning' : 'success'} text={`Long chains (>=${longChainThreshold}): ${snapshot.systems.filter((s) => s.dependencyDepth >= longChainThreshold).length}`} />
+            <Badge status={snapshot.isolatedNodeCount > 0 ? 'processing' : 'default'} text={`Isolated nodes: ${snapshot.isolatedNodeCount}`} />
+          </Space>
+        </ProCard>
+      ) : null}
+
+      <ProCard title="Dependency Explorer (Read-only)">
+        <ReadOnlyImpactCanvas snapshot={snapshot} selectedId={selectedSystemId} impactedIds={explorerResult?.affectedIds} />
+      </ProCard>
+    </Space>
+  );
+
+  const structuralHealthContent = (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <ProCard split="vertical">
+        <ProCard colSpan="25%"><Statistic title="Orphan systems" value={snapshot.orphanSystems.length} /></ProCard>
+        <ProCard colSpan="25%"><Statistic title="Zero inbound/outbound" value={snapshot.systems.filter((s) => s.inboundDependencies === 0 || s.outboundDependencies === 0).length} /></ProCard>
+        <ProCard colSpan="25%"><Statistic title="High centrality systems" value={snapshot.highCentralitySystems.length} /></ProCard>
+        <ProCard colSpan="25%"><Statistic title="Metadata gaps" value={snapshot.metadataGaps.length} /></ProCard>
+      </ProCard>
+
+      <ProCard title="Structural Health Details">
+        <ProTable<ImpactSystemMetrics>
+          rowKey="systemId"
+          search={false}
+          columns={[
+            { title: 'System Name', dataIndex: 'systemName' },
+            { title: 'Inbound', dataIndex: 'inboundDependencies', width: 100 },
+            { title: 'Outbound', dataIndex: 'outboundDependencies', width: 110 },
+            { title: 'Impact Score', dataIndex: 'impactScore', width: 120 },
+            {
+              title: 'Health Tags',
+              render: (_, row) => (
+                <Space>
+                  {row.inboundDependencies === 0 && row.outboundDependencies === 0 ? <Tag color="blue">Orphan</Tag> : null}
+                  {row.inboundDependencies === 0 || row.outboundDependencies === 0 ? <Tag color="gold">Zero in/out</Tag> : null}
+                  {snapshot.highCentralitySystems.some((item) => item.systemId === row.systemId) ? <Tag color="purple">High centrality</Tag> : null}
+                </Space>
+              ),
+            },
+          ]}
+          dataSource={snapshot.systems}
+        />
+      </ProCard>
+    </Space>
+  );
+
+  const settingsContent = (
+    <ProCard title="Analysis Settings">
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Typography.Text>Cache key (repository fingerprint): {snapshot.fingerprint}</Typography.Text>
+        <Space>
+          <Typography.Text>Long chain threshold</Typography.Text>
+          <Select
+            style={{ width: 120 }}
+            value={longChainThreshold}
+            options={[3, 4, 5, 6, 8].map((value) => ({ value, label: `${value}` }))}
+            onChange={setLongChainThreshold}
+          />
+        </Space>
+        <Typography.Text type="secondary">
+          Analysis is read-only, dependency-based, and computed in-memory from EaRepository.
+        </Typography.Text>
+      </Space>
+    </ProCard>
+  );
+
+  const contentBySection: Record<ImpactAnalysisSectionKey, React.ReactNode> = {
+    overview: overviewContent,
+    fragility: fragilityContent,
+    simulation: simulationContent,
+    explorer: dependencyExplorerContent,
+    health: structuralHealthContent,
+    settings: settingsContent,
+  };
+
+  return (
+    <PageContainer
+      title="Impact Analysis Mode"
+      ghost
+      style={{ paddingBlockStart: 0, paddingTop: 0, marginTop: -6 }}
+      header={{ style: { paddingBlockStart: 0, paddingTop: 0, paddingBlockEnd: 0, paddingBottom: 0, minHeight: 0, marginBottom: 0 } }}
+      childrenContentStyle={{ marginBlockStart: 0, marginTop: 0, paddingBlockStart: 0, paddingTop: 0, overflowX: 'hidden' }}
+    >
+      {contentBySection[section]}
+    </PageContainer>
   );
 };
 
 export default ImpactAnalysisTab;
-
-/*
- * Legacy coupled implementation (runner + result rendering) is intentionally disabled.
- * Analysis results now open in separate read-only tabs.
-
-
-  const [loadingExplanation, setLoadingExplanation] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const [state, setState] = React.useState<ImpactTabState>({});
-
-  const loadElements = React.useCallback(async () => {
-    setLoadingElements(true);
-    setError(null);
-    try {
-      const [caps, procs, apps, tech, progs] = await Promise.all([
-        getRepositoryCapabilities(),
-        getRepositoryProcesses(),
-        getRepositoryApplications(),
-        getRepositoryTechnologies(),
-        getRepositoryProgrammes(),
-      ]);
-
-      const all: BaseArchitectureElement[] = [];
-      if (caps?.success) all.push(...(caps.data ?? []));
-      if (procs?.success) all.push(...(procs.data ?? []));
-      if (apps?.success) all.push(...(apps.data ?? []));
-      if (tech?.success) all.push(...(tech.data ?? []));
-      if (progs?.success) all.push(...(progs.data ?? []));
-
-      const next = all
-        .map((e) => ({ id: normalizeId(e.id), name: e.name || e.id, elementType: e.elementType }))
-        .filter((e) => e.id.length > 0)
-        .sort((a, b) =>
-          compareStrings(a.elementType, b.elementType) || compareStrings(a.name, b.name) || compareStrings(a.id, b.id),
-        );
-
-      setElements(next);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load repository elements.');
-    } finally {
-      setLoadingElements(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    // Read-only data load is allowed; analysis is never auto-run.
-    void loadElements();
-
-    // Visible defaults (not hidden assumptions).
-    form.setFieldsValue({
-      direction: 'Downstream',
-      maxDepth: 6,
-      includedRelationshipTypes: relationshipTypeOptions,
-      analysisIntent: 'Change',
-      requestedBy: 'analyst',
-      includePaths: false,
-    });
-  }, [form, loadElements]);
-
-  const runAnalysis = React.useCallback(async () => {
-    setRunning(true);
-    setError(null);
-    const { openWorkspaceTab } = useIdeShell();
-    const { project } = useEaProject();
-
-    // Explicit run should clear any previous cross-diagram highlighting.
-    dispatchImpactSelection({ kind: 'clear' });
-
-    try {
-      const values = await form.validateFields();
-
-      const rootElementId = normalizeId(values.rootElementId);
-      const direction = values.direction as ImpactAnalysisDirection;
-      const maxDepth = Number(values.maxDepth);
-      const includedRelationshipTypes = (values.includedRelationshipTypes as string[]).slice().sort(compareStrings);
-      const analysisIntent = values.analysisIntent as ImpactAnalysisIntent;
-      const requestedBy = String(values.requestedBy ?? '').trim();
-      const includePaths = Boolean(values.includePaths);
-
-      const root = elementById.get(rootElementId);
-      const rootElementType = root?.elementType ?? 'Unknown';
-
-      const requestedAt = new Date().toISOString();
-      const basis = `${rootElementId}|${rootElementType}|${direction}|${maxDepth}|${includedRelationshipTypes.join(',')}|${analysisIntent}`;
-
-      const request: ImpactAnalysisRequest = {
-        requestId: stableRequestId(basis),
-        projectId: '',
-        requestedBy,
-        requestedAt,
-
-        rootElementId,
-        rootElementType,
-        direction,
-        maxDepth,
-
-        includedElementTypes: [],
-        includedRelationshipTypes,
-
-        analysisIntent,
-      };
-
-      const resp = await postImpactAnalyze(request, { includePaths });
-      if (!resp?.success) {
-        throw new Error(resp?.errorMessage || 'Impact analysis failed.');
-      }
-
-      const data = resp.data;
-
-      setState({
-        request,
-        summary: data.impactSummary,
-        rankedImpacts: data.rankedImpacts,
-        impactPathsCount: data.impactPaths?.length,
-        audit: data.audit
-          ? {
-              auditId: data.audit.auditId,
-              requestId: data.audit.requestId,
-              ranBy: data.audit.ranBy,
-              ranAt: data.audit.ranAt,
-              direction: data.audit.parameters.direction,
-              maxDepth: data.audit.parameters.maxDepth,
-              includedRelationshipTypes: data.audit.parameters.includedRelationshipTypes,
-            }
-          : undefined,
-        selectedElementId: undefined,
-        explanationText: undefined,
-        representativePathLength: undefined,
-        selectionPolicy: undefined,
-      });
-    } catch (e: any) {
-      setError(e?.message || 'Impact analysis failed.');
-    } finally {
-      setRunning(false);
-    }
-  }, [elementById, form]);
-
-  const explainSelected = React.useCallback(
-    async (elementId: string) => {
-      const request = state.request;
-      if (!request) return;
-
-      setLoadingExplanation(true);
-      setError(null);
-
-      try {
-        const resp = await getImpactExplanation({
-          rootId: request.rootElementId,
-          elementId,
-          direction: request.direction,
-          maxDepth: request.maxDepth,
-          relationshipTypes: request.includedRelationshipTypes,
-        });
-
-        if (!resp?.success) {
-          const msg = resp?.errorMessage || 'Explanation not found.';
-          throw new Error(msg);
-        }
-
-        const result = resp.data;
-        if (!result.ok) throw new Error(result.error);
-
-        dispatchImpactSelection({
-          kind: 'path',
-          rootElementId: result.rootElementId,
-          impactedElementId: result.impactedElementId,
-          orderedElementIds: (result.representativePath.orderedElementIds ?? []).slice(),
-          orderedRelationshipIds: (result.representativePath.orderedRelationshipIds ?? []).slice(),
-        });
-
-        setState((prev) => ({
-          ...prev,
-          selectedElementId: elementId,
-          explanationText: result.explanationText,
-          representativePathLength: result.representativePath.pathLength,
-          selectionPolicy: result.selectionPolicy,
-        }));
-      } catch (e: any) {
-        setError(e?.message || 'Failed to retrieve explanation.');
-      } finally {
-        setLoadingExplanation(false);
-      }
-    },
-    [state.request],
-  );
-
-  const columns: ColumnsType<ImpactRankedElement> = [
-    {
-      title: 'Score',
-      width: 90,
-      render: (_: unknown, row) => row.score?.computedScore ?? 0,
-      sorter: false,
-    },
-    {
-      title: 'Severity',
-      width: 110,
-      render: (_: unknown, row) => row.score?.severityLabel ?? 'Low',
-    },
-    {
-      title: 'Element',
-      render: (_: unknown, row) => {
-        const e = elementById.get(row.elementId);
-        return (
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>{e?.name ?? row.elementId}</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {e?.elementType ?? 'Unknown'} · {row.elementId}
-            </Typography.Text>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Paths',
-      width: 90,
-      render: (_: unknown, row) => row.evidence.totalPathsAffectingElement,
-    },
-    {
-      title: 'Hard',
-      width: 80,
-      render: (_: unknown, row) => row.evidence.hardPathCount,
-    },
-    {
-      title: 'Soft-only',
-      width: 100,
-      render: (_: unknown, row) => row.evidence.softOnlyPathCount,
-    },
-    {
-      title: 'Max depth',
-      width: 110,
-      render: (_: unknown, row) => row.evidence.maxDepthObserved,
-    },
-  ];
-
-  const summary = state.summary;
-  const ranked = state.rankedImpacts ?? [];
-  const selectedId = state.selectedElementId;
-
-  return (
-    <div style={{ padding: 12 }}>
-      <Typography.Title level={5} style={{ marginTop: 0 }}>
-          const rootLabel = root?.name ? root.name : rootElementId;
-          const result = createAnalysisResult({
-            kind: 'impact',
-            title: `Impact: ${rootLabel}`,
-            data: {
-              request,
-              summary: data.impactSummary,
-              rankedImpacts: data.rankedImpacts,
-              impactPathsCount: data.impactPaths?.length,
-              audit: data.audit
-                ? {
-                    auditId: data.audit.auditId,
-                    requestId: data.audit.requestId,
-                    ranBy: data.audit.ranBy,
-                    ranAt: data.audit.ranAt,
-                    direction: data.audit.parameters.direction,
-                    maxDepth: data.audit.parameters.maxDepth,
-                    includedRelationshipTypes: data.audit.parameters.includedRelationshipTypes,
-                  }
-                : undefined,
-              elementIndex: elements,
-            },
-          });
-
-          message.success('Impact analysis completed. Opening result tab…');
-          openWorkspaceTab({ type: 'analysisResult', resultId: result.id });
-          description="Element criticality is currently assumed Unknown for all elements (no criticality field exists in the repository model yet)."
-          style={{ marginBottom: 12 }}
-        />
-        <Form form={form} layout="vertical">
-          <Space align="start" size={16} wrap>
-            <Form.Item
-              label="Root element"
-              name="rootElementId"
-              rules={[{ required: true, message: 'Select a root element' }]}
-              style={{ minWidth: 420 }}
-            >
-              <Select
-                showSearch
-                placeholder={loadingElements ? 'Loading…' : 'Select root'}
-                optionFilterProp="label"
-                options={elements.map((e) => ({
-            message="Repository-only, explicit analysis"
-                  label: `${e.name} (${e.elementType})`,
-                }))}
-                Analysis only runs when you click <strong>Run analysis</strong>. It reads repository data only and opens results in a separate read-only tab.
-            </Form.Item>
-
-            <Form.Item label="Direction" name="direction" rules={[{ required: true }]} style={{ minWidth: 240 }}>
-              <Select options={directionOptions} />
-            </Form.Item>
-
-            <Form.Item label="Max depth" name="maxDepth" rules={[{ required: true }]} style={{ width: 140 }}>
-              <InputNumber min={1} max={25} />
-            </Form.Item>
-
-            <Form.Item label="Intent" name="analysisIntent" rules={[{ required: true }]} style={{ minWidth: 200 }}>
-              <Select options={intentOptions} />
-            </Form.Item>
-
-            <Form.Item label="Requested by" name="requestedBy" rules={[{ required: true }]} style={{ minWidth: 200 }}>
-              <Input />
-            </Form.Item>
-          </Space>
-
-          <Form.Item
-            label="Allowed relationship types"
-            name="includedRelationshipTypes"
-            rules={[{ required: true, message: 'Select at least one relationship type' }]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select relationship types"
-              options={relationshipTypeOptions.map((t) => ({ value: t, label: t }))}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Include raw paths (optional)"
-            name="includePaths"
-            valuePropName="checked"
-            tooltip="Gated. When enabled, the API returns raw ImpactPaths which can be large."
-          >
-            <Switch />
-          </Form.Item>
-
-          <Space>
-            <Button type="primary" onClick={() => void runAnalysis()} loading={running}>
-              Run analysis
-            </Button>
-            <Typography.Text type="secondary">No auto-run; results update only on explicit run.</Typography.Text>
-          </Space>
-        </Form>
-      </Card>
-
-      {error ? (
-        <div style={{ marginTop: 12 }}>
-          <Alert type="error" showIcon message={error} />
-        </div>
-      ) : null}
-
-      <Divider style={{ margin: '12px 0' }} />
-
-      <Card size="small" title="1) Impact Summary">
-        {summary ? (
-          <Descriptions size="small" column={2}>
-            <Descriptions.Item label="Root">{elementById.get(summary.rootElementId)?.name ?? summary.rootElementId}</Descriptions.Item>
-            <Descriptions.Item label="Total impacted elements">{summary.totalImpactedElements}</Descriptions.Item>
-            <Descriptions.Item label="Severity (H/M/L)">
-              {summary.severityBreakdown.High}/{summary.severityBreakdown.Medium}/{summary.severityBreakdown.Low}
-            </Descriptions.Item>
-            <Descriptions.Item label="Max dependency depth observed">{summary.maxDependencyDepthObserved}</Descriptions.Item>
-            <Descriptions.Item label="Analysis timestamp" span={2}>
-              {summary.analysisTimestamp}
-            </Descriptions.Item>
-
-            {state.audit ? (
-              <>
-                <Descriptions.Item label="Audit id" span={2}>
-                  {state.audit.auditId}
-                </Descriptions.Item>
-                <Descriptions.Item label="Ran by">{state.audit.ranBy}</Descriptions.Item>
-                <Descriptions.Item label="Ran at">{state.audit.ranAt}</Descriptions.Item>
-                <Descriptions.Item label="Direction">{state.audit.direction}</Descriptions.Item>
-                <Descriptions.Item label="Max depth">{state.audit.maxDepth}</Descriptions.Item>
-                <Descriptions.Item label="Relationship types" span={2}>
-                  {(state.audit.includedRelationshipTypes ?? []).join(', ') || '(none)'}
-                </Descriptions.Item>
-              </>
-            ) : null}
-          </Descriptions>
-        ) : (
-          <Typography.Text type="secondary">Run an analysis to see the summary.</Typography.Text>
-        )}
-      </Card>
-
-      {state.audit ? (
-        <div style={{ marginTop: 12 }}>
-          <ArchitectureReviewPanel
-            subjectKind="ImpactAnalysis"
-            subjectId={state.audit.auditId}
-            defaultReviewer={state.audit.ranBy}
-          />
-        </div>
-      ) : null}
-
-      <Divider style={{ margin: '12px 0' }} />
-
-      <Card size="small" title="2) Ranked Impact List" extra={state.impactPathsCount != null ? <Typography.Text type="secondary">Paths returned: {state.impactPathsCount}</Typography.Text> : null}>
-        <Table
-          rowKey={(r) => r.elementId}
-          size="small"
-          columns={columns}
-          dataSource={ranked}
-          pagination={{ pageSize: 8 }}
-          onRow={(record) => ({
-            onClick: () => void explainSelected(record.elementId),
-          })}
-          rowClassName={(record) => (record.elementId === selectedId ? 'ant-table-row-selected' : '')}
-        />
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Click an element to fetch a single representative explanation (no path dumping).
-        </Typography.Paragraph>
-      </Card>
-
-      <Divider style={{ margin: '12px 0' }} />
-
-      <Card size="small" title="3) Selected Impact Explanation" extra={loadingExplanation ? 'Loading…' : null}>
-        {selectedId && state.explanationText ? (
-          <Space direction="vertical" style={{ width: '100%' }} size={8}>
-            <Typography.Text strong>
-              {elementById.get(selectedId)?.name ?? selectedId}
-            </Typography.Text>
-            <Typography.Text type="secondary">
-              Policy: {state.selectionPolicy} · Path length: {state.representativePathLength}
-            </Typography.Text>
-            <Typography.Paragraph style={{ marginBottom: 0 }}>{state.explanationText}</Typography.Paragraph>
-          </Space>
-        ) : (
-          <Typography.Text type="secondary">Select an impacted element to see “why it is impacted”.</Typography.Text>
-        )}
-      </Card>
-    </div>
-  );
-};
-
-*/

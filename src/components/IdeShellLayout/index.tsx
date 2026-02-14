@@ -2644,8 +2644,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                 bordered
                                 bodyStyle={{
                                   height: '100%',
-                                  padding: 16,
-                                  overflow: 'auto',
+                                  padding: t.key === 'analysis:impact' ? '0 16px 16px 16px' : 16,
+                                  overflowY: 'auto',
+                                  overflowX: t.key === 'analysis:impact' ? 'hidden' : 'auto',
                                 }}
                                 style={{ height: '100%' }}
                               >
