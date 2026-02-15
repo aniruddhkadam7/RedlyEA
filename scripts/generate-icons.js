@@ -30,67 +30,73 @@ const OUT_DIR = path.join(ROOT, 'build', 'icons');
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
-// --- PNG copy (always works) ---
-fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'icon.png'));
-fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'eapkg-icon.png'));
-console.log('✓ Copied icon.png and eapkg-icon.png');
+async function main() {
+  // --- PNG copy (always works) ---
+  fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'icon.png'));
+  fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'app.png'));
+  fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'eapkg.png'));
+  fs.copyFileSync(SRC_512, path.join(OUT_DIR, 'eapkg-icon.png'));
+  console.log('✓ Copied icon/app/eapkg PNG assets');
 
-// --- ICO generation ---
-try {
-  const pngToIco = require('png-to-ico');
-  const icoBuf = pngToIco([SRC_512]);
-  if (icoBuf instanceof Promise) {
-    icoBuf.then((buf) => {
-      fs.writeFileSync(path.join(OUT_DIR, 'icon.ico'), buf);
-      fs.writeFileSync(path.join(OUT_DIR, 'eapkg-icon.ico'), buf);
-      console.log('✓ Generated icon.ico and eapkg-icon.ico');
-    });
-  } else {
+  // --- ICO generation ---
+  try {
+    let pngToIco;
+    try {
+      const mod = require('png-to-ico');
+      pngToIco = mod.default || mod;
+    } catch {
+      const mod = await import('png-to-ico');
+      pngToIco = mod.default || mod;
+    }
+
+    const icoBuf = await pngToIco([SRC_512]);
     fs.writeFileSync(path.join(OUT_DIR, 'icon.ico'), icoBuf);
     fs.writeFileSync(path.join(OUT_DIR, 'eapkg-icon.ico'), icoBuf);
     console.log('✓ Generated icon.ico and eapkg-icon.ico');
+  } catch {
+    console.warn('⚠ png-to-ico not installed. Run: npm i -D png-to-ico');
+    console.warn(
+      '  Falling back to PNG-only icons (electron-builder will still work).',
+    );
   }
-} catch {
-  console.warn('⚠ png-to-ico not installed. Run: npm i -D png-to-ico');
-  console.warn(
-    '  Falling back to PNG-only icons (electron-builder will still work).',
-  );
-}
 
-// --- ICNS generation (macOS only via iconutil) ---
-if (process.platform === 'darwin') {
-  try {
-    const iconset = path.join(OUT_DIR, 'icon.iconset');
-    fs.mkdirSync(iconset, { recursive: true });
-    const sizes = [16, 32, 64, 128, 256, 512];
-    // sips is available on macOS
-    for (const s of sizes) {
+  // --- ICNS generation (macOS only via iconutil) ---
+  if (process.platform === 'darwin') {
+    try {
+      const iconset = path.join(OUT_DIR, 'icon.iconset');
+      fs.mkdirSync(iconset, { recursive: true });
+      const sizes = [16, 32, 64, 128, 256, 512];
+      // sips is available on macOS
+      for (const s of sizes) {
+        execSync(
+          `sips -z ${s} ${s} "${SRC_512}" --out "${path.join(iconset, `icon_${s}x${s}.png`)}`,
+          { stdio: 'ignore' },
+        );
+        execSync(
+          `sips -z ${s * 2} ${s * 2} "${SRC_512}" --out "${path.join(iconset, `icon_${s}x${s}@2x.png`)}`,
+          { stdio: 'ignore' },
+        );
+      }
       execSync(
-        `sips -z ${s} ${s} "${SRC_512}" --out "${path.join(iconset, `icon_${s}x${s}.png`)}"`,
+        `iconutil -c icns "${iconset}" -o "${path.join(OUT_DIR, 'icon.icns')}"`,
         { stdio: 'ignore' },
       );
-      execSync(
-        `sips -z ${s * 2} ${s * 2} "${SRC_512}" --out "${path.join(iconset, `icon_${s}x${s}@2x.png`)}"`,
-        { stdio: 'ignore' },
+      fs.copyFileSync(
+        path.join(OUT_DIR, 'icon.icns'),
+        path.join(OUT_DIR, 'eapkg-icon.icns'),
       );
+      fs.rmSync(iconset, { recursive: true, force: true });
+      console.log('✓ Generated icon.icns and eapkg-icon.icns');
+    } catch (e) {
+      console.warn('⚠ ICNS generation failed:', e.message);
     }
-    execSync(
-      `iconutil -c icns "${iconset}" -o "${path.join(OUT_DIR, 'icon.icns')}"`,
-      { stdio: 'ignore' },
+  } else {
+    console.log(
+      'ℹ ICNS generation skipped (not macOS). electron-builder will use PNG fallback.',
     );
-    fs.copyFileSync(
-      path.join(OUT_DIR, 'icon.icns'),
-      path.join(OUT_DIR, 'eapkg-icon.icns'),
-    );
-    fs.rmSync(iconset, { recursive: true, force: true });
-    console.log('✓ Generated icon.icns and eapkg-icon.icns');
-  } catch (e) {
-    console.warn('⚠ ICNS generation failed:', e.message);
   }
-} else {
-  console.log(
-    'ℹ ICNS generation skipped (not macOS). electron-builder will use PNG fallback.',
-  );
+
+  console.log('\nDone. Icons written to build/icons/');
 }
 
-console.log('\nDone. Icons written to build/icons/');
+void main();

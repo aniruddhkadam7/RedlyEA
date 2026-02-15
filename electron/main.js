@@ -1,13 +1,20 @@
-const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  shell,
+  dialog,
+  ipcMain,
+  protocol,
+} = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
 
-// Ensure Electron can write cache/profile data even in restricted folders.
+// Stable user data folder under AppData (not temp).
 const userDataDir =
   process.env.ELECTRON_USER_DATA_DIR ||
-  path.join(app.getPath('temp'), 'ea-app-profile');
+  path.join(app.getPath('appData'), 'Redly EA Studio');
 app.setPath('userData', userDataDir);
 app.disableHardwareAcceleration();
 
@@ -25,9 +32,25 @@ const fileIconPngCandidates = [
 ];
 
 if (process.platform === 'win32') {
-  // Helps Windows associate the taskbar icon with this app in dev.
-  app.setAppUserModelId('com.redlyai.desktop');
+  app.setAppUserModelId('com.redly.architecturestudio');
 }
+
+// ---------------------------------------------------------------------------
+// Version tracking (read from package.json at runtime)
+// ---------------------------------------------------------------------------
+const APP_VERSION = (() => {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+    );
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
+console.log(
+  `[EA] Redly EA Studio v${APP_VERSION} (packaged=${app.isPackaged})`,
+);
 
 const buildIcoFromPngBuffer = (pngBuffer) => {
   if (!Buffer.isBuffer(pngBuffer) || pngBuffer.length < 24) return null;
@@ -219,7 +242,7 @@ const buildMetaRecord = (repoId, payload, existingMeta) => {
   };
 };
 
-const isDev = !!process.env.ELECTRON_START_URL;
+const isDev = !app.isPackaged;
 
 const resolveAppIcon = () => {
   const fallbackIco = path.join(__dirname, '..', 'public', 'favicon.ico');
@@ -260,6 +283,7 @@ const enqueueRepositoryImport = async (filePath) => {
       !filePath ||
       !(
         filePath.toLowerCase().endsWith('.eapkg') ||
+        filePath.toLowerCase().endsWith('.redly') ||
         filePath.toLowerCase().endsWith('.zip')
       )
     )
@@ -318,9 +342,7 @@ const enqueueRepositoryImport = async (filePath) => {
 
 function createWindow() {
   const titleBarOverlay =
-    process.platform === 'win32'
-      ? resolveTitleBarOverlay()
-      : undefined;
+    process.platform === 'win32' ? resolveTitleBarOverlay() : undefined;
 
   const win = new BrowserWindow({
     width: 1400,
@@ -333,6 +355,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false, // allow file:// to load local assets
     },
   });
 
@@ -347,7 +370,7 @@ function createWindow() {
   win.removeMenu();
 
   let hasRetriedDevLoad = false;
-  const devStartUrl = process.env.ELECTRON_START_URL || 'http://localhost:8003';
+  const devStartUrl = process.env.ELECTRON_START_URL || 'http://localhost:8000';
   const devFallbackUrl = devStartUrl.replace('localhost', '127.0.0.1');
 
   win.webContents.on(
@@ -380,12 +403,48 @@ function createWindow() {
 
   win.webContents.on('render-process-gone', (_event, details) => {
     console.error('[EA] Renderer process terminated:', details);
+    if (!isDev) {
+      try {
+        win.webContents.openDevTools({ mode: 'detach' });
+      } catch {}
+    }
   });
 
-  if (isDev) {
-    win.loadURL(devStartUrl);
+  win.webContents.on('crashed', () => {
+    console.error('[EA] Renderer crashed');
+    if (!isDev) {
+      try {
+        win.webContents.openDevTools({ mode: 'detach' });
+      } catch {}
+    }
+  });
+
+  // ── Renderer loading ──────────────────────────────────────────────
+  // Forward renderer console messages to main process stdout for debugging
+  win.webContents.on(
+    'console-message',
+    (_event, level, msg, line, sourceId) => {
+      const tag = ['LOG', 'WARN', 'ERROR', 'INFO', 'DEBUG'][level] || 'LOG';
+      console.log(`[Renderer:${tag}] ${msg} (${sourceId}:${line})`);
+    },
+  );
+
+  if (app.isPackaged) {
+    // Use custom app:// protocol so the renderer has a real origin
+    // and all relative asset paths (./umi.xxx.js, ./xxx.async.js) resolve
+    // correctly from the dist folder inside app.asar.
+    const prodUrl = 'app://dist/index.html';
+    console.log('[EA] Loading production renderer via protocol:', prodUrl);
+
+    win.loadURL(prodUrl).catch((err) => {
+      console.error('[EA] Failed to load production URL:', err);
+      try {
+        win.webContents.openDevTools({ mode: 'detach' });
+      } catch {}
+    });
   } else {
-    win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    console.log('[EA] Loading dev server:', devStartUrl);
+    win.loadURL(devStartUrl);
   }
 
   mainWindow = win;
@@ -753,6 +812,8 @@ ipcMain.handle('ea:openDevTools', async () => {
   try {
     if (!mainWindow || mainWindow.isDestroyed())
       return { ok: false, error: 'No active window.' };
+    if (app.isPackaged)
+      return { ok: false, error: 'DevTools are disabled in production.' };
     mainWindow.webContents.openDevTools({ mode: 'detach' });
     return { ok: true };
   } catch (err) {
@@ -779,12 +840,77 @@ ipcMain.handle('ea:setTitleBarTheme', async (_event, args) => {
   }
 });
 
+// Register custom 'app' protocol as privileged BEFORE app is ready.
+// This lets Electron serve the Umi dist folder as a proper website origin,
+// avoiding all file:// issues (null origin, absolute publicPath, CORS, etc.).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
 app.whenReady().then(() => {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
     app.quit();
     return;
   }
+
+  // ── Custom protocol handler ──────────────────────────────────────
+  // Serve files from <app.asar>/dist via app:// so the renderer has a
+  // real origin and all relative asset/chunk paths resolve correctly.
+  protocol.handle('app', async (request) => {
+    try {
+      const url = new URL(request.url);
+      let filePath = decodeURIComponent(url.pathname);
+
+      if (filePath === '/' || filePath === '') {
+        filePath = '/index.html';
+      }
+
+      const distPath = path.join(__dirname, '..', 'dist');
+      const fullPath = path.join(distPath, filePath);
+
+      // Determine MIME type from extension
+      const ext = path.extname(fullPath).toLowerCase();
+      const mimeTypes = {
+        '.html': 'text/html',
+        '.js': 'application/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.eot': 'application/vnd.ms-fontobject',
+        '.map': 'application/json',
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+      const data = fs.readFileSync(fullPath);
+      return new Response(data, {
+        status: 200,
+        headers: { 'Content-Type': contentType },
+      });
+    } catch (e) {
+      console.error('[EA] Protocol handler error:', e.message);
+      return new Response('Not Found', {
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+  });
 
   // Register .eapkg/.eaproj file types in Windows registry (icons + open-with)
   registerEaFileTypes();
@@ -797,6 +923,7 @@ app.whenReady().then(() => {
       (arg) =>
         typeof arg === 'string' &&
         (arg.toLowerCase().endsWith('.eapkg') ||
+          arg.toLowerCase().endsWith('.redly') ||
           arg.toLowerCase().endsWith('.zip')),
     );
     for (const p of candidates) {
@@ -812,6 +939,7 @@ app.whenReady().then(() => {
       (arg) =>
         typeof arg === 'string' &&
         (arg.toLowerCase().endsWith('.eapkg') ||
+          arg.toLowerCase().endsWith('.redly') ||
           arg.toLowerCase().endsWith('.zip')),
     );
     for (const p of candidates) {

@@ -1,16 +1,37 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.yourcompany.redlyai",
-  "productName": "RedlyAI",
+  "appId": "com.redly.architecturestudio",
+  "productName": "Redly EA Studio",
+  "artifactName": "Redly-EA-Studio-${version}-${os}-${arch}.${ext}",
   "directories": {
     "output": "release",
     "buildResources": "build"
   },
-  "files": ["dist/**/*", "electron/**/*", "!node_modules/.cache"],
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json",
+    "!node_modules/.cache",
+    "!src",
+    "!tests",
+    "!.git",
+    "!.vscode",
+    "!logs"
+  ],
   "extraMetadata": {
     "main": "electron/main.js"
   },
+  "asar": true,
+  "icon": "build/icons/app",
   "fileAssociations": [
+    {
+      "ext": "redly",
+      "name": "Redly EA Repository",
+      "description": "Redly EA Studio Repository",
+      "mimeType": "application/x-redly",
+      "icon": "build/icons/eapkg-icon",
+      "role": "Editor"
+    },
     {
       "ext": "eapkg",
       "name": "EA Repository Package",
@@ -20,53 +41,33 @@
       "role": "Editor"
     }
   ],
-  "icon": "build/icons/app",
   "win": {
-    "target": ["nsis", "portable"],
-    "icon": "build/icons/app.ico",
-    "fileAssociations": [
+    "target": [
       {
-        "ext": "eapkg",
-        "name": "EA Repository Package",
-        "description": "Enterprise Architecture Repository",
-        "icon": "build/icons/eapkg-icon.ico",
-        "role": "Editor"
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
       }
-    ]
+    ],
+    "icon": "build/icons/app.ico",
+    "signAndEditExecutable": false
   },
   "nsis": {
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
     "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "RedlyAI Architecture Studio"
+    "shortcutName": "Redly EA Studio",
+    "uninstallDisplayName": "Redly EA Studio",
+    "installerIcon": "build/icons/app.ico",
+    "uninstallerIcon": "build/icons/app.ico",
+    "artifactName": "Redly-EA-Studio-Setup-${version}.${ext}"
   },
-  "mac": {
-    "target": ["dmg", "zip"],
-    "icon": "build/icons/app.icns",
-    "category": "public.app-category.developer-tools",
-    "fileAssociations": [
-      {
-        "ext": "eapkg",
-        "name": "EA Repository Package",
-        "description": "Enterprise Architecture Repository",
-        "icon": "build/icons/eapkg-icon.icns",
-        "role": "Editor"
-      }
-    ]
-  },
-  "linux": {
-    "target": ["AppImage", "deb"],
-    "icon": "build/icons/app.png",
-    "category": "Development",
-    "fileAssociations": [
-      {
-        "ext": "eapkg",
-        "name": "EA Repository Package",
-        "description": "Enterprise Architecture Repository Package",
-        "mimeType": "application/x-eapkg"
-      }
-    ]
+  "portable": {
+    "artifactName": "Redly-EA-Studio-Portable-${version}.${ext}"
   }
 }

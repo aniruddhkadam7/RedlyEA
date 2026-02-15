@@ -1,0 +1,4 @@
+release/Redly-EA-Studio-Portable-6.0.1.exe filter=lfs diff=lfs merge=lfs -text
+release/Redly-EA-Studio-Setup-6.0.1.exe filter=lfs diff=lfs merge=lfs -text
+release/win-unpacked/Redly[[:space:]]EA[[:space:]]Studio.exe filter=lfs diff=lfs merge=lfs -text
+release/win-unpacked/resources/app.asar filter=lfs diff=lfs merge=lfs -text

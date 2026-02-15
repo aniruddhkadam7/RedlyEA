@@ -1,0 +1,59 @@
+directories:
+  output: release
+  buildResources: build
+$schema: https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json
+appId: com.redly.architecturestudio
+productName: Redly EA Studio
+artifactName: Redly-EA-Studio-${version}-${os}-${arch}.${ext}
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+      - package.json
+      - '!node_modules/.cache'
+      - '!src'
+      - '!tests'
+      - '!.git'
+      - '!.vscode'
+      - '!logs'
+extraMetadata:
+  main: electron/main.js
+asar: true
+icon: build/icons/app
+fileAssociations:
+  - ext: redly
+    name: Redly EA Repository
+    description: Redly EA Studio Repository
+    mimeType: application/x-redly
+    icon: build/icons/eapkg-icon
+    role: Editor
+  - ext: eapkg
+    name: EA Repository Package
+    description: Enterprise Architecture Repository
+    mimeType: application/x-eapkg
+    icon: build/icons/eapkg-icon
+    role: Editor
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: build/icons/app.ico
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Redly EA Studio
+  uninstallDisplayName: Redly EA Studio
+  installerIcon: build/icons/app.ico
+  uninstallerIcon: build/icons/app.ico
+  artifactName: Redly-EA-Studio-Setup-${version}.${ext}
+portable:
+  artifactName: Redly-EA-Studio-Portable-${version}.${ext}
+electronVersion: 29.4.6

@@ -18,11 +18,21 @@ const isJest =
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
  */
-const PUBLIC_PATH: string = '/';
+// Use relative paths for Electron packaged builds (file:// protocol)
+// Umi v4 rejects './' publicPath in dev mode, so only apply it for production.
+const isProd = process.env.NODE_ENV === 'production';
+const PUBLIC_PATH: string = isProd ? './' : '/';
 
 export default defineConfig({
   ...(UMI_ENV === 'dev' ? { mfsu: false } : {}),
   plugins: [join(__dirname, './ensureUmiTmpDir')],
+
+  /**
+   * @name base path for routing
+   * @description './' ensures route resolution works under file:// protocol (production only)
+   */
+  ...(isProd ? { base: './' } : {}),
+
   /**
    * @name 开启 hash 模式
    * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。
@@ -31,6 +41,46 @@ export default defineConfig({
   hash: true,
 
   publicPath: PUBLIC_PATH,
+
+  // Required by Umi when publicPath is relative ('./')  — production only
+  ...(isProd ? { runtimePublicPath: {} } : {}),
+
+  // Inject runtime fix BEFORE any bundle runs (production/Electron only).
+  // Under file:// protocol:
+  //   1. window.publicPath and __umi_public_path__ must be './' so async chunks
+  //      load relative to index.html instead of the filesystem root.
+  //   2. location.origin is null under file://, which can crash code that
+  //      expects a real origin — we patch it to 'http://localhost'.
+  ...(isProd
+    ? {
+        headScripts: [
+          {
+            content: `
+(function () {
+  if (location.protocol === 'file:') {
+    window.__umi_public_path__ = './';
+    window.publicPath = './';
+    try {
+      Object.defineProperty(window.location, 'origin', {
+        value: 'http://localhost',
+        configurable: true
+      });
+    } catch (e) {}
+  }
+})();
+`.trim(),
+            charset: 'utf-8',
+          },
+        ],
+      }
+    : {}),
+
+  /**
+   * @name hash history for Electron
+   * @description file:// protocol cannot use browser history (pushState).
+   *   Hash routing makes all routes work inside the packaged .exe.
+   */
+  history: { type: 'hash' },
 
   /**
    * @name 兼容性设置
