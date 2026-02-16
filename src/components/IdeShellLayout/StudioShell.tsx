@@ -95,7 +95,6 @@ import {
 
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import {
-  EA_LAYERS,
   type EaLayer,
   OBJECT_TYPE_DEFINITIONS,
   type ObjectType,
@@ -160,7 +159,11 @@ type StudioToolMode =
   | 'CREATE_FREE_CONNECTOR'
   | 'PAN';
 
-type AutoLayoutMode = 'layer' | 'flow';
+type AutoLayoutMode =
+  | 'smart'
+  | 'layeredArchitecture'
+  | 'generateArchitecture'
+  | 'resetManual';
 
 type CanvasModelingSource =
   | 'toolbox'
@@ -1929,6 +1932,11 @@ const StudioShell: React.FC<StudioShellProps> = ({
     string,
     { x: number; y: number }
   > | null>(null);
+  const manualLayoutBaselineRef = React.useRef<Record<
+    string,
+    { x: number; y: number }
+  > | null>(null);
+  const autoArrangeRunningRef = React.useRef(false);
   const toolModeRef = React.useRef<StudioToolMode>('SELECT');
   const relationshipEligibilityRef = React.useRef<Map<string, Set<string>>>(
     new Map(),
@@ -2513,6 +2521,10 @@ const StudioShell: React.FC<StudioShellProps> = ({
     applyLayoutSnapshot(next);
     return true;
   }, [applyLayoutSnapshot, captureLayoutSnapshot]);
+
+  React.useEffect(() => {
+    manualLayoutBaselineRef.current = null;
+  }, [activeTabKey, stagedElements.length]);
 
   const findNodeAtPosition = React.useCallback(
     (pos: { x: number; y: number }) => {
@@ -4763,6 +4775,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
         }
       });
 
+      manualLayoutBaselineRef.current = null;
       setAlignmentGuides({ x: null, y: null });
     },
     [
@@ -4779,6 +4792,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     // resetLayout is user-triggered ("Reset Layout" button) so fit: true
     // is intentional — the user expects the viewport to re-center.
     cyRef.current.layout({ name: 'grid', fit: true, avoidOverlap: true }).run();
+    manualLayoutBaselineRef.current = null;
   }, [recordLayoutUndoSnapshot]);
 
   const cleanAlignToGrid = React.useCallback(() => {
@@ -4789,6 +4803,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
       if (!isNodeEditable(node)) return;
       snapPosition(String(node.id()));
     });
+    manualLayoutBaselineRef.current = null;
     setAlignmentGuides({ x: null, y: null });
   }, [isNodeEditable, recordLayoutUndoSnapshot, snapPosition]);
 
@@ -4799,13 +4814,105 @@ const StudioShell: React.FC<StudioShellProps> = ({
         message.info('Layout is locked in presentation view.');
         return;
       }
+      if (autoArrangeRunningRef.current) {
+        message.info('Auto Arrange is already running.');
+        return;
+      }
 
       const cy = cyRef.current;
+      const snapshot = captureLayoutSnapshot();
+      if (!snapshot) return;
+
+      const viewState = {
+        zoom: cy.zoom(),
+        pan: { ...cy.pan() },
+        selectedNodeIds: cy
+          .nodes(':selected')
+          .toArray()
+          .map((n) => String(n.id())),
+        selectedEdgeIds: cy
+          .edges(':selected')
+          .toArray()
+          .map((e) => String(e.id())),
+      };
+
+      const applyPositions = (positions: Map<string, { x: number; y: number }>) =>
+        new Promise<void>((resolve) => {
+          const animTargets = Array.from(positions.entries())
+            .map(([id, pos]) => ({ id, pos, node: cy.getElementById(id) }))
+            .filter(({ node }) => node && !node.empty());
+
+          if (animTargets.length === 0) {
+            resolve();
+            return;
+          }
+
+          const duration = animTargets.length > 240 ? 180 : 280;
+          let remaining = 0;
+          const onDone = () => {
+            remaining -= 1;
+            if (remaining > 0) return;
+
+            cy.zoom(viewState.zoom);
+            cy.pan(viewState.pan);
+
+            cy.elements().unselect();
+            viewState.selectedNodeIds.forEach((id) => {
+              const node = cy.getElementById(id);
+              if (node && !node.empty()) node.select();
+            });
+            viewState.selectedEdgeIds.forEach((id) => {
+              const edge = cy.getElementById(id);
+              if (edge && !edge.empty()) edge.select();
+            });
+
+            cy.style().update();
+            refreshConnectionPositionSnapshot();
+            setAlignmentGuides({ x: null, y: null });
+            resolve();
+          };
+
+          requestAnimationFrame(() => {
+            animTargets.forEach(({ node, pos }) => {
+              remaining += 1;
+              node.stop(true, false);
+              node.animate(
+                { position: pos },
+                {
+                  duration,
+                  easing: 'ease-in-out',
+                  queue: false,
+                  complete: onDone,
+                },
+              );
+            });
+          });
+        });
+
+      if (mode === 'resetManual') {
+        if (!manualLayoutBaselineRef.current) {
+          message.info('No manual layout snapshot is available yet.');
+          return;
+        }
+        recordLayoutUndoSnapshot();
+        autoArrangeRunningRef.current = true;
+        void applyPositions(new Map(Object.entries(manualLayoutBaselineRef.current))).finally(
+          () => {
+            autoArrangeRunningRef.current = false;
+            persistWorkspaceRef.current?.();
+          },
+        );
+        return;
+      }
+
+      if (!manualLayoutBaselineRef.current) {
+        manualLayoutBaselineRef.current = snapshot;
+      }
+
       const rawNodes = cy
         .nodes()
         .filter((node) => !node.data('freeShape') && isNodeEditable(node))
         .toArray();
-
       if (rawNodes.length === 0) return;
 
       const rawEdges = cy
@@ -4827,36 +4934,31 @@ const StudioShell: React.FC<StudioShellProps> = ({
         const id = String(node.id());
         const dataType = node.data('elementType') as ObjectType | undefined;
         const fallback = stagedElementById.get(id);
-        const type = dataType ?? fallback?.type;
-        const layer = type
-          ? (OBJECT_TYPE_DEFINITIONS[type]?.layer ?? 'Business')
-          : 'Business';
+        const type = (dataType ?? fallback?.type) as ObjectType | undefined;
         return {
           id,
+          type,
           node,
-          layer,
           label: String(node.data('label') ?? fallback?.name ?? id),
           currentX: node.position('x'),
           currentY: node.position('y'),
         };
       });
 
-      const layerIndex = new Map<EaLayer, number>(
-        EA_LAYERS.map((layer, index) => [layer, index]),
-      );
       const rowGap = Math.max(120, gridSize * 4);
       const columnGap = Math.max(240, gridSize * 6);
-      const groupGap = Math.max(60, gridSize * 3);
       const center = getCanvasCenter();
+      const snap = (value: number) => {
+        const size = Math.max(4, Math.round(gridSize));
+        return Math.round(value / size) * size;
+      };
 
       const sortNodes = (
         a: (typeof nodes)[number],
         b: (typeof nodes)[number],
       ) => {
-        const layerDiff =
-          (layerIndex.get(a.layer) ?? 0) - (layerIndex.get(b.layer) ?? 0);
-        if (layerDiff !== 0) return layerDiff;
         if (a.currentY !== b.currentY) return a.currentY - b.currentY;
+        if (a.currentX !== b.currentX) return a.currentX - b.currentX;
         const labelDiff = a.label.localeCompare(b.label, undefined, {
           sensitivity: 'base',
         });
@@ -4864,160 +4966,350 @@ const StudioShell: React.FC<StudioShellProps> = ({
         return a.id.localeCompare(b.id, undefined, { sensitivity: 'base' });
       };
 
-      const placeColumns = (
-        columns: { groups: { nodes: typeof nodes }[] }[],
-      ) => {
-        const totalColumns = columns.length;
-        const startX = center.x - (totalColumns - 1) * (columnGap / 2);
-        const positions = new Map<string, { x: number; y: number }>();
-
-        columns.forEach((column, columnIndex) => {
-          let cursor = 0;
-          const placements: {
-            node: (typeof nodes)[number];
-            offsetY: number;
-          }[] = [];
-          column.groups.forEach((group, groupIndex) => {
-            group.nodes.forEach((node, index) => {
-              placements.push({ node, offsetY: cursor + index * rowGap });
-            });
-
-            if (group.nodes.length > 0) {
-              cursor += (group.nodes.length - 1) * rowGap;
-              if (groupIndex < column.groups.length - 1) {
-                cursor += groupGap;
-              }
-            }
-          });
-
-          const startY = center.y - cursor / 2;
-          placements.forEach(({ node, offsetY }) => {
-            positions.set(node.id, {
-              x: Math.round(startX + columnIndex * columnGap),
-              y: Math.round(startY + offsetY),
-            });
-          });
-        });
-
-        cy.batch(() => {
-          positions.forEach((position, id) => {
-            const node = cy.getElementById(id);
-            if (!node || node.empty()) return;
-            node.position(position);
-          });
-        });
-      };
-
-      recordLayoutUndoSnapshot();
-
-      const resolvedMode: AutoLayoutMode =
-        mode === 'flow' && edges.length === 0 ? 'layer' : mode;
-      if (mode === 'flow' && resolvedMode === 'layer') {
-        message.info(
-          'No relationships found for flow layout. Using By Layer instead.',
-        );
-      }
-
-      if (resolvedMode === 'layer') {
-        const buckets = new Map<EaLayer, typeof nodes>();
-        nodes.forEach((node) => {
-          const bucket = buckets.get(node.layer) ?? [];
-          bucket.push(node);
-          buckets.set(node.layer, bucket);
-        });
-
-        const columns = EA_LAYERS.map((layer) => ({
-          layer,
-          nodes: (buckets.get(layer) ?? []).slice().sort(sortNodes),
-        }))
-          .filter((entry) => entry.nodes.length > 0)
-          .map((entry) => ({ groups: [{ nodes: entry.nodes }] }));
-
-        placeColumns(columns);
-        return;
-      }
-
       const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
-      const indegree = new Map<string, number>();
       const outgoing = new Map<string, string[]>();
+      const incoming = new Map<string, string[]>();
       nodes.forEach((node) => {
-        indegree.set(node.id, 0);
         outgoing.set(node.id, []);
+        incoming.set(node.id, []);
       });
-
       edges.forEach((edge) => {
         if (!nodeById.has(edge.source) || !nodeById.has(edge.target)) return;
         outgoing.get(edge.source)?.push(edge.target);
-        indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1);
+        incoming.get(edge.target)?.push(edge.source);
       });
 
-      const sortedQueue = nodes
-        .filter((node) => (indegree.get(node.id) ?? 0) === 0)
-        .slice()
-        .sort(sortNodes);
+      const computeSmart = () => {
+        const indegree = new Map<string, number>();
+        nodes.forEach((node) => indegree.set(node.id, 0));
+        edges.forEach((edge) => {
+          if (!indegree.has(edge.target)) return;
+          indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1);
+        });
 
-      const rank = new Map<string, number>();
-      const processed = new Set<string>();
-      let maxRank = 0;
+        const rank = new Map<string, number>();
+        const queue = nodes
+          .filter((node) => (indegree.get(node.id) ?? 0) === 0)
+          .slice()
+          .sort(sortNodes);
+        const processed = new Set<string>();
+        let maxRank = 0;
 
-      const enqueue = (node: (typeof nodes)[number]) => {
-        sortedQueue.push(node);
-        sortedQueue.sort(sortNodes);
+        while (queue.length > 0) {
+          const current = queue.shift();
+          if (!current) break;
+          processed.add(current.id);
+          const currentRank = rank.get(current.id) ?? 0;
+          maxRank = Math.max(maxRank, currentRank);
+          (outgoing.get(current.id) ?? []).forEach((nextId) => {
+            rank.set(nextId, Math.max(rank.get(nextId) ?? 0, currentRank + 1));
+            indegree.set(nextId, (indegree.get(nextId) ?? 0) - 1);
+            if ((indegree.get(nextId) ?? 0) === 0) {
+              const nextNode = nodeById.get(nextId);
+              if (nextNode) {
+                queue.push(nextNode);
+                queue.sort(sortNodes);
+              }
+            }
+          });
+        }
+
+        nodes
+          .filter((node) => !processed.has(node.id))
+          .sort(sortNodes)
+          .forEach((node) => {
+            maxRank += 1;
+            rank.set(node.id, maxRank);
+          });
+
+        const buckets = new Map<number, (typeof nodes)>();
+        nodes.forEach((node) => {
+          const r = rank.get(node.id) ?? 0;
+          const bucket = buckets.get(r) ?? [];
+          bucket.push(node);
+          buckets.set(r, bucket);
+        });
+
+        const positions = new Map<string, { x: number; y: number }>();
+        const orderedRanks = Array.from(buckets.keys()).sort((a, b) => a - b);
+        orderedRanks.forEach((r, rankIndex) => {
+          const bucket = (buckets.get(r) ?? []).slice().sort(sortNodes);
+          const startX = center.x - ((orderedRanks.length - 1) * columnGap) / 2;
+          const startY = center.y - ((bucket.length - 1) * rowGap) / 2;
+          bucket.forEach((node, index) => {
+            positions.set(node.id, {
+              x: snap(startX + rankIndex * columnGap),
+              y: snap(startY + index * rowGap),
+            });
+          });
+        });
+        return positions;
       };
 
-      while (sortedQueue.length > 0) {
-        const current = sortedQueue.shift();
-        if (!current) break;
-        processed.add(current.id);
-        const currentRank = rank.get(current.id) ?? 0;
-        maxRank = Math.max(maxRank, currentRank);
-        const nextNodes = outgoing.get(current.id) ?? [];
-        nextNodes.forEach((nextId) => {
-          rank.set(nextId, Math.max(rank.get(nextId) ?? 0, currentRank + 1));
-          indegree.set(nextId, (indegree.get(nextId) ?? 0) - 1);
-          if ((indegree.get(nextId) ?? 0) === 0) {
-            const nextNode = nodeById.get(nextId);
-            if (nextNode) enqueue(nextNode);
+      const resolveBand = (type?: ObjectType) => {
+        if (!type) return 'BUSINESS' as const;
+        if (type === 'Application' || type === 'ApplicationService')
+          return 'APPLICATION' as const;
+        if (
+          type === 'Server' ||
+          type === 'Database' ||
+          type === 'Technology' ||
+          OBJECT_TYPE_DEFINITIONS[type]?.layer === 'Technology'
+        )
+          return 'TECHNOLOGY' as const;
+        if (OBJECT_TYPE_DEFINITIONS[type]?.layer === 'Application')
+          return 'APPLICATION' as const;
+        return 'BUSINESS' as const;
+      };
+
+      const computeLayered = () => {
+        const positions = new Map<string, { x: number; y: number }>();
+        const businessY = center.y - Math.max(220, rowGap * 2);
+        const appY = center.y;
+        const techY = center.y + Math.max(220, rowGap * 2);
+
+        const business = nodes
+          .filter((node) => resolveBand(node.type) === 'BUSINESS')
+          .sort(sortNodes);
+        const apps = nodes
+          .filter((node) => resolveBand(node.type) === 'APPLICATION')
+          .sort(sortNodes);
+        const tech = nodes
+          .filter((node) => resolveBand(node.type) === 'TECHNOLOGY')
+          .sort(sortNodes);
+
+        const actorTypes = new Set(['Department', 'Enterprise']);
+        const centerTypes = new Set(['BusinessProcess', 'BusinessService']);
+        const actors = business.filter((node) => node.type && actorTypes.has(node.type));
+        const centered = business.filter(
+          (node) => node.type && centerTypes.has(node.type),
+        );
+        const others = business.filter(
+          (node) =>
+            !actors.some((a) => a.id === node.id) &&
+            !centered.some((c) => c.id === node.id),
+        );
+
+        const placeRow = (
+          rowNodes: (typeof nodes),
+          rowY: number,
+          baseX?: number,
+        ) => {
+          if (rowNodes.length === 0) return;
+          const startX =
+            baseX ?? center.x - ((rowNodes.length - 1) * columnGap) / 2;
+          rowNodes.forEach((node, index) => {
+            positions.set(node.id, {
+              x: snap(startX + index * columnGap),
+              y: snap(rowY),
+            });
+          });
+        };
+
+        placeRow(actors, businessY, center.x - Math.max(1, business.length) * (columnGap * 0.75));
+        placeRow(centered, businessY);
+        placeRow(others, businessY, center.x + Math.max(1, centered.length) * (columnGap * 0.6));
+
+        const appAnchors = new Map<string, number[]>();
+        apps.forEach((app) => appAnchors.set(app.id, []));
+        edges.forEach((edge) => {
+          if (resolveBand(nodeById.get(edge.source)?.type) !== 'BUSINESS') return;
+          if (resolveBand(nodeById.get(edge.target)?.type) !== 'APPLICATION') return;
+          const sourcePos = positions.get(edge.source);
+          if (!sourcePos) return;
+          appAnchors.get(edge.target)?.push(sourcePos.x);
+        });
+
+        const sortedApps = apps.slice().sort((a, b) => {
+          const ax =
+            (appAnchors.get(a.id) ?? []).reduce((sum, x) => sum + x, 0) /
+              Math.max(1, (appAnchors.get(a.id) ?? []).length) ||
+            a.currentX;
+          const bx =
+            (appAnchors.get(b.id) ?? []).reduce((sum, x) => sum + x, 0) /
+              Math.max(1, (appAnchors.get(b.id) ?? []).length) ||
+            b.currentX;
+          return ax - bx;
+        });
+        placeRow(sortedApps, appY);
+
+        const techSorted = tech.slice().sort((a, b) => {
+          const priority = (n: (typeof tech)[number]) => {
+            if (n.type === 'Server') return 1;
+            if (n.type === 'Database') return 2;
+            return 3;
+          };
+          const diff = priority(a) - priority(b);
+          if (diff !== 0) return diff;
+          return sortNodes(a, b);
+        });
+
+        techSorted.forEach((node, index) => {
+          const yOffset = node.type === 'Server' || node.type === 'Database' ? rowGap : 0;
+          positions.set(node.id, {
+            x: snap(center.x - ((techSorted.length - 1) * columnGap) / 2 + index * columnGap),
+            y: snap(techY + yOffset),
+          });
+        });
+
+        return positions;
+      };
+
+      const computeGenerated = () => {
+        const positions = new Map<string, { x: number; y: number }>();
+        const visited = new Set<string>();
+        const undirected = new Map<string, Set<string>>();
+        nodes.forEach((node) => undirected.set(node.id, new Set()));
+        edges.forEach((edge) => {
+          undirected.get(edge.source)?.add(edge.target);
+          undirected.get(edge.target)?.add(edge.source);
+        });
+
+        const components: string[][] = [];
+        nodes.forEach((node) => {
+          if (visited.has(node.id)) return;
+          const queue = [node.id];
+          const component: string[] = [];
+          visited.add(node.id);
+          while (queue.length > 0) {
+            const id = queue.shift();
+            if (!id) break;
+            component.push(id);
+            (undirected.get(id) ?? new Set()).forEach((next) => {
+              if (visited.has(next)) return;
+              visited.add(next);
+              queue.push(next);
+            });
           }
-        });
-      }
-
-      nodes
-        .filter((node) => !processed.has(node.id))
-        .sort(sortNodes)
-        .forEach((node) => {
-          maxRank += 1;
-          rank.set(node.id, maxRank);
+          components.push(component);
         });
 
-      const rankBuckets = new Map<number, typeof nodes>();
-      nodes.forEach((node) => {
-        const nodeRank = rank.get(node.id) ?? 0;
-        const bucket = rankBuckets.get(nodeRank) ?? [];
-        bucket.push(node);
-        rankBuckets.set(nodeRank, bucket);
-      });
+        let clusterX = center.x;
+        components
+          .sort((a, b) => b.length - a.length)
+          .forEach((component, componentIndex) => {
+            const compNodes = component
+              .map((id) => nodeById.get(id))
+              .filter(Boolean) as (typeof nodes);
+            if (compNodes.length === 0) return;
 
-      const columns = Array.from(rankBuckets.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([, bucket]) => {
-          const groups = EA_LAYERS.map((layer) => ({
-            layer,
-            nodes: bucket
-              .filter((node) => node.layer === layer)
-              .sort(sortNodes),
-          })).filter((group) => group.nodes.length > 0);
-          return { groups: groups.map((group) => ({ nodes: group.nodes })) };
+            const indegree = new Map<string, number>();
+            component.forEach((id) => indegree.set(id, 0));
+            edges.forEach((edge) => {
+              if (!indegree.has(edge.source) || !indegree.has(edge.target)) return;
+              indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1);
+            });
+
+            const rank = new Map<string, number>();
+            const queue = compNodes
+              .filter((node) => (indegree.get(node.id) ?? 0) === 0)
+              .slice()
+              .sort(sortNodes);
+            const processed = new Set<string>();
+            let maxRank = 0;
+
+            while (queue.length > 0) {
+              const current = queue.shift();
+              if (!current) break;
+              processed.add(current.id);
+              const currentRank = rank.get(current.id) ?? 0;
+              maxRank = Math.max(maxRank, currentRank);
+              (outgoing.get(current.id) ?? []).forEach((nextId) => {
+                if (!indegree.has(nextId)) return;
+                rank.set(nextId, Math.max(rank.get(nextId) ?? 0, currentRank + 1));
+                indegree.set(nextId, (indegree.get(nextId) ?? 0) - 1);
+                if ((indegree.get(nextId) ?? 0) === 0) {
+                  const next = nodeById.get(nextId);
+                  if (next) {
+                    queue.push(next);
+                    queue.sort(sortNodes);
+                  }
+                }
+              });
+            }
+
+            compNodes
+              .filter((node) => !processed.has(node.id))
+              .sort(sortNodes)
+              .forEach((node) => {
+                maxRank += 1;
+                rank.set(node.id, maxRank);
+              });
+
+            const buckets = new Map<number, (typeof nodes)>();
+            compNodes.forEach((node) => {
+              const r = rank.get(node.id) ?? 0;
+              const bucket = buckets.get(r) ?? [];
+              bucket.push(node);
+              buckets.set(r, bucket);
+            });
+
+            const orderedRanks = Array.from(buckets.keys()).sort((a, b) => a - b);
+            const width =
+              Math.max(1, ...Array.from(buckets.values()).map((bucket) => bucket.length)) *
+              columnGap;
+            const clusterCenterX =
+              componentIndex === 0 ? center.x : clusterX + width / 2 + columnGap;
+
+            orderedRanks.forEach((rankValue) => {
+              const rankNodes = (buckets.get(rankValue) ?? []).slice().sort(sortNodes);
+              const y = center.y - (orderedRanks.length * rowGap) / 2 + rankValue * rowGap;
+              rankNodes.forEach((node, index) => {
+                positions.set(node.id, {
+                  x: snap(clusterCenterX - ((rankNodes.length - 1) * columnGap) / 2 + index * columnGap),
+                  y: snap(y),
+                });
+              });
+            });
+
+            clusterX = clusterCenterX + width / 2 + columnGap * 1.5;
+          });
+
+        nodes.forEach((node) => {
+          if (node.type !== 'Database') return;
+          const apps = (incoming.get(node.id) ?? [])
+            .map((id) => nodeById.get(id))
+            .filter(Boolean)
+            .filter((entry) => entry?.type === 'Application');
+          if (apps.length === 0) return;
+          const appXs = apps
+            .map((app) => positions.get(String(app?.id ?? ''))?.x)
+            .filter((x): x is number => Number.isFinite(x));
+          if (appXs.length === 0) return;
+          const current = positions.get(node.id);
+          if (!current) return;
+          const avgX = appXs.reduce((sum, x) => sum + x, 0) / appXs.length;
+          positions.set(node.id, { x: snap(avgX), y: current.y });
         });
 
-      placeColumns(columns);
+        return positions;
+      };
+
+      recordLayoutUndoSnapshot();
+      autoArrangeRunningRef.current = true;
+
+      window.setTimeout(() => {
+        const positions =
+          mode === 'smart'
+            ? computeSmart()
+            : mode === 'layeredArchitecture'
+              ? computeLayered()
+              : computeGenerated();
+
+        void applyPositions(positions).finally(() => {
+          autoArrangeRunningRef.current = false;
+          persistWorkspaceRef.current?.();
+        });
+      }, 0);
     },
     [
+      captureLayoutSnapshot,
       getCanvasCenter,
       gridSize,
       isNodeEditable,
       presentationReadOnly,
       recordLayoutUndoSnapshot,
+      refreshConnectionPositionSnapshot,
       stagedElementById,
     ],
   );
@@ -7665,6 +7957,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
           const pos = node.position();
           node.position({ x: pos.x + delta.x, y: pos.y + delta.y });
         });
+        manualLayoutBaselineRef.current = null;
         refreshConnectionPositionSnapshot();
         return;
       }
@@ -9720,6 +10013,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
         restoreNodeSize(node);
       }
       setAlignmentGuides({ x: null, y: null });
+      manualLayoutBaselineRef.current = null;
       refreshConnectionPositionSnapshot();
 
       const before = layoutDragSnapshotRef.current;
@@ -10726,16 +11020,6 @@ const StudioShell: React.FC<StudioShellProps> = ({
         cy.autoungrabify(false);
       }
 
-      // Auto-layout only when there are no saved positions at all.
-      // IMPORTANT: Use fit: false — the layout should position nodes but
-      // NOT force a viewport change.  Viewport is owned by the view tab.
-      const hasAnySavedPosition = nodes.some((n) => {
-        const wsNodes = workspace.layout?.nodes ?? [];
-        return wsNodes.some((wn) => wn.id === n.id);
-      });
-      if (!hasAnySavedPosition && nodes.length > 0) {
-        cy.layout({ name: 'grid', fit: false, avoidOverlap: true }).run();
-      }
       applyLayerVisibility();
       if (activeTabKey !== WORKSPACE_TAB_KEY) {
         // Suppress viewport persistence during programmatic restore so the
@@ -12777,8 +13061,19 @@ const StudioShell: React.FC<StudioShellProps> = ({
               <Dropdown
                 menu={{
                   items: [
-                    { key: 'layer', label: 'By Layer' },
-                    { key: 'flow', label: 'By Flow' },
+                    { key: 'smart', label: 'Smart Arrange' },
+                    {
+                      key: 'layeredArchitecture',
+                      label: 'Layered Architecture Arrange',
+                    },
+                    {
+                      key: 'generateArchitecture',
+                      label: 'Generate Architecture Diagram',
+                    },
+                    {
+                      key: 'resetManual',
+                      label: 'Reset Manual Positions',
+                    },
                   ],
                   onClick: ({ key }) =>
                     autoArrangeDiagram(key as AutoLayoutMode),
