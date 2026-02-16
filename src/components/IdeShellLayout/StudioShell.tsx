@@ -35,6 +35,7 @@ import React from 'react';
 import {
   hasRoadmapDragPayload,
   hasViewDragPayload,
+  readViewIdFromDrop,
 } from '@/diagram-studio/drag-drop/DragDropConstants';
 import { useStudioDropHandler } from '@/diagram-studio/drag-drop/useStudioDropHandler';
 import {
@@ -1131,15 +1132,6 @@ const StudioShell: React.FC<StudioShellProps> = ({
   const [studioModeLevel, setStudioModeLevel] =
     React.useState<StudioMode>('Model');
   const [presentationView, setPresentationView] = React.useState(false);
-  React.useEffect(() => {
-    if (activeTabKey === WORKSPACE_TAB_KEY) {
-      setStudioModeLevel('Model');
-      return;
-    }
-    if (activeViewId) {
-      setStudioModeLevel('Explore');
-    }
-  }, [activeTabKey, activeViewId]);
   const canAnalyzeMode = studioModeLevel !== 'Explore' && !presentationView;
   const canDiagramMode =
     (studioModeLevel === 'Design' || studioModeLevel === 'Model') &&
@@ -1926,6 +1918,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
   const middlePanRafRef = React.useRef<number | null>(null);
   /** Accumulated pan delta between rAF frames for middle-mouse drag. */
   const middlePanDeltaRef = React.useRef({ dx: 0, dy: 0 });
+  const pendingDroppedViewCenterRef = React.useRef<string | null>(null);
   const layoutUndoStackRef = React.useRef<
     Record<string, { x: number; y: number }>[]
   >([]);
@@ -10749,7 +10742,26 @@ const StudioShell: React.FC<StudioShellProps> = ({
         // pan/zoom listener doesn't overwrite the saved viewport with the
         // intermediate state produced by cy.zoom() / cy.pan().
         suppressViewportPersistRef.current = true;
-        restoreCanvasState(activeTabKey);
+        const shouldCenterDroppedView =
+          Boolean(activeViewId) &&
+          pendingDroppedViewCenterRef.current === activeViewId &&
+          cy.nodes().length > 0;
+
+        if (shouldCenterDroppedView) {
+          const droppedNodes = cy.nodes();
+          cy.fit(droppedNodes, 80);
+          const fittedZoom = cy.zoom();
+          const clampedZoom = Math.max(0.85, Math.min(1.25, fittedZoom));
+          if (Math.abs(clampedZoom - fittedZoom) > 0.001) {
+            cy.zoom(clampedZoom);
+            cy.center(droppedNodes);
+          }
+          captureCanvasState(activeTabKey);
+          pendingDroppedViewCenterRef.current = null;
+        } else {
+          restoreCanvasState(activeTabKey);
+        }
+
         // Allow one frame for the batched zoom/pan to settle, then re-enable.
         requestAnimationFrame(() => {
           suppressViewportPersistRef.current = false;
@@ -10766,12 +10778,14 @@ const StudioShell: React.FC<StudioShellProps> = ({
     activeViewId,
     applyLayerVisibility,
     buildLayoutFromView,
+    captureCanvasState,
     designWorkspace,
     eaRepository,
     iterativeModeling,
     restoreCanvasState,
     stagedElements,
     stagedRelationships,
+    activeViewId,
     viewReadOnly,
   ]);
 
@@ -13581,11 +13595,28 @@ const StudioShell: React.FC<StudioShellProps> = ({
             }}
             onDrop={(e) => {
               e.preventDefault();
-              // ── Handle VIEW drops from Explorer (opens view in tab) ──
-              if (
-                hasViewDragPayload(e.nativeEvent.dataTransfer) ||
-                hasRoadmapDragPayload(e.nativeEvent.dataTransfer)
-              ) {
+              const droppedViewId = readViewIdFromDrop(e.nativeEvent.dataTransfer);
+              if (droppedViewId) {
+                e.stopPropagation();
+                if (viewReadOnly) return;
+                if (!canDiagramMode) return;
+                const droppedView = ViewStore.get(droppedViewId);
+                if (!droppedView) {
+                  message.warning('Dropped view no longer exists.');
+                  return;
+                }
+
+                ensureViewTab(droppedViewId, {
+                  mode: 'new',
+                  view: droppedView,
+                  isWorking: droppedView.status === 'DRAFT',
+                });
+                pendingDroppedViewCenterRef.current = droppedViewId;
+                message.success(`Opened saved view "${droppedView.name}".`);
+                return;
+              }
+
+              if (hasRoadmapDragPayload(e.nativeEvent.dataTransfer)) {
                 viewDropHandlers.onDrop(e);
                 return;
               }

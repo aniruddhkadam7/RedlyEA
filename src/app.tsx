@@ -14,6 +14,7 @@ import type { DataNode } from 'antd/es/tree';
 import { AvatarDropdown, AvatarName } from '@/components';
 import IdeShellLayout from '@/components/IdeShellLayout';
 import { ExplorerTree } from '@/components/IdeShellLayout/explorer';
+import CatalogSidebar from '@/components/IdeShellLayout/CatalogSidebar';
 import DiagramsTree from '@/components/IdeShellLayout/DiagramsTree';
 import AnalysisTree from '@/components/IdeShellLayout/AnalysisTree';
 import MetamodelSidebar from '@/components/IdeShellLayout/MetamodelSidebar';
@@ -1193,6 +1194,7 @@ export const layout: RunTimeLayoutConfig = ({
                 <>
                   <IdeShellLayout
                     sidebars={{
+                      catalog: <CatalogSidebar />,
                       explorer: <ExplorerTree />,
                       diagrams: <DiagramsTree />,
                       analysis: <AnalysisTree />,

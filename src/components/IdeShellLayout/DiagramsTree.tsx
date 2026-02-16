@@ -1,104 +1,32 @@
 import {
   ApartmentOutlined,
-  DeleteOutlined,
-  EditOutlined,
   FileTextOutlined,
+  FolderOpenOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
-import { Button, Input, Modal, Tree } from 'antd';
-import type { DataNode } from 'antd/es/tree';
+import { Button, Dropdown, Input, Modal } from 'antd';
 import React from 'react';
 import { useLocation } from '@umijs/max';
 import { useIdeShell } from './index';
-import styles from './style.module.less';
+import NavigationSidebar, {
+  type NavigationSidebarGroup,
+} from './NavigationSidebar';
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
 import { message } from '@/ea/eaConsole';
+import { setViewDragPayload } from '@/diagram-studio/drag-drop/DragDropConstants';
 
 import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
 import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 
-const buildTree = (
-  views: ViewInstance[],
-  opts?: { onRename?: (view: ViewInstance) => void; onDelete?: (view: ViewInstance) => void },
-): DataNode[] => {
-  const savedOnly = views.filter((v) => v.status === 'SAVED');
-  const sorted = [...savedOnly].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-
-  const savedViewNodes: DataNode[] =
-    sorted.length === 0
-      ? [
-          {
-            key: 'views:empty',
-            title: 'No saved views',
-            selectable: false,
-            icon: <FileTextOutlined />,
-            isLeaf: true,
-          } satisfies DataNode,
-        ]
-      : sorted.map((v) => {
-          const viewpoint = ViewpointRegistry.get(v.viewpointId);
-          const viewpointLabel = viewpoint?.name ?? v.viewpointId;
-          return {
-            key: `view:${v.id}`,
-            title: (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <span>
-                  {v.name} <span style={{ color: '#8c8c8c' }}>({viewpointLabel})</span>
-                </span>
-                <span style={{ display: 'inline-flex', gap: 4 }}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      opts?.onRename?.(v);
-                    }}
-                  />
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      opts?.onDelete?.(v);
-                    }}
-                  />
-                </span>
-              </span>
-            ),
-            icon: <FileTextOutlined />,
-            isLeaf: true,
-          } satisfies DataNode;
-        });
-
-  const children: DataNode[] = [
-    {
-      key: 'views:saved',
-      title: 'Saved Views',
-      icon: <ApartmentOutlined />,
-      selectable: false,
-      children: savedViewNodes,
-    } satisfies DataNode,
-  ];
-
-  return [
-    {
-      key: 'diagrams',
-      title: 'DIAGRAMS',
-      icon: <ApartmentOutlined />,
-      selectable: false,
-      children,
-    },
-  ];
-};
+const getSavedViews = (views: ViewInstance[]): ViewInstance[] =>
+  views
+    .filter((view) => view.status === 'SAVED')
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 
 const DiagramsTree: React.FC = () => {
   const { openRouteTab, studioMode, requestStudioViewSwitch } = useIdeShell();
   const { selection, setSelection, setSelectedElement } = useIdeSelection();
-  const { metadata } = useEaRepository();
   const location = useLocation();
 
   const handleRenameView = React.useCallback((view: ViewInstance) => {
@@ -110,8 +38,8 @@ const DiagramsTree: React.FC = () => {
       content: (
         <Input
           defaultValue={view.name}
-          onChange={(e) => {
-            nextName = e.target.value;
+          onChange={(event) => {
+            nextName = event.target.value;
           }}
           placeholder="View name"
         />
@@ -129,6 +57,7 @@ const DiagramsTree: React.FC = () => {
           // Best-effort only.
         }
         message.success('View renamed.');
+        return Promise.resolve();
       },
     });
   }, []);
@@ -136,7 +65,8 @@ const DiagramsTree: React.FC = () => {
   const handleDeleteView = React.useCallback((view: ViewInstance) => {
     Modal.confirm({
       title: 'Delete view?',
-      content: 'Deleting a view removes only the view definition. Repository content remains unchanged.',
+      content:
+        'Deleting a view removes only the view definition. Repository content remains unchanged.',
       okText: 'Delete',
       okButtonProps: { danger: true },
       cancelText: 'Cancel',
@@ -156,28 +86,27 @@ const DiagramsTree: React.FC = () => {
     });
   }, []);
 
-  const [treeData, setTreeData] = React.useState<DataNode[]>(() => {
+  const [savedViews, setSavedViews] = React.useState<ViewInstance[]>(() => {
     try {
-      const views = ViewStore.list();
-      return buildTree(views, { onRename: handleRenameView, onDelete: handleDeleteView });
+      return getSavedViews(ViewStore.list());
     } catch {
-      return buildTree([], { onRename: handleRenameView, onDelete: handleDeleteView });
+      return [];
     }
   });
 
   React.useEffect(() => {
     const refresh = () => {
       try {
-        setTreeData(buildTree(ViewStore.list(), { onRename: handleRenameView, onDelete: handleDeleteView }));
+        setSavedViews(getSavedViews(ViewStore.list()));
       } catch {
-        setTreeData(buildTree([], { onRename: handleRenameView, onDelete: handleDeleteView }));
+        setSavedViews([]);
       }
     };
 
     refresh();
     window.addEventListener('ea:viewsChanged', refresh);
     return () => window.removeEventListener('ea:viewsChanged', refresh);
-  }, [handleDeleteView, handleRenameView, metadata?.updatedAt]);
+  }, []);
 
   const activeViewId = React.useMemo(() => {
     const path = location?.pathname ?? '';
@@ -189,39 +118,110 @@ const DiagramsTree: React.FC = () => {
 
   const selectedKeys = React.useMemo(() => {
     if (activeViewId) return [`view:${activeViewId}`];
-    if (selection.kind === 'view' && selection.keys.length > 0) return [`view:${selection.keys[0]}`];
-    if (selection.kind === 'route' && selection.keys.length > 0) return [selection.keys[0]];
+    if (selection.kind === 'view' && selection.keys.length > 0)
+      return [`view:${selection.keys[0]}`];
+    if (selection.kind === 'route' && selection.keys.length > 0)
+      return [selection.keys[0]];
     return [] as string[];
   }, [activeViewId, selection.kind, selection.keys]);
 
-  return (
-    <div className={styles.explorerTree}>
-      <Tree
-        showIcon
-        defaultExpandAll
-        selectable
-        treeData={treeData}
-        selectedKeys={selectedKeys}
-        onSelect={(selectedKeys: React.Key[], _info) => {
-          const key = selectedKeys?.[0];
-          if (typeof key !== 'string') return;
+  const groups: NavigationSidebarGroup[] = React.useMemo(
+    () => [
+      {
+        key: 'diagrams-navigation',
+        items: [
+          {
+            key: 'diagrams-root',
+            label: 'Diagrams',
+            level: 1,
+            icon: <ApartmentOutlined />,
+          },
+          {
+            key: 'diagrams-folder:saved',
+            label: 'Saved Views',
+            level: 2,
+            icon: <FolderOpenOutlined />,
+          },
+          ...(savedViews.length === 0
+            ? [
+                {
+                  key: 'view:empty',
+                  label: 'No saved views',
+                  level: 3 as const,
+                  icon: <FileTextOutlined />,
+                  muted: true,
+                },
+              ]
+            : savedViews.map((view) => {
+                const viewpoint = ViewpointRegistry.get(view.viewpointId);
+                const viewpointLabel = viewpoint?.name ?? view.viewpointId;
+                const key = `view:${view.id}`;
 
-          if (key.startsWith('view:')) {
-            const viewId = key.slice('view:'.length);
-            if (!viewId) return;
-            setSelection({ kind: 'view', keys: [viewId] });
-            if (studioMode) {
-              setSelectedElement(null);
-              setSelection({ kind: 'none', keys: [] });
-              requestStudioViewSwitch(viewId, { openMode: 'new' });
-              return;
-            }
-            openRouteTab(`/views/${viewId}`);
-          }
-        }}
-      />
-    </div>
+                return {
+                  key,
+                  label: `${view.name} (${viewpointLabel})`,
+                  level: 3 as const,
+                  icon: <FileTextOutlined />,
+                  selected: selectedKeys.includes(key),
+                  draggable: true,
+                  onSelect: () => {
+                    setSelection({ kind: 'view', keys: [view.id] });
+                    if (studioMode) {
+                      setSelectedElement(null);
+                      setSelection({ kind: 'none', keys: [] });
+                      requestStudioViewSwitch(view.id, { openMode: 'new' });
+                      return;
+                    }
+                    openRouteTab(`/views/${view.id}`);
+                  },
+                  onDragStart: (event: React.DragEvent<HTMLDivElement>) => {
+                    event.stopPropagation();
+                    setViewDragPayload(event.dataTransfer, view.id);
+                  },
+                  actions: (
+                    <Dropdown
+                      trigger={['click']}
+                      menu={{
+                        items: [
+                          { key: 'rename', label: 'Rename' },
+                          { key: 'delete', label: 'Delete', danger: true },
+                        ],
+                        onClick: ({ key: action }) => {
+                          if (action === 'rename') {
+                            handleRenameView(view);
+                          } else if (action === 'delete') {
+                            handleDeleteView(view);
+                          }
+                        },
+                      }}
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<MoreOutlined />}
+                        aria-label={`Actions for ${view.name}`}
+                      />
+                    </Dropdown>
+                  ),
+                };
+              })),
+        ],
+      },
+    ],
+    [
+      handleDeleteView,
+      handleRenameView,
+      openRouteTab,
+      requestStudioViewSwitch,
+      savedViews,
+      selectedKeys,
+      setSelectedElement,
+      setSelection,
+      studioMode,
+    ],
   );
+
+  return <NavigationSidebar ariaLabel="Diagrams navigation" groups={groups} />;
 };
 
 export default DiagramsTree;

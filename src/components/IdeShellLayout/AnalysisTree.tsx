@@ -1,4 +1,12 @@
-import { Menu } from 'antd';
+import {
+  AlertOutlined,
+  ApartmentOutlined,
+  BarChartOutlined,
+  ClusterOutlined,
+  DashboardOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import React from 'react';
 import {
   DEFAULT_IMPACT_ANALYSIS_SECTION,
@@ -6,7 +14,9 @@ import {
   type ImpactAnalysisSectionKey,
 } from '@/analysis/impactAnalysisMode';
 import { useIdeShell } from './index';
-import styles from './style.module.less';
+import NavigationSidebar, {
+  type NavigationSidebarGroup,
+} from './NavigationSidebar';
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
 
 const MENU_TO_SECTION: Record<string, ImpactAnalysisSectionKey> = {
@@ -18,35 +28,77 @@ const MENU_TO_SECTION: Record<string, ImpactAnalysisSectionKey> = {
   'analysis:settings': 'settings',
 };
 
+const ANALYSIS_ITEMS: Array<{
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+}> = [
+  { key: 'analysis:overview', label: 'Overview', icon: <BarChartOutlined /> },
+  { key: 'analysis:fragility', label: 'Fragility', icon: <AlertOutlined /> },
+  {
+    key: 'analysis:simulation',
+    label: 'Impact Simulation',
+    icon: <ThunderboltOutlined />,
+  },
+  {
+    key: 'analysis:explorer',
+    label: 'Dependency Explorer',
+    icon: <ClusterOutlined />,
+  },
+  {
+    key: 'analysis:health',
+    label: 'Structural Health',
+    icon: <DashboardOutlined />,
+  },
+  { key: 'analysis:settings', label: 'Settings', icon: <SettingOutlined /> },
+];
+
 const AnalysisTree: React.FC = () => {
   const { openWorkspaceTab } = useIdeShell();
   const { setSelection } = useIdeSelection();
   const [selectedKey, setSelectedKey] = React.useState<string>(`analysis:${DEFAULT_IMPACT_ANALYSIS_SECTION}`);
 
-  return (
-    <div className={styles.explorerTree}>
-      <Menu
-        mode="inline"
-        selectedKeys={[selectedKey]}
-        items={[
-          { key: 'analysis:overview', label: '📊 Overview' },
-          { key: 'analysis:fragility', label: '🔥 Fragility' },
-          { key: 'analysis:simulation', label: '🧨 Impact Simulation' },
-          { key: 'analysis:explorer', label: '🔗 Dependency Explorer' },
-          { key: 'analysis:health', label: '📈 Structural Health' },
-          { key: 'analysis:settings', label: '⚙ Settings' },
-        ]}
-        onClick={({ key }) => {
-          const section = MENU_TO_SECTION[key];
-          if (!section) return;
+  const groups: NavigationSidebarGroup[] = React.useMemo(
+    () => [
+      {
+        key: 'analysis-navigation',
+        items: [
+          {
+            key: 'analysis-root',
+            label: 'Analysis',
+            level: 1,
+            icon: <ApartmentOutlined />,
+          },
+          {
+            key: 'analysis-folder:impact',
+            label: 'Impact Analysis',
+            level: 2,
+            icon: <ApartmentOutlined />,
+          },
+          ...ANALYSIS_ITEMS.map((item) => ({
+            key: item.key,
+            label: item.label,
+            icon: item.icon,
+            level: 3 as const,
+            selected: selectedKey === item.key,
+            onSelect: () => {
+              const section = MENU_TO_SECTION[item.key];
+              if (!section) return;
 
-          setSelectedKey(key);
-          setSelection({ kind: 'analysis', keys: [key] });
-          openWorkspaceTab({ type: 'analysis', kind: 'impact' });
-          dispatchImpactAnalysisSection(section);
-        }}
-      />
-    </div>
+              setSelectedKey(item.key);
+              setSelection({ kind: 'analysis', keys: [item.key] });
+              openWorkspaceTab({ type: 'analysis', kind: 'impact' });
+              dispatchImpactAnalysisSection(section);
+            },
+          })),
+        ],
+      },
+    ],
+    [openWorkspaceTab, selectedKey, setSelection],
+  );
+
+  return (
+    <NavigationSidebar ariaLabel="Analysis navigation" groups={groups} />
   );
 };
 
