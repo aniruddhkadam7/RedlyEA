@@ -200,6 +200,11 @@ type RelationshipChooserState = {
   position: { x: number; y: number };
 };
 
+type EdgeInspectorState = {
+  edgeId: string;
+  position: { x: number; y: number };
+};
+
 type FreeShapeKind =
   | 'rectangle'
   | 'rounded-rectangle'
@@ -421,6 +426,7 @@ const _DRAG_THROTTLE_MS = 50;
 const MAX_LAYOUT_HISTORY = 50;
 const REPO_SNAPSHOT_KEY = 'ea.repository.snapshot.v1';
 const DRAFT_EDGE_ID = '__draft_edge__';
+const ASSOCIATION_FALLBACK_RELATIONSHIP: RelationshipType = 'INTEGRATES_WITH';
 const WORKSPACE_TAB_KEY = '__studio_workspace__';
 const createViewTabKey = (viewId: string) => `view:${viewId}:${generateUUID()}`;
 const createWorkingViewId = () => `working-view-${generateUUID()}`;
@@ -1989,6 +1995,12 @@ const StudioShell: React.FC<StudioShellProps> = ({
   );
   // ────────────────────────────────────────────────────────────────────
 
+  // ─── Floating Edge Inspector ────────────────────────────────────────
+  const [edgeInspector, setEdgeInspector] =
+    React.useState<EdgeInspectorState | null>(null);
+  const edgeInspectorRef = React.useRef<HTMLDivElement | null>(null);
+  // ────────────────────────────────────────────────────────────────────
+
   const relationshipDraftRef = React.useRef(relationshipDraft);
   const freeConnectorDragRef = React.useRef<{
     sourceId: string | null;
@@ -3487,6 +3499,139 @@ const StudioShell: React.FC<StudioShellProps> = ({
       setViewTabStateById,
     ],
   );
+
+  // ─── Edge Inspector Actions ─────────────────────────────────────────
+  const changeEdgeRelationshipType = React.useCallback(
+    (edgeId: string, newType: RelationshipType) => {
+      // 1. Update repository
+      const applied = applyRepositoryTransaction((repo) => {
+        const rel = repo.relationships.find((r) => r.id === edgeId);
+        if (rel) rel.type = newType;
+        return { ok: true } as const;
+      });
+      if (!applied.ok) {
+        message.error(applied.error);
+        return;
+      }
+      // 2. Update staged relationships
+      setStagedRelationships((prev) =>
+        prev.map((rel) =>
+          rel.id === edgeId ? { ...rel, type: newType } : rel,
+        ),
+      );
+      // 3. In-place Cytoscape edge update (no rebuild)
+      if (cyRef.current) {
+        const edge = cyRef.current.getElementById(edgeId);
+        if (edge && !edge.empty()) {
+          edge.data('relationshipType', newType);
+          edge.data('relationshipStyle', relationshipStyleForType(newType));
+          edge.data('label', resolveRelationshipLabel(newType));
+        }
+      }
+      // 4. Update inspector state
+      setEdgeInspector((prev) =>
+        prev && prev.edgeId === edgeId ? { ...prev } : prev,
+      );
+      persistWorkspaceDebounced(100);
+    },
+    [
+      applyRepositoryTransaction,
+      persistWorkspaceDebounced,
+      relationshipStyleForType,
+      resolveRelationshipLabel,
+    ],
+  );
+
+  const reverseEdgeDirection = React.useCallback(
+    (edgeId: string) => {
+      const edge = cyRef.current?.getElementById(edgeId);
+      if (!edge || edge.empty()) return;
+      const fromId = String(edge.data('source'));
+      const toId = String(edge.data('target'));
+      // 1. Update repository
+      const applied = applyRepositoryTransaction((repo) => {
+        const rel = repo.relationships.find((r) => r.id === edgeId);
+        if (rel) {
+          rel.fromId = toId;
+          rel.toId = fromId;
+        }
+        return { ok: true } as const;
+      });
+      if (!applied.ok) {
+        message.error(applied.error);
+        return;
+      }
+      // 2. Update staged relationships
+      setStagedRelationships((prev) =>
+        prev.map((rel) =>
+          rel.id === edgeId ? { ...rel, fromId: toId, toId: fromId } : rel,
+        ),
+      );
+      // 3. In-place Cytoscape swap: remove old edge, add reversed edge
+      if (cyRef.current) {
+        const data = { ...edge.data(), source: toId, target: fromId };
+        cyRef.current.remove(edge);
+        cyRef.current.add({ group: 'edges', data });
+      }
+      persistWorkspaceDebounced(100);
+    },
+    [applyRepositoryTransaction, persistWorkspaceDebounced],
+  );
+
+  const toggleEdgeOptional = React.useCallback(
+    (edgeId: string) => {
+      // 1. Update repository
+      const applied = applyRepositoryTransaction((repo) => {
+        const rel = repo.relationships.find((r) => r.id === edgeId);
+        if (rel) {
+          const attrs = rel.attributes ?? {};
+          (rel as any).attributes = {
+            ...attrs,
+            optional: !(attrs as any).optional,
+          };
+        }
+        return { ok: true } as const;
+      });
+      if (!applied.ok) {
+        message.error(applied.error);
+        return;
+      }
+      // 2. Update staged
+      setStagedRelationships((prev) =>
+        prev.map((rel) => {
+          if (rel.id !== edgeId) return rel;
+          const isOptional = !(rel.attributes as any)?.optional;
+          return {
+            ...rel,
+            attributes: { ...(rel.attributes ?? {}), optional: isOptional },
+          };
+        }),
+      );
+      // 3. Update Cytoscape edge data
+      if (cyRef.current) {
+        const edge = cyRef.current.getElementById(edgeId);
+        if (edge && !edge.empty()) {
+          const wasOptional = edge.data('optional');
+          edge.data('optional', !wasOptional);
+        }
+      }
+      // 4. Refresh inspector
+      setEdgeInspector((prev) =>
+        prev && prev.edgeId === edgeId ? { ...prev } : prev,
+      );
+      persistWorkspaceDebounced(100);
+    },
+    [applyRepositoryTransaction, persistWorkspaceDebounced],
+  );
+
+  const deleteEdgeFromInspector = React.useCallback(
+    (edgeId: string) => {
+      setEdgeInspector(null);
+      deleteStagedRelationship(edgeId);
+    },
+    [deleteStagedRelationship],
+  );
+  // ────────────────────────────────────────────────────────────────────
 
   const clearRelationshipDraftArtifacts = React.useCallback(() => {
     if (!cyRef.current) return;
@@ -8237,6 +8382,13 @@ const StudioShell: React.FC<StudioShellProps> = ({
             },
           },
           {
+            selector: 'edge[?optional]',
+            style: {
+              opacity: 0.55,
+              'line-style': 'dashed',
+            },
+          },
+          {
             selector: 'edge[draft]',
             style: {
               width: 2,
@@ -9889,7 +10041,29 @@ const StudioShell: React.FC<StudioShellProps> = ({
       const eaEdges = selectedEdges.filter(
         (e) => !e.data('freeConnector') && !e.data('governanceWarning'),
       );
-      setSelectedEdgeId(eaEdges.length ? String(eaEdges[0].id()) : null);
+      if (eaEdges.length > 0) {
+        const edgeId = String(eaEdges[0].id());
+        setSelectedEdgeId(edgeId);
+        // Open floating edge inspector at edge midpoint
+        const edge = eaEdges[0];
+        const midpoint = edge.midpoint();
+        const rendered = toRenderedPosition(midpoint);
+        const rect = containerRef.current?.getBoundingClientRect();
+        const offsetX = rect?.left ?? 0;
+        const offsetY = rect?.top ?? 0;
+        if (rendered) {
+          setEdgeInspector({
+            edgeId,
+            position: {
+              x: rendered.x + offsetX,
+              y: rendered.y + offsetY,
+            },
+          });
+        }
+      } else {
+        setSelectedEdgeId(null);
+        setEdgeInspector(null);
+      }
       setSelectedFreeConnectorId(
         freeEdges.length ? String(freeEdges[0].id()) : null,
       );
@@ -10144,6 +10318,30 @@ const StudioShell: React.FC<StudioShellProps> = ({
       window.removeEventListener('keydown', handleKey);
     };
   }, [connectionPalette]);
+
+  // Dismiss edge inspector on click-outside or Escape
+  React.useEffect(() => {
+    if (!edgeInspector) return;
+    const handleDismiss = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (
+        edgeInspectorRef.current &&
+        target &&
+        edgeInspectorRef.current.contains(target)
+      )
+        return;
+      setEdgeInspector(null);
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setEdgeInspector(null);
+    };
+    window.addEventListener('mousedown', handleDismiss);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('mousedown', handleDismiss);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [edgeInspector]);
 
   React.useEffect(() => {
     if (!cyRef.current) return;
@@ -13675,6 +13873,117 @@ const StudioShell: React.FC<StudioShellProps> = ({
               onDismiss={() => setConnectionEditor(null)}
             />
           ) : null}
+          {/* ── Floating Edge Inspector ── */}
+          {edgeInspector
+            ? (() => {
+                const _edge = cyRef.current?.getElementById(
+                  edgeInspector.edgeId,
+                );
+                if (!_edge || _edge.empty()) return null;
+                const _fromId = String(_edge.data('source'));
+                const _toId = String(_edge.data('target'));
+                const _relType = _edge.data('relationshipType') as
+                  | RelationshipType
+                  | undefined;
+                const _isOptional = Boolean(_edge.data('optional'));
+                const _sourceLabel =
+                  resolveElementLabel(_fromId)?.label ?? _fromId;
+                const _targetLabel = resolveElementLabel(_toId)?.label ?? _toId;
+                const _validTypes = getInferredRelationshipTypesForPair(
+                  _fromId,
+                  _toId,
+                );
+                return (
+                  <div
+                    ref={edgeInspectorRef}
+                    className={styles.edgeInspector}
+                    style={{
+                      left: edgeInspector.position.x,
+                      top: edgeInspector.position.y,
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className={styles.edgeInspectorHeader}>
+                      <span
+                        title={_sourceLabel}
+                        className={styles.edgeInspectorEndpoint}
+                      >
+                        {_sourceLabel}
+                      </span>
+                      <span style={{ opacity: 0.45, fontSize: 11 }}>→</span>
+                      <span
+                        title={_targetLabel}
+                        className={styles.edgeInspectorEndpoint}
+                      >
+                        {_targetLabel}
+                      </span>
+                    </div>
+                    <div className={styles.edgeInspectorRow}>
+                      <span className={styles.edgeInspectorLabel}>Type</span>
+                      <select
+                        className={styles.edgeInspectorSelect}
+                        value={_relType ?? ''}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            changeEdgeRelationshipType(
+                              edgeInspector.edgeId,
+                              e.target.value as RelationshipType,
+                            );
+                          }
+                        }}
+                      >
+                        {_relType && !_validTypes.includes(_relType) && (
+                          <option value={_relType}>
+                            {resolveRelationshipLabel(_relType)}
+                          </option>
+                        )}
+                        {_validTypes.map((t) => (
+                          <option key={t} value={t}>
+                            {resolveRelationshipLabel(t)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.edgeInspectorActions}>
+                      <button
+                        type="button"
+                        className={styles.edgeInspectorBtn}
+                        title="Reverse direction"
+                        onClick={() =>
+                          reverseEdgeDirection(edgeInspector.edgeId)
+                        }
+                      >
+                        ⇄ Reverse
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          _isOptional
+                            ? styles.edgeInspectorBtnActive
+                            : styles.edgeInspectorBtn
+                        }
+                        title="Toggle optional"
+                        onClick={() => toggleEdgeOptional(edgeInspector.edgeId)}
+                      >
+                        ◌ Optional
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.edgeInspectorBtnDanger}
+                        title="Delete relationship"
+                        onClick={() =>
+                          deleteEdgeFromInspector(edgeInspector.edgeId)
+                        }
+                      >
+                        ✕ Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
+            : null}
           {nodeContextMenu ? (
             <div
               role="menu"

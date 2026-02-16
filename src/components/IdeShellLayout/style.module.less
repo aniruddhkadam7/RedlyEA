@@ -650,6 +650,125 @@
   outline-offset: 2px;
 }
 
+/* ── Edge Inspector (floating overlay) ── */
+.edgeInspector {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 1600;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
+  padding: 10px 12px;
+  min-width: 240px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  font-size: 12px;
+}
+
+.edgeInspectorHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.edgeInspectorEndpoint {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edgeInspectorRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edgeInspectorLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+}
+
+.edgeInspectorSelect {
+  flex: 1;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  background: #fafafa;
+  cursor: pointer;
+  outline: none;
+}
+
+.edgeInspectorSelect:focus {
+  border-color: rgba(250, 140, 22, 0.6);
+}
+
+.edgeInspectorActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.edgeInspectorBtn {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 5px;
+  background: #fafafa;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.edgeInspectorBtn:hover {
+  background: #f0f0f0;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.edgeInspectorBtnActive {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(250, 140, 22, 0.5);
+  border-radius: 5px;
+  background: #fff7e6;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #d48806;
+}
+
+.edgeInspectorBtnActive:hover {
+  background: #fff1d6;
+}
+
+.edgeInspectorBtnDanger {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 77, 79, 0.35);
+  border-radius: 5px;
+  background: #fff1f0;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #cf1322;
+}
+
+.edgeInspectorBtnDanger:hover {
+  background: #ffa39e33;
+  border-color: rgba(255, 77, 79, 0.6);
+}
+
 .studioCommandRow {
   display: inline-flex;
   align-items: center;
@@ -2766,6 +2885,46 @@
 
 :global([data-theme="dark"]) .relationshipChooserOption:hover {
   background: #3c3c3c;
+}
+
+/* ── Edge Inspector (dark) ── */
+:global([data-theme="dark"]) .edgeInspector {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5) !important;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorLabel {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .edgeInspectorSelect {
+  background: #333333;
+  border-color: #555;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtn {
+  background: #333333;
+  border-color: #555;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtn:hover {
+  background: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtnActive {
+  background: #3d3000;
+  border-color: rgba(250, 140, 22, 0.5);
+  color: #faad14;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtnDanger {
+  background: #3a1010;
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff7875;
 }
 
 /* ── Palette & toolbox panels ── */
