@@ -1,27 +1,27 @@
-﻿import React from 'react';
-import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
-import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
+﻿import React from "react";
+import { ViewLayoutStore } from "@/diagram-studio/view-runtime/ViewLayoutStore";
+import { ViewStore } from "@/diagram-studio/view-runtime/ViewStore";
+import type { ViewInstance } from "@/diagram-studio/viewpoints/ViewInstance";
 import {
   type DesignWorkspace,
   DesignWorkspaceStore,
-} from '@/ea/DesignWorkspaceStore';
-import { message, notification } from '@/ea/eaConsole';
-import { RELATIONSHIP_TYPE_DEFINITIONS } from '@/pages/dependency-view/utils/eaMetaModel';
+} from "@/ea/DesignWorkspaceStore";
+import { message, notification } from "@/ea/eaConsole";
+import { RELATIONSHIP_TYPE_DEFINITIONS } from "@/pages/dependency-view/utils/eaMetaModel";
 import {
   type EaObject,
   type EaRelationship,
   EaRepository,
-} from '@/pages/dependency-view/utils/eaRepository';
-import type { RepositoryRoleBinding } from '@/repository/accessControl';
-import { isAnyObjectTypeWritableForScope } from '@/repository/architectureScopePolicy';
-import { getCurrentUserOrThrow } from '@/repository/currentUser';
+} from "@/pages/dependency-view/utils/eaRepository";
+import type { RepositoryRoleBinding } from "@/repository/accessControl";
+import { isAnyObjectTypeWritableForScope } from "@/repository/architectureScopePolicy";
+import { getCurrentUserOrThrow } from "@/repository/currentUser";
 import {
   CUSTOM_CORE_EA_SEED,
   getCustomMetaModelConfig,
   isCustomFrameworkModelingEnabled,
   isObjectTypeEnabledForFramework,
-} from '@/repository/customFrameworkConfig';
+} from "@/repository/customFrameworkConfig";
 import {
   getFrameworkLifecyclePolicy,
   getFrameworkObjectPolicy,
@@ -29,18 +29,18 @@ import {
   isAdmPhaseAllowedForReferenceFramework,
   isLifecycleStateAllowedForReferenceFramework,
   isRelationshipTypeAllowedForReferenceFramework,
-} from '@/repository/referenceFrameworkPolicy';
+} from "@/repository/referenceFrameworkPolicy";
 import {
   type EaRepositoryMetadata,
   validateRepositoryMetadata,
-} from '@/repository/repositoryMetadata';
+} from "@/repository/repositoryMetadata";
 import {
   REPOSITORY_SNAPSHOT_STORAGE_KEY,
   type RepositorySnapshot,
   readRepositorySnapshot,
   writeRepositorySnapshot,
-} from '@/repository/repositorySnapshotStore';
-import { listBaselines } from '../../backend/baselines/BaselineStore';
+} from "@/repository/repositorySnapshotStore";
+import { listBaselines } from "../../backend/baselines/BaselineStore";
 
 // governance removed â€” imports kept as no-ops for type compatibility
 
@@ -49,7 +49,7 @@ export type EaRepositoryContextValue = {
   metadata: EaRepositoryMetadata | null;
   loading: boolean;
   initializationState: {
-    status: 'initialized' | 'uninitialized';
+    status: "initialized" | "uninitialized";
     reason: string | null;
   };
   setEaRepository: React.Dispatch<React.SetStateAction<EaRepository | null>>;
@@ -60,7 +60,7 @@ export type EaRepositoryContextValue = {
     patch: Partial<EaRepositoryMetadata>,
   ) => { ok: true } | { ok: false; error: string };
   createNewRepository: (
-    input: Omit<EaRepositoryMetadata, 'createdAt' | 'owner'>,
+    input: Omit<EaRepositoryMetadata, "createdAt" | "owner">,
   ) => { ok: true } | { ok: false; error: string };
   loadRepositoryFromJsonText: (
     jsonText: string,
@@ -79,10 +79,10 @@ const EaRepositoryContext = React.createContext<
 >(undefined);
 
 const STORAGE_KEY = REPOSITORY_SNAPSHOT_STORAGE_KEY;
-const PROJECT_DIRTY_KEY = 'ea.project.dirty';
-const PROJECT_STATUS_EVENT = 'ea:projectStatusChanged';
-const ACTIVE_REPO_ID_KEY = 'ea.repository.activeId';
-const ACTIVE_REPO_NAME_KEY = 'ea.repository.activeName';
+const PROJECT_DIRTY_KEY = "ea.project.dirty";
+const PROJECT_STATUS_EVENT = "ea:projectStatusChanged";
+const ACTIVE_REPO_ID_KEY = "ea.repository.activeId";
+const ACTIVE_REPO_NAME_KEY = "ea.repository.activeName";
 const HISTORY_LIMIT = 50;
 
 const readLocalStorage = (key: string): string | null => {
@@ -96,7 +96,7 @@ const readLocalStorage = (key: string): string | null => {
 const deepSortKeys = (value: unknown): unknown => {
   if (value === null || value === undefined) return value;
   if (Array.isArray(value)) return value.map(deepSortKeys);
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
     const sorted: Record<string, unknown> = {};
     for (const key of Object.keys(obj).sort((a, b) => a.localeCompare(b))) {
@@ -114,12 +114,12 @@ const stableStringify = (value: unknown): string => {
 const hasReadOnlyObjectChanges = (
   prev: EaRepository | null,
   next: EaRepository | null,
-  architectureScope: EaRepositoryMetadata['architectureScope'] | null,
+  architectureScope: EaRepositoryMetadata["architectureScope"] | null,
 ): boolean => {
   if (
-    architectureScope !== 'Business Unit' &&
-    architectureScope !== 'Domain' &&
-    architectureScope !== 'Programme'
+    architectureScope !== "Business Unit" &&
+    architectureScope !== "Domain" &&
+    architectureScope !== "Programme"
   ) {
     return false;
   }
@@ -169,14 +169,14 @@ const countLiveObjectsByType = (repo: EaRepository, type: string): number => {
 const hasLiveNonEnterpriseObjects = (repo: EaRepository): boolean => {
   for (const obj of repo.objects.values()) {
     if ((obj.attributes as any)?._deleted === true) continue;
-    if (obj.type !== 'Enterprise') return true;
+    if (obj.type !== "Enterprise") return true;
   }
   return false;
 };
 
 const isRepositoryInitialized = (repo: EaRepository | null): boolean => {
   if (!repo) return false;
-  return countLiveObjectsByType(repo, 'Enterprise') > 0;
+  return countLiveObjectsByType(repo, "Enterprise") > 0;
 };
 
 const hasBusinessUnitScopeViolations = (
@@ -188,23 +188,23 @@ const hasBusinessUnitScopeViolations = (
   // - Enterprise->Enterprise ownership (OWNS) is disabled
   if (!initialized) return null;
 
-  const enterpriseCount = countLiveObjectsByType(repo, 'Enterprise');
+  const enterpriseCount = countLiveObjectsByType(repo, "Enterprise");
   if (enterpriseCount < 1) {
-    return 'Business Unit scope requires exactly one Enterprise root.';
+    return "Business Unit scope requires exactly one Enterprise root.";
   }
   if (enterpriseCount > 1) {
-    return 'Business Unit scope requires exactly one Enterprise root.';
+    return "Business Unit scope requires exactly one Enterprise root.";
   }
 
   for (const r of repo.relationships) {
-    if (r.type !== 'OWNS') continue;
+    if (r.type !== "OWNS") continue;
     const from = repo.objects.get(r.fromId);
     const to = repo.objects.get(r.toId);
     if (!from || !to) continue;
     if ((from.attributes as any)?._deleted === true) continue;
     if ((to.attributes as any)?._deleted === true) continue;
-    if (from.type === 'Enterprise' && to.type === 'Enterprise') {
-      return 'Enterprise-to-Enterprise ownership is disabled in Business Unit scope.';
+    if (from.type === "Enterprise" && to.type === "Enterprise") {
+      return "Enterprise-to-Enterprise ownership is disabled in Business Unit scope.";
     }
   }
 
@@ -212,7 +212,7 @@ const hasBusinessUnitScopeViolations = (
 };
 
 const normalizeDomainId = (value: unknown): string | null => {
-  const raw = typeof value === 'string' ? value.trim() : '';
+  const raw = typeof value === "string" ? value.trim() : "";
   if (!raw) return null;
   return raw.toLowerCase();
 };
@@ -237,21 +237,21 @@ const hasDomainScopeRelationshipViolations = (
     const fromDomain = getObjectDomainId(from) ?? current;
     const toDomain = getObjectDomainId(to) ?? current;
     if (fromDomain && toDomain && fromDomain !== toDomain) {
-      return 'Cross-domain relationships are blocked in Domain scope.';
+      return "Cross-domain relationships are blocked in Domain scope.";
     }
   }
   return null;
 };
 
 const hasProgrammeScopeViolations = (repo: EaRepository): string | null => {
-  const programmeCount = countLiveObjectsByType(repo, 'Programme');
+  const programmeCount = countLiveObjectsByType(repo, "Programme");
   if (programmeCount > 0) return null;
 
   // No Programmes yet: block creation of any other live elements.
   for (const obj of repo.objects.values()) {
     if ((obj.attributes as any)?._deleted === true) continue;
-    if (obj.type === 'Programme') continue;
-    return 'Programme scope requires at least one Programme before creating other elements.';
+    if (obj.type === "Programme") continue;
+    return "Programme scope requires at least one Programme before creating other elements.";
   }
 
   return null;
@@ -259,13 +259,13 @@ const hasProgrammeScopeViolations = (repo: EaRepository): string | null => {
 
 const hasReferenceFrameworkViolations = (
   repo: EaRepository,
-  referenceFramework: EaRepositoryMetadata['referenceFramework'] | null,
-  frameworkConfig: EaRepositoryMetadata['frameworkConfig'] | null | undefined,
+  referenceFramework: EaRepositoryMetadata["referenceFramework"] | null,
+  frameworkConfig: EaRepositoryMetadata["frameworkConfig"] | null | undefined,
 ): string | null => {
   if (!referenceFramework) return null;
 
   // ArchiMate: allow only a conservative, ArchiMate-aligned relationship subset.
-  if (referenceFramework === 'ArchiMate') {
+  if (referenceFramework === "ArchiMate") {
     for (const r of repo.relationships) {
       if (
         !isRelationshipTypeAllowedForReferenceFramework(
@@ -293,7 +293,7 @@ const hasReferenceFrameworkViolations = (
     }
   }
 
-  if (referenceFramework === 'TOGAF') {
+  if (referenceFramework === "TOGAF") {
     const objectPolicy = getFrameworkObjectPolicy(referenceFramework);
     const lifecyclePolicy = getFrameworkLifecyclePolicy(referenceFramework);
     const phasePolicy = getFrameworkPhasePolicy(referenceFramework);
@@ -308,9 +308,9 @@ const hasReferenceFrameworkViolations = (
 
         // ADM phase metadata required.
         const phase =
-          typeof (obj.attributes as any)?.admPhase === 'string'
+          typeof (obj.attributes as any)?.admPhase === "string"
             ? String((obj.attributes as any).admPhase).trim()
-            : '';
+            : "";
         if (!phase) {
           return `TOGAF repositories require ADM phase metadata (missing on ${obj.type} ${obj.id}).`;
         }
@@ -328,9 +328,9 @@ const hasReferenceFrameworkViolations = (
 
         // ADM lifecycle states (Baseline/Target).
         const lifecycleState =
-          typeof (obj.attributes as any)?.lifecycleState === 'string'
+          typeof (obj.attributes as any)?.lifecycleState === "string"
             ? String((obj.attributes as any).lifecycleState).trim()
-            : '';
+            : "";
         if (!lifecycleState) {
           return `TOGAF repositories require lifecycleState (missing on ${obj.type} ${obj.id}).`;
         }
@@ -352,7 +352,7 @@ const hasReferenceFrameworkViolations = (
     }
   }
 
-  if (referenceFramework === 'Custom') {
+  if (referenceFramework === "Custom") {
     // Custom: no assumptions. Until user enables at least one element type, ALL modeling is disabled.
     if (
       !isCustomFrameworkModelingEnabled(
@@ -362,10 +362,10 @@ const hasReferenceFrameworkViolations = (
     ) {
       for (const obj of repo.objects.values()) {
         if ((obj.attributes as any)?._deleted === true) continue;
-        return 'Custom reference framework: modeling is disabled until you enable at least one element type in the meta-model editor.';
+        return "Custom reference framework: modeling is disabled until you enable at least one element type in the meta-model editor.";
       }
       if (repo.relationships.length > 0) {
-        return 'Custom reference framework: modeling is disabled until you enable at least one element type in the meta-model editor.';
+        return "Custom reference framework: modeling is disabled until you enable at least one element type in the meta-model editor.";
       }
       return null;
     }
@@ -376,7 +376,7 @@ const hasReferenceFrameworkViolations = (
       if ((obj.attributes as any)?._deleted === true) continue;
       if (
         !isObjectTypeEnabledForFramework(
-          'Custom',
+          "Custom",
           frameworkConfig ?? undefined,
           obj.type as any,
         )
@@ -394,7 +394,7 @@ const hasReferenceFrameworkViolations = (
         !custom.enabledObjectTypes.includes(from.type as any) ||
         !custom.enabledObjectTypes.includes(to.type as any)
       ) {
-        return 'Custom reference framework: relationships require enabled endpoint types.';
+        return "Custom reference framework: relationships require enabled endpoint types.";
       }
     }
   }
@@ -417,7 +417,7 @@ const ensureOwnerBinding = (
 ): { ok: true; bindings: RepositoryRoleBinding[] } => {
   return {
     ok: true,
-    bindings: [{ userId: metadata.owner.userId, role: 'Owner' }],
+    bindings: [{ userId: metadata.owner.userId, role: "Owner" }],
   };
 };
 
@@ -433,7 +433,7 @@ const serializeRepository = (
   metadata: EaRepositoryMetadata,
 ): SerializedRepository => {
   const exported = repo.export();
-  const repositoryName = metadata.repositoryName || 'default';
+  const repositoryName = metadata.repositoryName || "default";
   const existingSnapshot = readRepositorySnapshot();
   const isSameRepository =
     existingSnapshot?.metadata?.repositoryName === metadata.repositoryName;
@@ -479,10 +479,10 @@ const serializeRepository = (
 
 const normalizeStudioState = (
   value: unknown,
-): RepositorySnapshot['studioState'] => {
+): RepositorySnapshot["studioState"] => {
   const asAny = value as any;
   const viewLayouts =
-    asAny?.viewLayouts && typeof asAny.viewLayouts === 'object'
+    asAny?.viewLayouts && typeof asAny.viewLayouts === "object"
       ? (asAny.viewLayouts as Record<
           string,
           Record<string, { x: number; y: number }>
@@ -520,15 +520,15 @@ const tryDeserializeRepository = (
     return {
       ok: false,
       error:
-        'Invalid repository snapshot: expected { objects, relationships }.',
+        "Invalid repository snapshot: expected { objects, relationships }.",
     };
   }
 
   // Reference-framework strictness (ArchiMate): reject snapshots that contain non-supported relationship types.
-  if (metaRes.metadata.referenceFramework === 'ArchiMate') {
+  if (metaRes.metadata.referenceFramework === "ArchiMate") {
     for (const r of relationships) {
-      const t = String((r as any)?.type ?? '').trim();
-      if (!isRelationshipTypeAllowedForReferenceFramework('ArchiMate', t)) {
+      const t = String((r as any)?.type ?? "").trim();
+      if (!isRelationshipTypeAllowedForReferenceFramework("ArchiMate", t)) {
         return {
           ok: false,
           error: `Invalid ArchiMate repository snapshot: unsupported relationship type "${t}".`,
@@ -537,10 +537,10 @@ const tryDeserializeRepository = (
     }
   }
 
-  if (metaRes.metadata.referenceFramework === 'TOGAF') {
-    const objectPolicy = getFrameworkObjectPolicy('TOGAF');
+  if (metaRes.metadata.referenceFramework === "TOGAF") {
+    const objectPolicy = getFrameworkObjectPolicy("TOGAF");
     for (const o of objects) {
-      const t = String((o as any)?.type ?? '').trim();
+      const t = String((o as any)?.type ?? "").trim();
       if (
         objectPolicy.allowedObjectTypes.length > 0 &&
         !objectPolicy.allowedObjectTypes.includes(t as any)
@@ -553,7 +553,7 @@ const tryDeserializeRepository = (
     }
   }
 
-  if (metaRes.metadata.referenceFramework === 'Custom') {
+  if (metaRes.metadata.referenceFramework === "Custom") {
     const custom = getCustomMetaModelConfig(
       metaRes.metadata.frameworkConfig ?? undefined,
     );
@@ -567,24 +567,24 @@ const tryDeserializeRepository = (
         return {
           ok: false,
           error:
-            'Invalid Custom repository snapshot: modeling disabled until at least one element type is enabled.',
+            "Invalid Custom repository snapshot: modeling disabled until at least one element type is enabled.",
         };
       }
       if (relationships.length > 0) {
         return {
           ok: false,
           error:
-            'Invalid Custom repository snapshot: relationships not allowed until meta-model is configured.',
+            "Invalid Custom repository snapshot: relationships not allowed until meta-model is configured.",
         };
       }
     } else {
       for (const o of objects) {
         if ((o as any)?.attributes?._deleted === true) continue;
-        const t = String((o as any)?.type ?? '').trim();
+        const t = String((o as any)?.type ?? "").trim();
         if (!t)
           return {
             ok: false,
-            error: 'Invalid Custom repository snapshot: missing object type.',
+            error: "Invalid Custom repository snapshot: missing object type.",
           };
         if (!custom.enabledObjectTypes.includes(t as any)) {
           return {
@@ -601,7 +601,7 @@ const tryDeserializeRepository = (
     : [];
   const studioState = normalizeStudioState(asAny?.studioState);
   const updatedAt =
-    typeof asAny?.updatedAt === 'string'
+    typeof asAny?.updatedAt === "string"
       ? asAny.updatedAt
       : new Date().toISOString();
 
@@ -642,7 +642,7 @@ const tryDeserializeRepository = (
   } catch (e: any) {
     return {
       ok: false,
-      error: e?.message || 'Failed to load repository snapshot.',
+      error: e?.message || "Failed to load repository snapshot.",
     };
   }
 };
@@ -700,7 +700,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateRepositoryMetadata = React.useCallback(
     (patch: Partial<EaRepositoryMetadata>) => {
       if (!metadata)
-        return { ok: false, error: 'No repository loaded.' } as const;
+        return { ok: false, error: "No repository loaded." } as const;
 
       const candidate = {
         ...metadata,
@@ -719,7 +719,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         if (frameworkViolation)
           return { ok: false, error: frameworkViolation } as const;
 
-        if (res.metadata.architectureScope === 'Business Unit') {
+        if (res.metadata.architectureScope === "Business Unit") {
           const violation = hasBusinessUnitScopeViolations(
             eaRepository,
             isRepositoryInitialized(eaRepository),
@@ -727,7 +727,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
           if (violation) return { ok: false, error: violation } as const;
         }
 
-        if (res.metadata.architectureScope === 'Domain') {
+        if (res.metadata.architectureScope === "Domain") {
           const violation = hasDomainScopeRelationshipViolations(
             eaRepository,
             res.metadata.repositoryName ?? null,
@@ -735,7 +735,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
           if (violation) return { ok: false, error: violation } as const;
         }
 
-        if (res.metadata.architectureScope === 'Programme') {
+        if (res.metadata.architectureScope === "Programme") {
           const violation = hasProgrammeScopeViolations(eaRepository);
           if (violation) return { ok: false, error: violation } as const;
         }
@@ -764,14 +764,14 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       const id = readLocalStorage(ACTIVE_REPO_ID_KEY);
       if (id) return id;
       const uuid =
-        typeof globalThis.crypto?.randomUUID === 'function'
+        typeof globalThis.crypto?.randomUUID === "function"
           ? globalThis.crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       try {
         localStorage.setItem(ACTIVE_REPO_ID_KEY, uuid);
         localStorage.setItem(
           ACTIVE_REPO_NAME_KEY,
-          repositoryName || 'Repository',
+          repositoryName || "Repository",
         );
       } catch {
         // Best-effort only.
@@ -793,7 +793,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
     const views = repositorySnapshot.views ?? [];
     const viewLayouts = repositorySnapshot.studioState?.viewLayouts ?? {};
 
-    const repositoryName = metadata.repositoryName || 'default';
+    const repositoryName = metadata.repositoryName || "default";
     const designWorkspaces =
       repositorySnapshot.studioState?.designWorkspaces ??
       DesignWorkspaceStore.list(repositoryName);
@@ -801,21 +801,21 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const studioState = {
       ideLayout: {
-        activity: readLocalStorage('ide.activity'),
-        sidebarOpen: readLocalStorage('ide.sidebar.open'),
-        sidebarWidth: readLocalStorage('ide.sidebar.width'),
-        bottomOpen: readLocalStorage('ide.bottom.open'),
-        bottomHeight: readLocalStorage('ide.bottom.height'),
-        panelDock: readLocalStorage('ide.panel.dock'),
-        rightPanelWidth: readLocalStorage('ide.panel.right.width'),
+        activity: readLocalStorage("ide.activity"),
+        sidebarOpen: readLocalStorage("ide.sidebar.open"),
+        sidebarWidth: readLocalStorage("ide.sidebar.width"),
+        bottomOpen: readLocalStorage("ide.bottom.open"),
+        bottomHeight: readLocalStorage("ide.bottom.height"),
+        panelDock: readLocalStorage("ide.panel.dock"),
+        rightPanelWidth: readLocalStorage("ide.panel.right.width"),
       },
       preferences: {
-        applicationGrouping: readLocalStorage('ea.applicationGrouping'),
+        applicationGrouping: readLocalStorage("ea.applicationGrouping"),
         programmeScopeShowTechnology: readLocalStorage(
-          'ea.programmeScope.showTechnology',
+          "ea.programmeScope.showTechnology",
         ),
-        seedBannerDismissed: readLocalStorage('ea.seed.banner.dismissed'),
-        catalogDefined: readLocalStorage('ea.catalogDefined'),
+        seedBannerDismissed: readLocalStorage("ea.seed.banner.dismissed"),
+        catalogDefined: readLocalStorage("ea.catalogDefined"),
       },
       viewLayouts,
       designWorkspaces,
@@ -846,7 +846,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [eaRepository, metadata]);
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const handler = () => {
       if (!eaRepository || !metadata) return;
@@ -856,7 +856,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         const repositoryId = ensureActiveRepositoryId(
-          metadata.repositoryName || 'Repository',
+          metadata.repositoryName || "Repository",
         );
         void window.eaDesktop.saveManagedRepository({ payload, repositoryId });
       } catch {
@@ -864,8 +864,8 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    window.addEventListener('ea:baselinesChanged', handler);
-    return () => window.removeEventListener('ea:baselinesChanged', handler);
+    window.addEventListener("ea:baselinesChanged", handler);
+    return () => window.removeEventListener("ea:baselinesChanged", handler);
   }, [
     buildManagedRepositoryPayload,
     eaRepository,
@@ -876,19 +876,19 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const initializationState = React.useMemo(() => {
     if (!eaRepository) {
       return {
-        status: 'uninitialized' as const,
-        reason: 'No repository loaded.',
+        status: "uninitialized" as const,
+        reason: "No repository loaded.",
       };
     }
 
     if (isRepositoryInitialized(eaRepository)) {
-      return { status: 'initialized' as const, reason: null };
+      return { status: "initialized" as const, reason: null };
     }
 
     return {
-      status: 'uninitialized' as const,
+      status: "uninitialized" as const,
       reason:
-        'No Enterprise root exists. Initialize the repository by creating the Enterprise root.',
+        "No Enterprise root exists. Initialize the repository by creating the Enterprise root.",
     };
   }, [eaRepository]);
 
@@ -922,12 +922,12 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         return {
           ok: false,
           error:
-            'Cannot remove the Enterprise root; repository would become uninitialized.',
+            "Cannot remove the Enterprise root; repository would become uninitialized.",
         } as const;
       }
 
       if (!prevInitialized) {
-        const nextEnterpriseCount = countLiveObjectsByType(next, 'Enterprise');
+        const nextEnterpriseCount = countLiveObjectsByType(next, "Enterprise");
         const nextHasNonEnterpriseObjects = hasLiveNonEnterpriseObjects(next);
         const nextHasLiveRelationships = next.relationships.some((r) => {
           const from = next.objects.get(r.fromId);
@@ -943,21 +943,24 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
             return {
               ok: false,
               error:
-                'Repository is UNINITIALIZED: create the Enterprise root before adding other elements.',
+                "Repository is UNINITIALIZED: create the Enterprise root before adding other elements.",
             } as const;
           }
           if (nextHasLiveRelationships) {
             return {
               ok: false,
               error:
-                'Repository is UNINITIALIZED: relationships are not allowed until the Enterprise root exists.',
+                "Repository is UNINITIALIZED: relationships are not allowed until the Enterprise root exists.",
             } as const;
           }
         } else {
-          // Enterprise root is being created (or was just created in this batch).
-          // Allow adding other elements alongside the Enterprise root so that
-          // auto-initialization from Explorer / Create workflows can include
-          // both the Enterprise root and the new element in a single update.
+          if (nextHasNonEnterpriseObjects) {
+            return {
+              ok: false,
+              error:
+                "Initialization must create the Enterprise root first; add other elements after initialization.",
+            } as const;
+          }
         }
       }
 
@@ -969,13 +972,13 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       if (frameworkViolation) {
         const isHardViolation =
           // Custom framework gating is always hard-blocking (prevents modeling before configuration).
-          frameworkViolation.startsWith('Custom reference framework:') ||
+          frameworkViolation.startsWith("Custom reference framework:") ||
           // ArchiMate relationship type allowlist is part of the ontology.
           frameworkViolation.startsWith(
-            'ArchiMate reference framework allows',
+            "ArchiMate reference framework allows",
           ) ||
           // Structural corruption (missing defs/endpoints).
-          frameworkViolation.includes('blocked invalid relationship');
+          frameworkViolation.includes("blocked invalid relationship");
 
         if (isHardViolation) {
           return { ok: false, error: frameworkViolation } as const;
@@ -988,7 +991,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      if (scope === 'Business Unit') {
+      if (scope === "Business Unit") {
         const violation = hasBusinessUnitScopeViolations(
           next,
           isRepositoryInitialized(next),
@@ -996,7 +999,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         if (violation) return { ok: false, error: violation } as const;
       }
 
-      if (scope === 'Domain') {
+      if (scope === "Domain") {
         const violation = hasDomainScopeRelationshipViolations(
           next,
           metadata?.repositoryName ?? null,
@@ -1004,7 +1007,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         if (violation) return { ok: false, error: violation } as const;
       }
 
-      if (scope === 'Programme') {
+      if (scope === "Programme") {
         const violation = hasProgrammeScopeViolations(next);
         if (violation) return { ok: false, error: violation } as const;
       }
@@ -1013,24 +1016,24 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Read-only enforcement must run after validation so errors are actionable.
       if (hasReadOnlyObjectChanges(prev, next, scope)) {
-        if (scope === 'Domain') {
+        if (scope === "Domain") {
           return {
             ok: false,
             error:
-              'Read-only in Domain scope: only Capabilities + Business Services + Applications + Application Services are editable.',
+              "Read-only in Domain scope: only Capabilities + Business Services + Applications + Application Services are editable.",
           } as const;
         }
-        if (scope === 'Programme') {
+        if (scope === "Programme") {
           return {
             ok: false,
             error:
-              'Read-only in Programme scope: only Programmes, Projects, impacted Capabilities, and impacted Applications are editable.',
+              "Read-only in Programme scope: only Programmes, Projects, impacted Capabilities, and impacted Applications are editable.",
           } as const;
         }
         return {
           ok: false,
           error:
-            'Read-only in Business Unit scope: only Business + Application + Technology layers are editable.',
+            "Read-only in Business Unit scope: only Business + Application + Technology layers are editable.",
         } as const;
       }
 
@@ -1051,17 +1054,17 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       const res = validateAndExplainRepositoryUpdate(prev, next);
       if (!res.ok) {
         const lower = res.error.toLowerCase();
-        if (lower.includes('read-only')) {
+        if (lower.includes("read-only")) {
           notification.open({
-            key: 'read-only-banner',
-            message: 'Read-only',
+            key: "read-only-banner",
+            message: "Read-only",
             description: res.error,
             duration: 0,
           });
-        } else if (lower.includes('strict')) {
+        } else if (lower.includes("strict")) {
           notification.open({
-            key: 'read-only-banner',
-            message: 'Blocked by Strict Governance',
+            key: "read-only-banner",
+            message: "Blocked by Strict Governance",
             description: res.error,
             duration: 0,
           });
@@ -1082,7 +1085,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
     (next) => {
       setEaRepositoryState((prev) => {
         const resolved =
-          typeof next === 'function'
+          typeof next === "function"
             ? (next as (p: EaRepository | null) => EaRepository | null)(prev)
             : next;
 
@@ -1092,17 +1095,17 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         const res = validateAndExplainRepositoryUpdate(prev, resolved);
         if (!res.ok) {
           const lower = res.error.toLowerCase();
-          if (lower.includes('read-only')) {
+          if (lower.includes("read-only")) {
             notification.open({
-              key: 'read-only-banner',
-              message: 'Read-only',
+              key: "read-only-banner",
+              message: "Read-only",
               description: res.error,
               duration: 0,
             });
-          } else if (lower.includes('strict')) {
+          } else if (lower.includes("strict")) {
             notification.open({
-              key: 'read-only-banner',
-              message: 'Blocked by Strict Governance',
+              key: "read-only-banner",
+              message: "Blocked by Strict Governance",
               description: res.error,
               duration: 0,
             });
@@ -1120,7 +1123,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
   React.useEffect(() => {
     // Best-effort: if a repository is loaded and scope is Business Unit, validate once.
-    if (!eaRepository || metadata?.architectureScope !== 'Business Unit')
+    if (!eaRepository || metadata?.architectureScope !== "Business Unit")
       return;
     const violation = hasBusinessUnitScopeViolations(
       eaRepository,
@@ -1161,19 +1164,19 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
         setMetadata(freezeMetadata(res.metadata));
         return { ok: true } as const;
       } catch (e: any) {
-        return { ok: false, error: e?.message || 'Invalid JSON.' } as const;
+        return { ok: false, error: e?.message || "Invalid JSON." } as const;
       }
     },
     [setEaRepository],
   );
 
   const createNewRepository = React.useCallback(
-    (input: Omit<EaRepositoryMetadata, 'createdAt' | 'owner'>) => {
+    (input: Omit<EaRepositoryMetadata, "createdAt" | "owner">) => {
       let currentUser: ReturnType<typeof getCurrentUserOrThrow>;
       try {
         currentUser = getCurrentUserOrThrow();
       } catch {
-        return { ok: false, error: 'No active user context.' } as const;
+        return { ok: false, error: "No active user context." } as const;
       }
 
       const createdAt = new Date().toISOString();
@@ -1196,8 +1199,8 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const key = `ea.rbac.bindings.${metaRes.metadata.repositoryName}`;
         const initial = [
-          { userId: metaRes.metadata.owner.userId, role: 'Owner' as const },
-          { userId: metaRes.metadata.owner.userId, role: 'Architect' as const },
+          { userId: metaRes.metadata.owner.userId, role: "Owner" as const },
+          { userId: metaRes.metadata.owner.userId, role: "Architect" as const },
         ];
         localStorage.setItem(key, JSON.stringify(initial));
       } catch {
@@ -1205,7 +1208,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const meta =
-        metaRes.metadata.referenceFramework === 'Custom'
+        metaRes.metadata.referenceFramework === "Custom"
           ? (() => {
               const provided = metaRes.metadata.frameworkConfig?.custom as
                 | any
@@ -1277,14 +1280,14 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Flush to managed desktop file (fire-and-forget).
       if (
-        typeof window !== 'undefined' &&
+        typeof window !== "undefined" &&
         window.eaDesktop?.saveManagedRepository
       ) {
         try {
           const payload = buildManagedRepositoryPayload();
           if (payload) {
             const repositoryId = ensureActiveRepositoryId(
-              metadata.repositoryName || 'Repository',
+              metadata.repositoryName || "Repository",
             );
             void window.eaDesktop.saveManagedRepository({
               payload,
@@ -1412,7 +1415,7 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       const isDirty = prevSerialized ? prevSerialized !== nextSerialized : true;
       if (isDirty) {
         try {
-          localStorage.setItem(PROJECT_DIRTY_KEY, 'true');
+          localStorage.setItem(PROJECT_DIRTY_KEY, "true");
           window.dispatchEvent(new Event(PROJECT_STATUS_EVENT));
         } catch {
           // ignore
@@ -1438,13 +1441,13 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
       writeRepositorySnapshot(nextSnapshot);
 
       if (
-        typeof window !== 'undefined' &&
+        typeof window !== "undefined" &&
         window.eaDesktop?.saveManagedRepository
       ) {
         const payload = buildManagedRepositoryPayload();
         if (payload) {
           const repositoryId = ensureActiveRepositoryId(
-            metadata.repositoryName || 'Repository',
+            metadata.repositoryName || "Repository",
           );
           if (managedSaveTimerRef.current)
             clearTimeout(managedSaveTimerRef.current);
@@ -1495,6 +1498,6 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
 export function useEaRepository(): EaRepositoryContextValue {
   const ctx = React.useContext(EaRepositoryContext);
   if (!ctx)
-    throw new Error('useEaRepository must be used within EaRepositoryProvider');
+    throw new Error("useEaRepository must be used within EaRepositoryProvider");
   return ctx;
 }

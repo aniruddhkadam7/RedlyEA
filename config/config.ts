@@ -1,20 +1,20 @@
 // https://umijs.org/config/
 
-import { join } from 'node:path';
-import { defineConfig } from '@umijs/max';
-import defaultSettings from './defaultSettings';
-import proxy from './proxy';
+import { join } from "node:path";
+import { defineConfig } from "@umijs/max";
+import defaultSettings from "./defaultSettings";
+import proxy from "./proxy";
 
-import routes from './routes';
+import routes from "./routes";
 
-const { UMI_ENV = 'dev' } = process.env;
+const { UMI_ENV = "dev" } = process.env;
 const isJest =
-  process.env.UMI_SKIP_OPENAPI === '1' ||
-  process.env.NODE_ENV === 'test' ||
+  process.env.UMI_SKIP_OPENAPI === "1" ||
+  process.env.NODE_ENV === "test" ||
   process.env.JEST_WORKER_ID !== undefined;
 
 // Detect if building for Electron (set ELECTRON_BUILD=1 when running desktop:build)
-const isElectronBuild = process.env.ELECTRON_BUILD === '1';
+const isElectronBuild = process.env.ELECTRON_BUILD === "1";
 
 /**
  * @name 使用公共路径
@@ -22,11 +22,11 @@ const isElectronBuild = process.env.ELECTRON_BUILD === '1';
  * @doc https://umijs.org/docs/api/config#publicpath
  * @note For Electron file:// protocol, must use './' instead of '/'
  */
-const PUBLIC_PATH: string = isElectronBuild ? './' : '/';
+const PUBLIC_PATH: string = isElectronBuild ? "./" : "/";
 
 export default defineConfig({
-  ...(UMI_ENV === 'dev' ? { mfsu: false } : {}),
-  plugins: [join(__dirname, './ensureUmiTmpDir')],
+  ...(UMI_ENV === "dev" ? { mfsu: false } : {}),
+  plugins: [join(__dirname, "./ensureUmiTmpDir")],
   /**
    * @name 开启 hash 模式
    * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。
@@ -55,7 +55,7 @@ export default defineConfig({
    * @description Electron file:// protocol requires hash history, not browser history
    * @doc https://umijs.org/docs/api/config#history
    */
-  history: isElectronBuild ? { type: 'hash' } : { type: 'browser' },
+  history: isElectronBuild ? { type: "hash" } : { type: "browser" },
 
   /**
    * @name 兼容性设置
@@ -114,7 +114,7 @@ export default defineConfig({
    * @name layout 插件
    * @doc https://umijs.org/docs/max/layout-menu
    */
-  title: 'Ant Design Pro',
+  title: "Ant Design Pro",
   layout: {
     locale: true,
     ...defaultSettings,
@@ -125,8 +125,8 @@ export default defineConfig({
    * @doc https://umijs.org/docs/max/moment2dayjs
    */
   moment2dayjs: {
-    preset: 'antd',
-    plugins: ['duration'],
+    preset: "antd",
+    plugins: ["duration"],
   },
   /**
    * @name 国际化插件
@@ -134,7 +134,7 @@ export default defineConfig({
    */
   locale: {
     // default en-US
-    default: 'en-US',
+    default: "en-US",
     antd: true,
     // default true, when it is true, will use `navigator.language` overwrite default
     baseNavigator: false,
@@ -149,7 +149,7 @@ export default defineConfig({
     configProvider: {
       theme: {
         token: {
-          fontFamily: 'AlibabaSans, sans-serif',
+          fontFamily: "AlibabaSans, sans-serif",
         },
       },
     },
@@ -166,7 +166,7 @@ export default defineConfig({
    */
   access: {},
   //================ pro 插件配置 =================
-  presets: ['umi-presets-pro'],
+  presets: ["umi-presets-pro"],
   /**
    * @name openAPI 插件的配置
    * @description 基于 openapi 的规范生成serve 和mock，能减少很多样板代码
@@ -180,25 +180,25 @@ export default defineConfig({
             requestLibPath: "import { request } from '@/utils/request'",
             // 或者使用在线的版本
             // schemaPath: "https://gw.alipayobjects.com/os/antfincdn/M%24jrzTTYJN/oneapi.json"
-            schemaPath: join(__dirname, 'oneapi.json'),
+            schemaPath: join(__dirname, "oneapi.json"),
             mock: false,
           },
           {
             requestLibPath: "import { request } from '@/utils/request'",
             schemaPath:
-              'https://gw.alipayobjects.com/os/antfincdn/CA1dOm%2631B/openapi.json',
-            projectName: 'swagger',
+              "https://gw.alipayobjects.com/os/antfincdn/CA1dOm%2631B/openapi.json",
+            projectName: "swagger",
           },
         ],
       }),
   mock: {
-    include: ['mock/**/*', 'src/pages/**/_mock.ts'],
+    include: ["mock/**/*", "src/pages/**/_mock.ts"],
   },
   esbuildMinifyIIFE: true,
   utoopack: false,
   requestRecord: {},
   exportStatic: {},
   define: {
-    'process.env.CI': process.env.CI,
+    "process.env.CI": process.env.CI,
   },
 });

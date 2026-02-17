@@ -13,11 +13,11 @@
 import type {
   EaLayer,
   ObjectType,
-} from '@/pages/dependency-view/utils/eaMetaModel';
+} from "@/pages/dependency-view/utils/eaMetaModel";
 import {
   OBJECT_TYPE_DEFINITIONS,
   RELATIONSHIP_TYPE_DEFINITIONS,
-} from '@/pages/dependency-view/utils/eaMetaModel';
+} from "@/pages/dependency-view/utils/eaMetaModel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,22 +25,22 @@ import {
 
 /** Describes a structural category node in the explorer tree. */
 export type ExplorerNodeKind =
-  | 'workspace-root'
-  | 'section' // e.g. Repository, Metamodel, Architectures, etc.
-  | 'sub-section' // e.g. Object Types, Relationship Types
-  | 'category' // e.g. Business Types, Application Types
-  | 'collection' // e.g. Capabilities, Processes — dynamic from metamodel
-  | 'element-leaf' // individual EA element from repository
-  | 'view-leaf' // saved view
-  | 'baseline-leaf' // baseline snapshot
-  | 'roadmap-leaf' // roadmap
-  | 'plateau-leaf' // plateau
-  | 'report-leaf' // report
-  | 'setting-leaf' // setting entry
-  | 'metamodel-type' // metamodel type definition
-  | 'relationship-leaf' // relationship record
-  | 'cta' // call to action (e.g. "initialize enterprise")
-  | 'placeholder'; // empty-state placeholder
+  | "workspace-root"
+  | "section" // e.g. Repository, Metamodel, Architectures, etc.
+  | "sub-section" // e.g. Object Types, Relationship Types
+  | "category" // e.g. Business Types, Application Types
+  | "collection" // e.g. Capabilities, Processes — dynamic from metamodel
+  | "element-leaf" // individual EA element from repository
+  | "view-leaf" // saved view
+  | "baseline-leaf" // baseline snapshot
+  | "roadmap-leaf" // roadmap
+  | "plateau-leaf" // plateau
+  | "report-leaf" // report
+  | "setting-leaf" // setting entry
+  | "metamodel-type" // metamodel type definition
+  | "relationship-leaf" // relationship record
+  | "cta" // call to action (e.g. "initialize enterprise")
+  | "placeholder"; // empty-state placeholder
 
 export type ExplorerNodeData = {
   elementId?: string;
@@ -66,51 +66,51 @@ export const EXPLORER_KEYS = {
   root: (workspaceName: string) => `ws:${workspaceName}`,
 
   // Level 1 — Top sections
-  repository: 'section:repository',
-  metamodel: 'section:metamodel',
-  architectures: 'section:architectures',
-  frameworkPackages: 'section:framework-packages',
-  modelLibrary: 'section:model-library',
-  baselines: 'section:baselines',
-  reports: 'section:reports',
-  settings: 'section:settings',
+  repository: "section:repository",
+  metamodel: "section:metamodel",
+  architectures: "section:architectures",
+  frameworkPackages: "section:framework-packages",
+  modelLibrary: "section:model-library",
+  baselines: "section:baselines",
+  reports: "section:reports",
+  settings: "section:settings",
 
   // Repository sub-items
-  repoProperties: 'section:repository:properties',
-  repoAuditTrail: 'section:repository:audit-trail',
-  repoUsersRoles: 'section:repository:users-roles',
-  repoAccessControl: 'section:repository:access-control',
+  repoProperties: "section:repository:properties",
+  repoAuditTrail: "section:repository:audit-trail",
+  repoUsersRoles: "section:repository:users-roles",
+  repoAccessControl: "section:repository:access-control",
 
   // Metamodel sub-sections
-  metamodelStandards: 'section:metamodel:standards',
-  metamodelObjectTypes: 'section:metamodel:object-types',
-  metamodelRelTypes: 'section:metamodel:relationship-types',
-  metamodelAttributes: 'section:metamodel:attributes',
-  metamodelViewpoints: 'section:metamodel:viewpoints',
+  metamodelStandards: "section:metamodel:standards",
+  metamodelObjectTypes: "section:metamodel:object-types",
+  metamodelRelTypes: "section:metamodel:relationship-types",
+  metamodelAttributes: "section:metamodel:attributes",
+  metamodelViewpoints: "section:metamodel:viewpoints",
 
   // Metamodel object type categories
-  objectTypeBusiness: 'category:object-types:business',
-  objectTypeApplication: 'category:object-types:application',
-  objectTypeTechnology: 'category:object-types:technology',
-  objectTypeData: 'category:object-types:data',
-  objectTypeCustom: 'category:object-types:custom',
+  objectTypeBusiness: "category:object-types:business",
+  objectTypeApplication: "category:object-types:application",
+  objectTypeTechnology: "category:object-types:technology",
+  objectTypeData: "category:object-types:data",
+  objectTypeCustom: "category:object-types:custom",
 
   // Metamodel relationship type categories
-  relTypeStructural: 'category:rel-types:structural',
-  relTypeDependency: 'category:rel-types:dependency',
-  relTypeFlow: 'category:rel-types:flow',
-  relTypeCustom: 'category:rel-types:custom',
+  relTypeStructural: "category:rel-types:structural",
+  relTypeDependency: "category:rel-types:dependency",
+  relTypeFlow: "category:rel-types:flow",
+  relTypeCustom: "category:rel-types:custom",
 
   // Metamodel attributes
-  attributesGlobal: 'category:attributes:global',
-  attributesTypeSpecific: 'category:attributes:type-specific',
-  attributesCalculated: 'category:attributes:calculated',
+  attributesGlobal: "category:attributes:global",
+  attributesTypeSpecific: "category:attributes:type-specific",
+  attributesCalculated: "category:attributes:calculated",
 
   // Metamodel viewpoints
-  viewpointsBusiness: 'category:viewpoints:business',
-  viewpointsApplication: 'category:viewpoints:application',
-  viewpointsTechnology: 'category:viewpoints:technology',
-  viewpointsStrategy: 'category:viewpoints:strategy',
+  viewpointsBusiness: "category:viewpoints:business",
+  viewpointsApplication: "category:viewpoints:application",
+  viewpointsTechnology: "category:viewpoints:technology",
+  viewpointsStrategy: "category:viewpoints:strategy",
 
   // Architecture sub-sections
   architecture: (name: string) => `arch:${name}`,
@@ -186,25 +186,25 @@ export const EXPLORER_KEYS = {
   roadmapTransition: (arch: string) => `arch:${arch}:roadmaps:transition`,
 
   // Framework Packages
-  frameworkIndustry: 'section:framework-packages:industry',
-  frameworkSecurity: 'section:framework-packages:security',
-  frameworkCustom: 'section:framework-packages:custom',
+  frameworkIndustry: "section:framework-packages:industry",
+  frameworkSecurity: "section:framework-packages:security",
+  frameworkCustom: "section:framework-packages:custom",
 
   // Baselines sub
-  baselineSnapshots: 'section:baselines:snapshots',
-  baselineArchived: 'section:baselines:archived',
+  baselineSnapshots: "section:baselines:snapshots",
+  baselineArchived: "section:baselines:archived",
 
   // Reports sub
-  reportImpact: 'section:reports:impact',
-  reportCost: 'section:reports:cost',
-  reportRisk: 'section:reports:risk',
-  reportCompliance: 'section:reports:compliance',
+  reportImpact: "section:reports:impact",
+  reportCost: "section:reports:cost",
+  reportRisk: "section:reports:risk",
+  reportCompliance: "section:reports:compliance",
 
   // Settings sub
-  settingsIntegrations: 'section:settings:integrations',
-  settingsNotifications: 'section:settings:notifications',
-  settingsMonitoring: 'section:settings:monitoring',
-  settingsSystemConfig: 'section:settings:system-config',
+  settingsIntegrations: "section:settings:integrations",
+  settingsNotifications: "section:settings:notifications",
+  settingsMonitoring: "section:settings:monitoring",
+  settingsSystemConfig: "section:settings:system-config",
 
   // Leaf-level elements
   element: (id: string) => `element:${id}`,
@@ -222,12 +222,12 @@ export const EXPLORER_KEYS = {
 // ---------------------------------------------------------------------------
 
 /** Semantic layer mapping from EaLayer to explorer categories. */
-const _LAYER_TO_COMPONENT_CATEGORY: Record<EaLayer, string> = {
-  Business: 'business',
-  Application: 'applications',
-  Technology: 'technology',
-  'Implementation & Migration': 'projects',
-  Governance: 'business', // fallback
+const LAYER_TO_COMPONENT_CATEGORY: Record<EaLayer, string> = {
+  Business: "business",
+  Application: "applications",
+  Technology: "technology",
+  "Implementation & Migration": "projects",
+  Governance: "business", // fallback
 };
 
 /**
@@ -268,19 +268,19 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
     const layer = def.layer;
 
     // Business layer classification
-    if (layer === 'Business') {
+    if (layer === "Business") {
       if (
-        normalizedType.includes('capability') ||
-        normalizedType.includes('subcapability') ||
-        normalizedType.includes('capabilitycategory') ||
-        normalizedType.includes('valuestream')
+        normalizedType.includes("capability") ||
+        normalizedType.includes("subcapability") ||
+        normalizedType.includes("capabilitycategory") ||
+        normalizedType.includes("valuestream")
       ) {
         categories.capabilities.push(type);
-      } else if (normalizedType.includes('process')) {
+      } else if (normalizedType.includes("process")) {
         categories.processes.push(type);
       } else if (
-        normalizedType.includes('department') ||
-        normalizedType.includes('enterprise')
+        normalizedType.includes("department") ||
+        normalizedType.includes("enterprise")
       ) {
         categories.actors.push(type);
       } else {
@@ -290,13 +290,13 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
     }
 
     // Application layer classification
-    if (layer === 'Application') {
+    if (layer === "Application") {
       if (
-        normalizedType.includes('api') ||
-        normalizedType.includes('interface')
+        normalizedType.includes("api") ||
+        normalizedType.includes("interface")
       ) {
         categories.apis.push(type);
-      } else if (normalizedType.includes('service')) {
+      } else if (normalizedType.includes("service")) {
         categories.services.push(type);
       } else {
         categories.applications.push(type);
@@ -305,17 +305,17 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
     }
 
     // Technology layer classification
-    if (layer === 'Technology') {
+    if (layer === "Technology") {
       if (
-        normalizedType.includes('network') ||
-        normalizedType.includes('loadbalancer')
+        normalizedType.includes("network") ||
+        normalizedType.includes("loadbalancer")
       ) {
         categories.network.push(type);
-      } else if (normalizedType.includes('cloud')) {
+      } else if (normalizedType.includes("cloud")) {
         categories.cloud.push(type);
       } else if (
-        normalizedType.includes('database') ||
-        normalizedType.includes('storage')
+        normalizedType.includes("database") ||
+        normalizedType.includes("storage")
       ) {
         categories.dataStores.push(type);
       } else {
@@ -325,13 +325,13 @@ export function getObjectTypesByCategory(): Record<string, ObjectType[]> {
     }
 
     // Implementation & Migration
-    if (layer === 'Implementation & Migration') {
+    if (layer === "Implementation & Migration") {
       categories.projects.push(type);
       continue;
     }
 
     // Governance
-    if (layer === 'Governance') {
+    if (layer === "Governance") {
       categories.security.push(type);
       continue;
     }
@@ -367,28 +367,28 @@ export function getRelationshipTypesByCategory(): Record<string, string[]> {
     if (!def) continue;
     const normalized = relType.toLowerCase();
 
-    if (['decomposes_to', 'composed_of', 'owns', 'has'].includes(normalized)) {
+    if (["decomposes_to", "composed_of", "owns", "has"].includes(normalized)) {
       categories.structural.push(relType);
     } else if (
       [
-        'depends_on',
-        'uses',
-        'used_by',
-        'consumes',
-        'requires',
-        'supports',
-        'supported_by',
+        "depends_on",
+        "uses",
+        "used_by",
+        "consumes",
+        "requires",
+        "supports",
+        "supported_by",
       ].includes(normalized)
     ) {
       categories.dependency.push(relType);
     } else if (
       [
-        'triggers',
-        'served_by',
-        'integrates_with',
-        'connects_to',
-        'exposes',
-        'provided_by',
+        "triggers",
+        "served_by",
+        "integrates_with",
+        "connects_to",
+        "exposes",
+        "provided_by",
       ].includes(normalized)
     ) {
       categories.flow.push(relType);
@@ -422,17 +422,17 @@ export function getObjectTypesByMetamodelLayer(): Record<string, ObjectType[]> {
     if (!def) continue;
 
     switch (def.layer) {
-      case 'Business':
+      case "Business":
         layers.business.push(type);
         break;
-      case 'Application':
+      case "Application":
         layers.application.push(type);
         break;
-      case 'Technology':
+      case "Technology":
         layers.technology.push(type);
         break;
-      case 'Implementation & Migration':
-      case 'Governance':
+      case "Implementation & Migration":
+      case "Governance":
         layers.custom.push(type);
         break;
       default:
@@ -441,7 +441,7 @@ export function getObjectTypesByMetamodelLayer(): Record<string, ObjectType[]> {
   }
 
   // Data types derived from Technology types with data semantics
-  const dataTypes = new Set(['Database', 'Storage']);
+  const dataTypes = new Set(["Database", "Storage"]);
   layers.data = layers.technology.filter((t) => dataTypes.has(t));
   layers.technology = layers.technology.filter((t) => !dataTypes.has(t));
 
@@ -485,7 +485,7 @@ export function resolveArchitectureName(
   const name = (
     repositoryName ??
     organizationName ??
-    'Default Architecture'
+    "Default Architecture"
   ).trim();
-  return name || 'Default Architecture';
+  return name || "Default Architecture";
 }
