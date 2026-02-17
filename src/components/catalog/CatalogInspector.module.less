@@ -1,0 +1,65 @@
+.inspectorRoot {
+  height: 100%;
+  overflow: hidden;
+  padding: 10px 12px;
+  background: var(--ide-bg-container);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.emptyState {
+  padding: 12px;
+}
+
+.collapse :global(.ant-collapse-item) {
+  border-bottom: 1px solid var(--ide-border);
+}
+
+.collapse :global(.ant-collapse-header) {
+  padding: 6px 0 !important;
+  font-weight: 600;
+}
+
+.collapse {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sectionGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 0 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  color: var(--ide-text-secondary);
+}
+
+.inspectorRoot :global(.ant-input),
+.inspectorRoot :global(.ant-input-affix-wrapper),
+.inspectorRoot :global(.ant-select-selector),
+.inspectorRoot :global(.ant-input-number) {
+  min-height: 32px;
+  height: 32px;
+}
+
+.inspectorRoot :global(.ant-input-number),
+.inspectorRoot :global(.ant-select) {
+  width: 100%;
+}
+
+.inspectorRoot :global(textarea.ant-input) {
+  min-height: 72px;
+}

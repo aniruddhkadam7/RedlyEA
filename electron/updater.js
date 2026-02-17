@@ -1,0 +1,326 @@
+/**
+ * Auto-updater module for RedlyAI Electron app.
+ * Uses electron-updater with GitHub Releases as the update server.
+ *
+ * Architecture:
+ * - electron-updater checks GitHub Releases for latest.yml
+ * - Compares version in latest.yml with app.getVersion()
+ * - Downloads update differentially using blockmap files
+ * - Installs on app quit or user-triggered restart
+ *
+ * Compatible with:
+ * - NSIS installer (Windows)
+ * - DMG/ZIP (macOS)
+ * - AppImage (Linux)
+ */
+
+const { app, dialog, BrowserWindow, ipcMain } = require("electron");
+const path = require("node:path");
+
+// Only import autoUpdater in packaged app to avoid dev errors
+let autoUpdater = null;
+
+// Track whether the current check was triggered by the renderer via IPC.
+// When true, native dialogs are suppressed so the renderer can show its own UI.
+let isRendererTriggeredCheck = false;
+
+// Track whether a download was triggered by the renderer via IPC.
+let isRendererTriggeredDownload = false;
+
+/**
+ * Register IPC handlers for updater.
+ * These are registered ALWAYS (dev + production) so the renderer never gets
+ * "No handler registered" errors.  In dev mode the handlers return
+ * graceful "not available" responses.
+ */
+function registerUpdaterIpc() {
+  ipcMain.handle("updater:check", async () => {
+    if (!autoUpdater) {
+      return {
+        ok: false,
+        error: "Auto-updates are only available in the packaged desktop app.",
+      };
+    }
+    try {
+      // Suppress native dialogs for renderer-triggered checks
+      isRendererTriggeredCheck = true;
+      const result = await autoUpdater.checkForUpdates();
+      return { ok: true, updateInfo: result?.updateInfo ?? null };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    } finally {
+      // Reset after a tick so the event handler can read the flag
+      setTimeout(() => {
+        isRendererTriggeredCheck = false;
+      }, 500);
+    }
+  });
+
+  ipcMain.handle("updater:download", async () => {
+    if (!autoUpdater) {
+      return {
+        ok: false,
+        error: "Auto-updates are only available in the packaged desktop app.",
+      };
+    }
+    try {
+      isRendererTriggeredDownload = true;
+      await autoUpdater.downloadUpdate();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    } finally {
+      setTimeout(() => {
+        isRendererTriggeredDownload = false;
+      }, 500);
+    }
+  });
+
+  ipcMain.handle("updater:install", () => {
+    if (!autoUpdater) {
+      return {
+        ok: false,
+        error: "Auto-updates are only available in the packaged desktop app.",
+      };
+    }
+    autoUpdater.quitAndInstall(false, true);
+    return { ok: true };
+  });
+
+  ipcMain.handle("updater:getVersion", () => {
+    return { version: app.getVersion() };
+  });
+}
+
+// Register IPC handlers immediately so they are available before app.ready
+registerUpdaterIpc();
+
+/**
+ * Initialize the auto-updater.
+ * Call this after app is ready and main window is created.
+ *
+ * @param {BrowserWindow} mainWindow - The main browser window
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.silent - If true, don't show dialogs (default: false)
+ * @param {number} options.checkInterval - Check interval in ms (default: 1 hour)
+ */
+function initAutoUpdater(mainWindow, options = {}) {
+  // Only run in packaged app
+  if (!app.isPackaged) {
+    console.log(
+      "[Updater] Skipping auto-updater in development mode (IPC stubs are active)",
+    );
+    return;
+  }
+
+  try {
+    // Dynamic import to avoid issues in development
+    const { autoUpdater: updater } = require("electron-updater");
+    autoUpdater = updater;
+  } catch (err) {
+    console.error("[Updater] Failed to load electron-updater:", err.message);
+    return;
+  }
+
+  const { silent = false, checkInterval = 60 * 60 * 1000 } = options;
+
+  // Configure updater
+  autoUpdater.autoDownload = false; // Don't download automatically, wait for user
+  autoUpdater.autoInstallOnAppQuit = true; // Install when app quits
+  autoUpdater.allowDowngrade = false; // Don't allow downgrade to older versions
+
+  // Logging
+  autoUpdater.logger = {
+    info: (msg) => console.log("[Updater]", msg),
+    warn: (msg) => console.warn("[Updater]", msg),
+    error: (msg) => console.error("[Updater]", msg),
+    debug: (msg) => console.log("[Updater:debug]", msg),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Event Handlers
+  // ---------------------------------------------------------------------------
+
+  autoUpdater.on("checking-for-update", () => {
+    console.log("[Updater] Checking for updates...");
+    sendStatusToWindow(mainWindow, "checking");
+  });
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("[Updater] Update available:", info.version);
+    sendStatusToWindow(mainWindow, "available", info);
+
+    // Only show native dialog for automatic/background checks.
+    // When the renderer triggered the check, it will show its own UI.
+    if (!silent && !isRendererTriggeredCheck) {
+      showUpdateAvailableDialog(mainWindow, info);
+    }
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    console.log("[Updater] Already up to date:", info.version);
+    sendStatusToWindow(mainWindow, "not-available", info);
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    const percent = Math.round(progress.percent);
+    console.log(`[Updater] Download progress: ${percent}%`);
+    sendStatusToWindow(mainWindow, "downloading", {
+      percent,
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total,
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    console.log("[Updater] Update downloaded:", info.version);
+    sendStatusToWindow(mainWindow, "downloaded", info);
+
+    // Only show native dialog for automatic downloads.
+    // When the renderer triggered the download, it will show its own UI.
+    if (!silent && !isRendererTriggeredDownload) {
+      showUpdateDownloadedDialog(mainWindow, info);
+    }
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[Updater] Error:", err.message);
+    sendStatusToWindow(mainWindow, "error", { message: err.message });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Initial check and periodic checks
+  // ---------------------------------------------------------------------------
+
+  // Check for updates after a short delay (let app fully initialize)
+  setTimeout(() => {
+    checkForUpdates();
+  }, 10000); // 10 seconds after startup
+
+  // Periodic update checks
+  if (checkInterval > 0) {
+    setInterval(() => {
+      checkForUpdates();
+    }, checkInterval);
+  }
+
+  console.log("[Updater] Auto-updater initialized");
+}
+
+/**
+ * Manually trigger an update check.
+ */
+async function checkForUpdates() {
+  if (!autoUpdater) {
+    console.log("[Updater] Updater not initialized");
+    return null;
+  }
+
+  try {
+    return await autoUpdater.checkForUpdates();
+  } catch (err) {
+    console.error("[Updater] Check failed:", err.message);
+    return null;
+  }
+}
+
+/**
+ * Send update status to the renderer process.
+ */
+function sendStatusToWindow(mainWindow, status, data = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("updater:status", { status, ...data });
+  }
+}
+
+/**
+ * Show dialog when an update is available.
+ */
+function showUpdateAvailableDialog(mainWindow, info) {
+  const releaseNotes =
+    typeof info.releaseNotes === "string"
+      ? info.releaseNotes
+      : Array.isArray(info.releaseNotes)
+        ? info.releaseNotes.map((n) => n.note || n).join("\n")
+        : "";
+
+  const dialogOpts = {
+    type: "info",
+    buttons: ["Download Update", "Later"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Update Available",
+    message: `A new version of RedlyAI is available!`,
+    detail: `Version ${info.version} is ready to download.\n\nCurrent version: ${app.getVersion()}\n\n${releaseNotes ? `What's new:\n${releaseNotes.substring(0, 500)}` : ""}`,
+  };
+
+  dialog.showMessageBox(mainWindow, dialogOpts).then((result) => {
+    if (result.response === 0) {
+      // User clicked "Download Update"
+      autoUpdater.downloadUpdate();
+    }
+  });
+}
+
+/**
+ * Show dialog when update has been downloaded.
+ */
+function showUpdateDownloadedDialog(mainWindow, info) {
+  const dialogOpts = {
+    type: "info",
+    buttons: ["Restart Now", "Later"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Update Ready",
+    message: "Update downloaded!",
+    detail: `Version ${info.version} has been downloaded and is ready to install.\n\nThe app will restart to complete the update.`,
+  };
+
+  dialog.showMessageBox(mainWindow, dialogOpts).then((result) => {
+    if (result.response === 0) {
+      // User clicked "Restart Now"
+      autoUpdater.quitAndInstall(false, true);
+    }
+  });
+}
+
+/**
+ * Show dialog for manual update check (from menu).
+ */
+async function checkForUpdatesInteractive(mainWindow) {
+  if (!autoUpdater) {
+    dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: "Updates",
+      message: "Auto-updates are not available in development mode.",
+    });
+    return;
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    if (!result || !result.updateInfo) {
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "No Updates",
+        message: "You're running the latest version!",
+        detail: `Current version: ${app.getVersion()}`,
+      });
+    }
+    // If update is available, the 'update-available' event will trigger the dialog
+  } catch (err) {
+    dialog.showMessageBox(mainWindow, {
+      type: "error",
+      title: "Update Check Failed",
+      message: "Could not check for updates.",
+      detail: err.message,
+    });
+  }
+}
+
+module.exports = {
+  initAutoUpdater,
+  checkForUpdates,
+  checkForUpdatesInteractive,
+};

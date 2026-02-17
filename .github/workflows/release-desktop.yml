@@ -1,0 +1,193 @@
+# GitHub Actions workflow for building and publishing RedlyAI Electron app
+# Triggers on version tags (v1.0.0, v1.0.1, etc.)
+# Builds for Windows, macOS, and Linux, then uploads to GitHub Releases
+#
+# Prerequisites:
+# 1. Create a GitHub Personal Access Token with 'repo' scope
+# 2. Add it as a repository secret named GH_TOKEN
+#
+# Usage:
+# 1. Update version: npm version patch/minor/major
+# 2. Push tags: git push --tags
+# 3. This workflow runs automatically
+
+name: Release Desktop App
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 1.0.0)"
+        required: false
+        type: string
+
+# Limit concurrent releases
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build job for each platform
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            artifact: windows
+          - os: macos-latest
+            platform: mac
+            artifact: macos
+          - os: ubuntu-latest
+            platform: linux
+            artifact: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # macOS: Import code signing certificate
+      - name: Import macOS signing certificate
+        if: matrix.platform == 'mac' && env.APPLE_CERTIFICATE_BASE64 != ''
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+          rm certificate.p12
+
+      # Linux: Install additional dependencies for building
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools rpm
+
+      # Build the web app
+      - name: Build web app
+        run: pnpm run build
+        env:
+          ELECTRON_BUILD: 1
+
+      # Generate icons
+      - name: Generate icons
+        run: pnpm run desktop:icons
+
+      # Build and publish the Electron app
+      - name: Build Electron app
+        run: pnpm exec electron-builder --config electron-builder.json --${{ matrix.platform }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # macOS notarization (optional, requires Apple Developer account)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows code signing (optional)
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      # Upload artifacts (for debugging, artifacts are also on GitHub Releases)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.artifact }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.yml
+            release/*.yaml
+            release/*.blockmap
+          retention-days: 7
+          if-no-files-found: warn
+
+  # Create release notes
+  create-release-notes:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+
+          if [ -n "$PREV_TAG" ]; then
+            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> release_notes.md
+          else
+            git log --pretty=format:"- %s (%h)" -20 >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Downloads" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "| Platform | Download |" >> release_notes.md
+          echo "|----------|----------|" >> release_notes.md
+          echo "| Windows (Installer) | RedlyAI-Setup-${CURRENT_TAG#v}.exe |" >> release_notes.md
+          echo "| Windows (Portable) | RedlyAI-${CURRENT_TAG#v}.exe |" >> release_notes.md
+          echo "| macOS | RedlyAI-${CURRENT_TAG#v}.dmg |" >> release_notes.md
+          echo "| Linux (AppImage) | RedlyAI-${CURRENT_TAG#v}.AppImage |" >> release_notes.md
+          echo "| Linux (Debian) | redlyai_${CURRENT_TAG#v}_amd64.deb |" >> release_notes.md
+
+      - name: Update release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

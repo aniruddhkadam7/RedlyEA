@@ -1,0 +1,3335 @@
+.root {
+  height: 100%;
+  width: 100%;
+}
+
+.desktopRoot {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.desktopRoot .layoutRoot,
+.desktopRoot .mainRow,
+.desktopRoot .editorColumn,
+.desktopRoot .editorRow,
+.desktopRoot .editorArea {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.layoutRoot {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.topHeader {
+  background: #1b2a55 !important;
+  color: #f3f6ff;
+}
+
+:global([data-theme='dark']) .topHeader {
+  background: #111827 !important;
+  color: #e5e7eb;
+}
+
+:global([data-theme="light"]) .topHeader {
+  background: #1b2a55 !important;
+  color: #f3f6ff;
+}
+
+.titleBar {
+  -webkit-app-region: drag;
+  user-select: none;
+  padding-right: 140px;
+}
+
+.titleBar :global(a),
+.titleBar :global(button),
+.titleBar :global(input),
+.titleBar :global(textarea),
+.titleBar :global(select),
+.titleBar :global(.ant-btn),
+.titleBar :global(.ant-input),
+.titleBar :global(.ant-input-affix-wrapper),
+.titleBar :global(.ant-input-search),
+.titleBar :global(.ant-menu),
+.titleBar :global(.ant-menu-item),
+.titleBar :global(.ant-menu-submenu-title),
+.titleBar :global(.ant-dropdown) {
+  -webkit-app-region: no-drag;
+}
+
+.titleBarRepo {
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desktopRoot .titleBarRepo {
+  font-size: 12px;
+}
+
+.desktopRoot .titleBarUser {
+  font-size: 12px;
+}
+
+.activitySider {
+  background: var(--ide-rail-bg) !important;
+  color: var(--ide-rail-icon);
+}
+
+.activitySider :global(.ant-layout-sider-children) {
+  background: var(--ide-rail-bg);
+}
+
+.activitySider :global(.ant-btn),
+.activitySider :global(.ant-btn .anticon),
+.activitySider :global(.ant-typography),
+.activitySider :global(.ant-typography span) {
+  color: var(--ide-rail-icon) !important;
+}
+
+.topHeader :global(.ant-typography),
+.topHeader :global(.ant-typography span),
+.topHeader :global(.ant-btn),
+.topHeader :global(.ant-btn .anticon) {
+  color: #f3f6ff !important;
+}
+
+.topHeader :global(.ant-menu),
+.topHeader :global(.ant-menu-item),
+.topHeader :global(.ant-menu-submenu-title),
+.topHeader :global(.ant-menu-submenu-arrow),
+.topHeader :global(.ant-menu-overflow-item) {
+  color: #f3f6ff !important;
+}
+
+.topHeader :global(.ant-menu-item-selected),
+.topHeader :global(.ant-menu-submenu-selected) {
+  color: #ffffff !important;
+}
+
+.topHeader :global(.ant-menu-item:hover),
+.topHeader :global(.ant-menu-submenu-title:hover) {
+  color: #ffffff !important;
+}
+
+.topBar {
+  min-height: 30px;
+  height: auto;
+  line-height: normal;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.topMenu {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.topMenuButton {
+  height: 24px;
+  padding: 0 8px;
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topBarHint {
+  font-size: 12px;
+}
+
+.headerSearchWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.headerSearchWrap::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(243, 246, 255, 0), rgba(243, 246, 255, 0.8), rgba(243, 246, 255, 0));
+  opacity: 0.75;
+}
+
+.modernHeaderSearch {
+  width: min(400px, 42vw);
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 246, 255, 0.5);
+  background: linear-gradient(180deg, rgba(44, 68, 128, 0.94), rgba(27, 42, 85, 0.98));
+  box-shadow: 0 1px 4px rgba(3, 10, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+:global([data-theme='dark']) .modernHeaderSearch {
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(17, 24, 39, 0.98));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.modernHeaderSearch:hover,
+.modernHeaderSearch:focus-within {
+  border-color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(55, 84, 158, 0.97), rgba(31, 49, 98, 0.99));
+  box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.22), 0 2px 8px rgba(7, 16, 40, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+:global([data-theme='dark']) .modernHeaderSearch:hover,
+:global([data-theme='dark']) .modernHeaderSearch:focus-within {
+  border-color: rgba(203, 213, 225, 0.6);
+  background: linear-gradient(180deg, rgba(51, 65, 85, 0.97), rgba(30, 41, 59, 0.99));
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.modernHeaderSearchIcon {
+  color: #f3f6ff;
+  font-size: 15px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.modernHeaderSearchInput {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.modernHeaderSearchInput::placeholder {
+  color: rgba(243, 246, 255, 0.88);
+}
+
+.modernHeaderSearchInput::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.desktopRoot .modernHeaderSearch {
+  height: 30px;
+}
+
+.headerSearch :global(.ant-input),
+.headerSearch :global(.ant-input-affix-wrapper) {
+  border-radius: 999px !important;
+}
+
+.headerSearch :global(.ant-input-affix-wrapper) {
+  border: 1px solid rgba(243, 246, 255, 0.3) !important;
+  background: linear-gradient(180deg, rgba(36, 58, 117, 0.9), rgba(27, 42, 85, 0.96)) !important;
+  box-shadow: none !important;
+  color: #f3f6ff !important;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 999px !important;
+}
+
+.headerSearch :global(.ant-input-affix-wrapper:hover),
+.headerSearch :global(.ant-input-affix-wrapper-focused) {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background: linear-gradient(180deg, rgba(48, 74, 143, 0.94), rgba(36, 58, 117, 0.98)) !important;
+  box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.15) !important;
+}
+
+.headerSearch :global(.ant-input) {
+  color: #f3f6ff !important;
+  background: transparent !important;
+}
+
+.headerSearch :global(.ant-input-prefix),
+.headerSearch :global(.ant-input-prefix .anticon),
+.headerSearch :global(.ant-input-prefix svg) {
+  color: #f3f6ff !important;
+}
+
+.headerSearch :global(.ant-input::placeholder) {
+  color: rgba(243, 246, 255, 0.78) !important;
+}
+
+.headerSearch :global(.ant-input-suffix),
+.headerSearch :global(.ant-input-clear-icon),
+.headerSearch :global(.ant-input-clear-icon .anticon),
+.headerSearch :global(.ant-input-clear-icon svg) {
+  color: #f3f6ff !important;
+  opacity: 1;
+}
+
+.headerSearch :global(.ant-input-clear-icon) {
+  background: transparent !important;
+  border: none !important;
+}
+
+.headerSearch :global(.ant-input-group-addon) {
+  background: transparent !important;
+}
+
+.desktopRoot .headerSearch :global(.ant-input),
+.desktopRoot .headerSearch :global(.ant-input-affix-wrapper) {
+  height: 26px;
+  padding-block: 0;
+}
+
+.headerSearch :global(.ant-input-affix-wrapper) {
+  padding-inline: 14px;
+}
+
+.mainRow {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.activityBar {
+  width: 50px;
+}
+
+.leftDock {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+  background: var(--ide-bg-layout);
+}
+
+.iconRail {
+  flex: 0 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 7px;
+  border-right: 1px solid var(--ide-border);
+  background: var(--ide-rail-bg);
+}
+
+.iconRailTop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.iconRailBottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.railAvatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+}
+
+.leftContextPanel {
+  flex: 0 0 auto;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--ide-border);
+  background: var(--ide-bg-sidebar);
+  box-shadow: none;
+}
+
+.leftDockResizer {
+  width: 6px;
+  flex: 0 0 auto;
+  cursor: col-resize;
+}
+
+.leftDockResizer:hover {
+  background: var(--ide-resizer-hover);
+}
+
+.secondarySidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sidebarHeaderActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.iconButton {
+  width: 24px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.iconButton:hover {
+  background: var(--ide-control-hover);
+}
+
+.activityButton {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.activityButton :global(svg) {
+  font-size: 34px;
+}
+
+.activityButton:hover {
+  background: var(--ide-control-hover);
+}
+
+.activityButtonActive {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  padding: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.activityButtonActive :global(svg) {
+  font-size: 34px;
+}
+
+.desktopRoot .iconRail {
+  gap: 4px;
+  padding: 4px 4px;
+}
+
+.desktopRoot .iconRailTop,
+.desktopRoot .iconRailBottom {
+  gap: 4px;
+}
+
+.desktopRoot .iconRailBottom {
+  padding-top: 6px;
+}
+
+.desktopRoot .activityButton,
+.desktopRoot .activityButtonActive {
+  border-radius: 6px;
+}
+
+.desktopRoot .activityButton :global(svg),
+.desktopRoot .activityButtonActive :global(svg) {
+  font-size: 22px;
+}
+
+.desktopRoot .titleBar :global(.anticon),
+.desktopRoot .titleBar :global(svg) {
+  font-size: 14px;
+}
+
+.desktopRoot .titleBar :global(.ant-btn) {
+  height: 24px;
+  min-height: 24px;
+  padding-inline: 6px;
+  padding-block: 0;
+}
+
+.desktopRoot .titleBar :global(.ant-btn.ant-btn-icon-only) {
+  width: 24px;
+  padding-inline: 0;
+}
+
+/* Header logo: force the underlying <img> to fill the square. */
+.headerLogo :global(.ant-avatar-img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  display: block;
+}
+
+.logoButton:hover {
+  background: var(--ide-control-hover);
+}
+
+.logoButton:focus-visible {
+  outline: 2px solid var(--ide-border);
+  outline-offset: 2px;
+}
+
+/* AI button: center the icon container so the <video> keeps its intended size. */
+.aiButton :global(.ant-btn-icon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.sidebarHeader {
+  min-height: 28px;
+  height: auto;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-header-bg);
+}
+
+.sidebarHeaderText {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebarBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ide-bg-sidebar);
+}
+
+.sidebarPanelSection {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebarPanelSectionExplorer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.navigationSidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0 12px;
+  box-sizing: border-box;
+}
+
+.navigationSidebarGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navigationSidebarRow {
+  --nav-level-indent: 0px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px 0 calc(10px + var(--nav-level-indent));
+  box-sizing: border-box;
+  color: var(--ide-tree-text);
+  font-size: 13px;
+  font-weight: 500;
+  user-select: none;
+  outline: none;
+}
+
+.navigationSidebarRowLevel1 {
+  --nav-level-indent: 0px;
+}
+
+.navigationSidebarRowLevel2 {
+  --nav-level-indent: 16px;
+}
+
+.navigationSidebarRowLevel3 {
+  --nav-level-indent: 32px;
+}
+
+.navigationSidebarRowClickable {
+  cursor: pointer;
+}
+
+.navigationSidebarRowDraggable {
+  cursor: grab;
+}
+
+.navigationSidebarRowDraggable:active {
+  cursor: grabbing;
+}
+
+.navigationSidebarRowClickable:hover {
+  background: var(--ide-tree-hover-bg);
+}
+
+.navigationSidebarRowSelected {
+  background: var(--ide-tree-selected-bg);
+  color: var(--ide-text);
+}
+
+.navigationSidebarRowSelected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--ide-tree-accent);
+}
+
+.navigationSidebarRowMuted {
+  color: var(--ide-tree-muted);
+}
+
+.navigationSidebarIconSlot {
+  width: 16px;
+  min-width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: var(--ide-tree-muted);
+  line-height: 1;
+}
+
+.navigationSidebarLabel {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.navigationSidebarActions {
+  margin-left: 8px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navigationSidebarActions :global(.ant-btn) {
+  color: var(--ide-tree-muted);
+}
+
+.navigationSidebarActions :global(.ant-btn:hover) {
+  color: var(--ide-tree-text);
+  background: var(--ide-tree-hover-bg);
+}
+
+.sidebarPanelSection::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sidebarPanelSection::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.6);
+}
+
+.sidebarPanelSection::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+}
+
+
+/*
+ * Ant Design wraps Sider children in .ant-layout-sider-children.
+ * If that wrapper isn't height-constrained + flex, nested overflow containers won't scroll.
+ */
+.sidebarSider :global(.ant-layout-sider-children) {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebarResizer {
+  width: 6px;
+  cursor: col-resize;
+  flex: 0 0 auto;
+}
+
+.sidebarResizer:hover {
+  background: var(--ide-resizer-hover);
+}
+
+.editorColumn {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ide-bg-layout);
+}
+
+.editorRow {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.editorArea {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.studioShell {
+  height: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff7e6 0%, #ffffff 40%);
+}
+
+.relationshipChooser {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 1600;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  min-width: 180px;
+  display: grid;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.relationshipChooserLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.relationshipChooserOptions {
+  display: grid;
+  gap: 6px;
+}
+
+.relationshipChooserOption {
+  width: 100%;
+  background: #fff7e6;
+  border: 1px solid rgba(250, 140, 22, 0.35);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.relationshipChooserOption:hover {
+  background: #fff1d6;
+  border-color: rgba(250, 140, 22, 0.6);
+}
+
+.relationshipChooserOption:focus-visible {
+  outline: 2px solid rgba(250, 140, 22, 0.8);
+  outline-offset: 2px;
+}
+
+/* ── Edge Inspector (floating overlay) ── */
+.edgeInspector {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 1600;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
+  padding: 10px 12px;
+  min-width: 240px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  font-size: 12px;
+}
+
+.edgeInspectorHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.edgeInspectorEndpoint {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edgeInspectorRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edgeInspectorLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+}
+
+.edgeInspectorSelect {
+  flex: 1;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  background: #fafafa;
+  cursor: pointer;
+  outline: none;
+}
+
+.edgeInspectorSelect:focus {
+  border-color: rgba(250, 140, 22, 0.6);
+}
+
+.edgeInspectorActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.edgeInspectorBtn {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 5px;
+  background: #fafafa;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.edgeInspectorBtn:hover {
+  background: #f0f0f0;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.edgeInspectorBtnActive {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(250, 140, 22, 0.5);
+  border-radius: 5px;
+  background: #fff7e6;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #d48806;
+}
+
+.edgeInspectorBtnActive:hover {
+  background: #fff1d6;
+}
+
+.edgeInspectorBtnDanger {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 77, 79, 0.35);
+  border-radius: 5px;
+  background: #fff1f0;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #cf1322;
+}
+
+.edgeInspectorBtnDanger:hover {
+  background: #ffa39e33;
+  border-color: rgba(255, 77, 79, 0.6);
+}
+
+.studioCommandRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  overflow: visible;
+}
+
+.studioToolBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex: 0 0 auto;
+}
+
+.studioToolButton,
+.studioToolButtonActive {
+  height: 28px !important;
+  width: 28px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.studioToolButtonActive {
+  background: rgba(0, 0, 0, 0.18) !important;
+}
+
+.studioToolButton :global(.anticon),
+.studioToolButtonActive :global(.anticon) {
+  font-size: 16px;
+}
+
+.studioLayerInlineGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.studioLayerInlineGroup :global(.ant-checkbox-wrapper) {
+  margin-inline: 0;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.studioRibbonGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex: 0 0 auto;
+}
+
+.studioRibbonGroupTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+.studioRibbonGroupTitle :global(.anticon) {
+  font-size: 12px;
+}
+
+.studioRibbonGroupContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.studioRibbonGroupSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex: 0 0 auto;
+}
+
+.studioRibbonGroupPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  flex: 2 1 520px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.studioRibbonGroupMuted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.65);
+  flex: 0 0 auto;
+}
+
+.studioRibbonGroupActions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex: 0 0 auto;
+}
+
+.studioRibbonItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+.studioRibbonItemCompact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.studioRibbonItemCompact :global(.ant-input-number) {
+  height: 28px;
+}
+
+.studioRibbonItemCompact :global(.ant-input-number-input) {
+  height: 26px;
+  line-height: 26px;
+}
+
+.studioRibbonItemLabel {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studioRibbonItemMuted {
+  color: rgba(0, 0, 0, 0.6);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studioRibbonItemMutedLabel {
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.studioRibbonToggleGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.studioRibbonToggle,
+.studioRibbonToggleActive {
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 6px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.75) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+.studioRibbonToggleActive {
+  background: rgba(0, 0, 0, 0.18) !important;
+  color: rgba(0, 0, 0, 0.95) !important;
+}
+
+.studioRibbonHint {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.studioRibbonHintIcon {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.studioRibbonBand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.studioRibbonDivider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.studioRibbonButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+}
+
+.studioRibbonButton:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.studioRibbonButtonIconOnly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+}
+
+.studioRibbonButtonIconOnly:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.studioRibbonIconOnly {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.studioRibbonButton :global(.anticon),
+.studioRibbonButtonIconOnly :global(.anticon) {
+  font-size: 16px;
+}
+
+
+
+.studioShortcutBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.studioShortcutButton,
+.studioShortcutButtonActive {
+  height: 18px !important;
+  padding: 0 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px;
+  border-radius: 4px;
+}
+
+.studioShortcutButton :global(.ant-btn-icon),
+.studioShortcutButtonActive :global(.ant-btn-icon) {
+  margin-inline-end: 0;
+}
+
+.studioShortcutButtonActive {
+  background: rgba(0, 0, 0, 0.12) !important;
+}
+
+.studioShortcutLabel {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.studioCommandTitle {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.studioCommandDivider {
+  width: 1px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.studioCommandWorkspace {
+  font-weight: 600;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.studioCommandMeta {
+  font-size: 12px;
+}
+
+.studioCommandActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
+
+.studioCommandActions :global(.ant-btn) {
+  height: 28px;
+  padding-inline: 6px;
+}
+
+.studioCommandActions :global(.ant-btn .anticon) {
+  font-size: 16px;
+}
+
+.studioCommandStatus {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studioSubHeader {
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+}
+
+.studioSubHeaderLeft {
+  min-width: 0;
+  display: flex;
+
+.studioPromptRow {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+}
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.studioSubHeaderTitle {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.studioSubHeaderLabel {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studioSubHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+
+
+
+.studioSubHeaderMeta {
+  font-size: 12px;
+}
+
+.studioPromptRow {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-bg-container);
+}
+
+.studioViewTabs {
+  padding: 4px 12px 6px;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+}
+
+.studioViewTabs :global(.ant-tabs-nav) {
+  margin: 0;
+}
+
+.studioViewTabs :global(.ant-tabs-nav::before) {
+  border-bottom: none;
+}
+
+.studioStatusBar {
+  height: 28px;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studioColumns {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.studioLeft {
+  min-height: 0;
+  overflow: auto;
+  background: var(--ide-bg-container);
+  border: 1px solid var(--ide-border);
+  border-radius: 8px;
+  padding: 12px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  contain: content;
+  will-change: scroll-position;
+}
+
+.studioWorkspaceCard {
+  border: 1px solid var(--ide-border);
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.studioWorkspaceMeta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.studioWorkspaceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.studioCenter {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studioCanvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px dashed var(--ide-border);
+  border-radius: 10px;
+  background: linear-gradient(0deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%),
+    #f7f7f7;
+  background-size: 20px 20px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.studioCanvasDropHighlight {
+  border-color: #1890ff;
+  border-style: solid;
+  box-shadow: inset 0 0 0 2px rgba(24, 144, 255, 0.25),
+    0 0 12px rgba(24, 144, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .studioCanvasDropHighlight {
+  border-color: #177ddc;
+  box-shadow: inset 0 0 0 2px rgba(23, 125, 220, 0.3),
+    0 0 12px rgba(23, 125, 220, 0.2);
+}
+
+
+.studioCanvasSurface {
+  position: absolute;
+  inset: 0;
+}
+
+
+.studioCanvasHint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ide-border);
+}
+
+.studioCanvasOverlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.studioAlignmentGuideOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.studioAlignmentGuideVertical {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(82, 196, 26, 0.6);
+  pointer-events: none;
+}
+
+.studioAlignmentGuideHorizontal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(82, 196, 26, 0.6);
+  pointer-events: none;
+}
+
+.studioPlacementGuide {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  margin-top: -9px;
+  border: 2px dashed rgba(250, 140, 22, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.studioValidationList {
+  display: grid;
+  gap: 8px;
+}
+
+.studioRight {
+  min-height: 0;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.studioRightSection {
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--ide-bg-layout);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.studioRightHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.studioCompactProperties {
+  display: grid;
+  gap: 10px;
+}
+
+.studioCompactPropertiesRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.studioCompactTypeIcon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.studioTypeIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #1f1f1f;
+}
+
+.studioRightBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.studioPaletteList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.studioPaletteSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.studioPaletteItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.studioPaletteItem {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+}
+
+.studioPaletteItemButton {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.studioToolboxPanel {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.studioToolboxHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.studioToolboxTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.studioToolboxActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.studioToolboxTabs :global(.ant-tabs-nav) {
+  margin-bottom: 8px;
+}
+.studioToolboxTabs :global(.ant-tabs-nav-list) {
+  gap: 6px;
+  column-gap: 6px;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+.studioToolboxTabs :global(.ant-tabs-tab) {
+  padding: 0 6px;
+  margin: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  justify-content: center;
+}
+.studioToolboxTabs :global(.ant-tabs-tab-btn) {
+  font-size: clamp(9px, 1.1vw, 11px);
+  letter-spacing: 0;
+  white-space: nowrap;
+  width: auto;
+  text-align: center;
+}
+.studioToolboxTabs :global(.ant-tabs-nav-wrap) {
+  overflow: visible;
+}
+.studioToolboxTabs :global(.ant-tabs-content-holder) {
+  overflow-x: hidden;
+  min-width: 0;
+}
+.studioToolboxGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  justify-items: stretch;
+  align-items: stretch;
+  overflow-x: hidden;
+  min-width: 0;
+}
+.studioToolboxIconButton,
+.studioToolboxIconButtonActive {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.studioToolboxIconButton:hover {
+  background: var(--ide-control-hover);
+}
+.studioToolboxIconButtonActive {
+  border-color: #1677ff;
+  background: rgba(22, 119, 255, 0.12);
+}
+.studioToolboxIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 4px;
+  border-radius: 6px;
+  background: #f5f5f5;
+  pointer-events: none;
+}
+.studioToolboxIconImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.studioToolboxEmpty {
+  display: block;
+  padding: 8px 4px 12px;
+}
+
+.studioToolboxFreePanel {
+  display: grid;
+  gap: 8px;
+}
+
+.studioToolboxSectionTitle {
+  display: block;
+  margin-top: 4px;
+}
+
+.studioPaletteItemButton:hover {
+  background: var(--ide-control-hover);
+}
+
+.studioPaletteItemButtonActive {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.15);
+  background: #e6f4ff;
+}
+
+.studioToolHelper {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ide-border);
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 2;
+}
+
+.studioCreateHint {
+  position: absolute;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ide-border);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  color: #595959;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.studioPlacementGhost {
+  position: absolute;
+  border: 2px dashed #1677ff;
+  background: rgba(22, 119, 255, 0.08);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.studioLayerToggleGroup {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+}
+
+.studioLayerToggleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.studioLegendList {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.studioLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ide-border);
+  background: #fff;
+}
+
+.studioLegendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+  border: 1px solid var(--ide-border);
+  flex: 0 0 auto;
+}
+
+.studioLegendIcon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.studioLegendCompactList {
+  display: grid;
+  gap: 4px;
+}
+
+.studioLegendCompactItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.75;
+}
+
+.studioLegendCompactSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  border: 1px solid var(--ide-border);
+  flex: 0 0 auto;
+}
+
+.studioLegendCompactIcon {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
+.studioLegendCompactLabel {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+
+.studioRelationshipPreview {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.rightResizer {
+  width: 5px;
+  cursor: col-resize;
+  flex: 0 0 auto;
+  background: var(--ide-border);
+  opacity: 0.35;
+}
+
+.rightResizer:hover {
+  background: var(--ide-resizer-hover);
+  opacity: 1;
+}
+
+.rightPanel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--ide-border);
+  background: var(--ide-bg-container);
+  box-shadow: none;
+}
+
+.rightCollapsedBar {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--ide-border);
+  background: var(--ide-rail-bg);
+  box-shadow: none;
+}
+
+.bottomResizer {
+  height: 4px;
+  cursor: row-resize;
+  flex: 0 0 auto;
+  background: var(--ide-bg-panel);
+  border-top: 1px solid var(--ide-border);
+  border-bottom: 1px solid var(--ide-border-subtle);
+}
+
+.bottomResizer:hover {
+  background: var(--ide-resizer-hover);
+}
+
+.bottomPanel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+  box-shadow: var(--ide-shadow-subtle);
+}
+
+.bottomPaletteContainer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 2px solid var(--ide-border);
+  background: var(--ide-bg-container);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+}
+
+.bottomPaletteHeader {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+  position: relative;
+  min-height: 32px;
+}
+
+.bottomPaletteContent {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ide-bg-container);
+  color: var(--ide-text);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottomPaletteScroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  background: var(--ide-bg-container);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) rgba(226, 232, 240, 0.6);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.bottomPaletteScroll :global(.ant-table) {
+  width: 100%;
+  margin: 0;
+}
+
+.bottomPaletteScroll :global(.ant-table table) {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.bottomPaletteScroll :global(.ant-table-container) {
+  border: none;
+  padding: 0;
+}
+
+.bottomPaletteScroll :global(.ant-table-thead > tr > th),
+.bottomPaletteScroll :global(.ant-table-tbody > tr > td) {
+  border: 1px solid var(--ide-border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.bottomPaletteScroll :global(.ant-table-thead > tr > th) {
+  background: var(--ide-bg-panel);
+  font-weight: 600;
+}
+
+.bottomPaletteScroll :global(.ant-table-selection-column) {
+  width: 36px;
+}
+
+.bottomPaletteScroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.bottomPaletteScroll::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.6);
+}
+
+.bottomPaletteScroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+}
+
+.bottomPaletteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--ide-text-secondary);
+  margin-bottom: 10px;
+}
+
+.bottomPaletteHeader .panelTabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.bottomPaletteHeader .panelTab,
+.bottomPaletteHeader .panelTabActive {
+  border: none;
+  border-right: 1px solid var(--ide-border-subtle);
+  border-radius: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--ide-text-secondary);
+  cursor: pointer;
+  position: relative;
+  top: 0;
+  opacity: 0.75;
+}
+
+.bottomPaletteHeader .panelTab:hover {
+  background: var(--ide-control-hover);
+  opacity: 0.9;
+}
+
+.bottomPaletteHeader .panelTabActive {
+  background: var(--ide-bg-container);
+  font-weight: 600;
+  color: var(--ide-text);
+  opacity: 1;
+}
+
+.bottomPanelHeader {
+  min-height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--ide-border-subtle);
+  background: var(--ide-bg-panel);
+}
+
+.panelTabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+}
+
+.panelMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--ide-text-secondary);
+}
+
+.panelTab,
+.panelTabActive {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--ide-text-secondary);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.panelTabActive {
+  border-color: var(--ide-border);
+  color: var(--ide-text);
+  background: var(--ide-bg-container);
+}
+
+.bottomPanelTitle {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bottomPanelBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--ide-bg-panel);
+  color: var(--ide-text);
+}
+
+.bottomPanelContent {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.bottomPanelPane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bottomPanelPaneActive {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.bottomPanelScrollable {
+  height: 100%;
+  overflow: auto;
+}
+
+.bottomPanelBodyStatic {
+  overflow: hidden;
+}
+
+.bottomCollapsedBar {
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--ide-border);
+  background: var(--ide-bg-panel);
+}
+
+.editorTabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Tabs should feel IDE-like: contained, with a clear nav/content separation. */
+.editorTabs :global(.ant-tabs-nav) {
+  background: var(--ide-bg-container);
+  border-bottom: 1px solid var(--ide-border);
+  margin: 0;
+  padding: 0 4px;
+  min-height: 32px;
+}
+
+.editorTabs :global(.ant-tabs-tab) {
+  padding: 6px 12px;
+}
+
+.editorTabs :global(.ant-tabs-tab-btn) {
+  font-size: 14px;
+}
+
+.editorTabs :global(.ant-tabs-nav::before) {
+  border-bottom: 1px solid var(--ide-border) !important;
+}
+
+.editorTabs :global(.ant-tabs-tab) {
+  background: var(--ide-tab-inactive-bg);
+}
+
+.editorTabs :global(.ant-tabs-tab:hover) {
+  background: var(--ide-control-hover);
+}
+
+.editorTabs :global(.ant-tabs-tab-active) {
+  background: var(--ide-bg-container);
+}
+
+.editorTabs :global(.ant-tabs-content-holder) {
+  background: var(--ide-bg-container);
+}
+
+.editorTabs :global(.ant-tabs-nav) {
+  flex: 0 0 auto;
+}
+
+.editorTabs :global(.ant-tabs-content-holder) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editorTabs :global(.ant-tabs-content) {
+  height: 100%;
+}
+
+.editorTabs :global(.ant-tabs-tabpane) {
+  height: 100%;
+}
+
+.editorPane {
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.editorCanvas {
+  height: 100%;
+  min-height: 0;
+}
+
+.emptyEditor {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.catalogTab {
+  padding: 12px;
+}
+
+.catalogTabHeader {
+  margin-bottom: 10px;
+}
+
+.placeholder {
+  padding: 10px;
+}
+
+.explorerTree {
+  --explorer-connector-color: color-mix(in srgb, var(--ide-tree-line) 82%, var(--ide-tree-text) 18%);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  font-size: 12px;
+  color: var(--ide-tree-text);
+  background: inherit;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+.explorerTreeHeader {
+  flex: 0 0 auto;
+}
+
+.explorerTreeContainer {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Clear hierarchy: 12-14px indentation per level. */
+.explorerTree :global(.ant-tree-indent-unit) {
+  width: 14px;
+}
+
+/* Solid hierarchy guide lines (enterprise tree style). */
+.explorerTree :global(.ant-tree-indent-unit) {
+  position: relative;
+  display: inline-block;
+  height: 100%;
+}
+
+/* Custom tree lines (avoid Ant Design line overlay). */
+.explorerTree :global(.ant-tree-indent-unit)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -11px;
+  bottom: -11px;
+  border-left: 1px solid var(--explorer-connector-color);
+  opacity: 1;
+}
+
+.explorerTree :global(.ant-tree-indent-unit.ant-tree-indent-unit-end)::before {
+  top: -11px;
+  bottom: 50%;
+}
+
+.explorerTree :global(.ant-tree-switcher) {
+  position: relative;
+}
+
+.explorerTree :global(.ant-tree-switcher)::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 8px;
+  border-top: 1px solid var(--explorer-connector-color);
+  transform: translateY(-50%);
+  opacity: 1;
+}
+
+.explorerTree :global(.ant-tree-treenode) {
+  padding-block: 0;
+  position: relative;
+}
+
+.explorerTree :global(.ant-tree-node-content-wrapper) {
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  padding-inline: 2px;
+  overflow: hidden;
+  color: inherit;
+}
+
+/* Explorer affordances: neutral selection (no blue, no pills). */
+.explorerTree :global(.ant-tree-node-content-wrapper) {
+  border-radius: 0;
+  position: relative;
+}
+
+.explorerTree :global(.ant-tree-node-content-wrapper:hover) {
+  background: var(--ide-tree-hover-bg);
+}
+
+.explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+  background: var(--ide-tree-selected-bg) !important;
+}
+
+/* VS Code-like left accent line for the selected row. */
+.explorerTree :global(.ant-tree-treenode-selected)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 0;
+  background: var(--ide-tree-accent);
+}
+
+.explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
+  background: var(--ide-tree-selected-bg) !important;
+}
+
+.pathActive {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  background: var(--ide-tree-hover-bg);
+  box-shadow: inset 2px 0 0 var(--ide-tree-accent);
+}
+
+/* Icon + caret alignment (16px icons, same color as text). */
+.explorerTree :global(.ant-tree-iconEle) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 3px;
+  color: var(--ide-tree-muted);
+  opacity: 1;
+  line-height: 16px;
+}
+
+.explorerTree :global(.ant-tree-iconEle .anticon) {
+  font-size: 14px;
+  line-height: 1;
+  stroke-width: 1.4;
+}
+
+.explorerTree :global(.ant-tree-iconEle .explorer-asset-icon) {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: saturate(0.84) contrast(1.03);
+  transform: translateY(0);
+}
+
+.explorerTree :global(.ant-tree-switcher) {
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+  color: var(--ide-tree-line);
+}
+
+.explorerTree :global(.ant-tree-switcher-noop) {
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+}
+
+.explorerTree :global(.ant-tree-switcher) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.explorerTree :global(.ant-tree) {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  contain: layout paint;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.explorerTree :global(.ant-tree-list),
+.explorerTree :global(.ant-tree-list-holder),
+.explorerTree :global(.ant-tree-list-holder-inner) {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.explorerTreeToggle {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--ide-tree-line) 70%, var(--ide-tree-text) 30%);
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--ide-tree-text) 88%, #000 12%);
+  background: color-mix(in srgb, var(--ide-bg-sidebar) 74%, var(--ide-tree-line) 26%);
+  transform: translateY(0);
+}
+
+.explorerTreeToggleGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.explorerTreeSpacer {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+.explorerTreeLabel {
+  display: inline-flex;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 18px;
+}
+
+.explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-1 .explorerTreeLabel) {
+  color: #2f5f96 !important;
+  letter-spacing: 0.25px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-0 .explorerTreeLabel) {
+  color: #2e3a46 !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-2 .explorerTreeLabel) {
+  color: #2e3a46 !important;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-3 .explorerTreeLabel) {
+  color: #3a4653 !important;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-4 .explorerTreeLabel) {
+  color: #4a5568 !important;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper),
+.explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree :global(.explorer-depth-5 .explorerTreeLabel) {
+  color: #6b7785 !important;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-folder .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-folder);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-component .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-catalogue .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-catalogue);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-matrix .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-matrix);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-diagram .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-diagram);
+}
+
+.explorerTree :global(.ant-tree-treenode.explorer-node-framework .ant-tree-iconEle) {
+  color: var(--ide-tree-icon-framework);
+}
+
+.explorerTree :global(.explorer-icon-component-glyph),
+.explorerTree :global(.explorer-icon-matrix-glyph),
+.explorerTree :global(.explorer-icon-diagram-glyph),
+.explorerTree :global(.explorer-icon-framework-glyph),
+.explorerTree :global(.explorer-icon-metamodel-glyph) {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+}
+
+.explorerTree :global(.explorer-icon-component-glyph)::before,
+.explorerTree :global(.explorer-icon-component-glyph)::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  background: var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.explorer-icon-component-glyph)::before {
+  width: 8px;
+  height: 8px;
+  left: 4px;
+  top: 4px;
+  box-shadow: -4px 0 0 var(--ide-tree-icon-component), 4px 0 0 var(--ide-tree-icon-component);
+}
+
+.explorerTree :global(.explorer-icon-matrix-glyph) {
+  border: 1px solid var(--ide-tree-icon-matrix);
+  border-radius: 2px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 0 50% / 100% 1px no-repeat,
+    transparent;
+}
+
+.explorerTree :global(.explorer-icon-diagram-glyph) {
+  background:
+    radial-gradient(circle at 26% 25%, #f5b93a 0 2px, transparent 2.2px),
+    radial-gradient(circle at 72% 28%, #4e86df 0 2px, transparent 2.2px),
+    radial-gradient(circle at 52% 73%, #d4645b 0 2px, transparent 2.2px),
+    linear-gradient(#8da3bf, #8da3bf) 32% 34% / 40% 1px no-repeat,
+    linear-gradient(#8da3bf, #8da3bf) 56% 38% / 18% 1px no-repeat,
+    linear-gradient(#8da3bf, #8da3bf) 44% 62% / 24% 1px no-repeat;
+}
+
+.explorerTree :global(.explorer-icon-framework-glyph) {
+  background:
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 14% / 10px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 45% / 12px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 76% / 14px 5px no-repeat;
+}
+
+.explorerTree :global(.explorer-icon-metamodel-glyph) {
+  border: 1px solid var(--ide-tree-icon-metamodel);
+  border-radius: 2px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 4px / 10px 1px no-repeat,
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 8px / 10px 1px no-repeat,
+    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 12px / 6px 1px no-repeat,
+    transparent;
+}
+
+.explorerTreeCta {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.explorerTreeCta :global(.ant-typography) {
+  white-space: normal;
+}
+
+.explorerTreeCta :global(.ant-btn) {
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK THEME OVERRIDES — VS Code Dark
+   ═══════════════════════════════════════════════════════════════════
+   Hierarchy tokens:
+     bg-app:       #1e1e1e   (root / inspector)
+     bg-panel:     #252526   (header, explorer, toolbox container)
+     bg-card:      #2d2d2d   (cards, toolbox tiles, elevated)
+     bg-surface:   #333333   (hover states)
+
+     text-primary: #d4d4d4   text-secondary: #9da0a6
+     text-muted:   #6e7681   text-disabled:  #555555
+
+     accent:       #3794ff   accent-hover: #4aa0ff
+     accent-sel:   #094771   (VS Code selection blue)
+
+     icon-default: #c5c5c5   icon-hover: #ffffff
+     icon-active:  #3794ff
+
+     border:       #3c3c3c
+     btn-primary:  #0e639c   btn-primary-hover: #1177bb
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Header (top bar) ── */
+:global([data-theme="dark"]) .topHeader {
+  background: #252526 !important;
+  color: #d4d4d4;
+  border-bottom: 1px solid #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .topHeader :global(.ant-typography),
+:global([data-theme="dark"]) .topHeader :global(.ant-typography span),
+:global([data-theme="dark"]) .topHeader :global(.ant-btn),
+:global([data-theme="dark"]) .topHeader :global(.ant-btn .anticon) {
+  color: #d4d4d4 !important;
+}
+
+:global([data-theme="dark"]) .topHeader :global(.ant-btn:hover),
+:global([data-theme="dark"]) .topHeader :global(.ant-btn:hover .anticon) {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .topHeader :global(.ant-menu),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-item),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-submenu-title),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-submenu-arrow),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-overflow-item) {
+  color: #d4d4d4 !important;
+  background: transparent !important;
+}
+
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-item-selected),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-submenu-selected) {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-item:hover),
+:global([data-theme="dark"]) .topHeader :global(.ant-menu-submenu-title:hover) {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ── Activity bar (icon rail) ── */
+:global([data-theme="dark"]) .activitySider {
+  background: #252526 !important;
+  color: #c5c5c5;
+}
+
+:global([data-theme="dark"]) .activitySider :global(.ant-layout-sider-children) {
+  background: #252526;
+}
+
+:global([data-theme="dark"]) .activitySider :global(.ant-btn),
+:global([data-theme="dark"]) .activitySider :global(.ant-btn .anticon),
+:global([data-theme="dark"]) .activitySider :global(.ant-typography),
+:global([data-theme="dark"]) .activitySider :global(.ant-typography span) {
+  color: #c5c5c5 !important;
+}
+
+:global([data-theme="dark"]) .activitySider :global(.ant-btn:hover),
+:global([data-theme="dark"]) .activitySider :global(.ant-btn:hover .anticon) {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .iconRail {
+  background: #252526;
+}
+
+/* ── Explorer sidebar ── */
+:global([data-theme="dark"]) .leftContextPanel {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .sidebarHeader {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper:hover) {
+  background: #2a2d2e !important;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+  background: #094771 !important;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
+  background: #094771 !important;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-treenode-selected)::before {
+  background: #3794ff;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-indent-unit)::before {
+  border-left-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .explorerTree :global(.ant-tree-switcher:not(.ant-tree-switcher-noop))::before {
+  border-top-color: #3c3c3c;
+}
+
+/* ── Canvas (ALWAYS stays light) ── */
+:global([data-theme="dark"]) .studioCanvas {
+  background:
+    linear-gradient(0deg, transparent 95%, rgba(0, 0, 0, 0.06) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.06) 95%),
+    #fafafa !important;
+  background-size: 20px 20px !important;
+}
+
+:global([data-theme="dark"]) .studioCanvasHint {
+  background: rgba(255, 255, 255, 0.92);
+  color: #333333;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* ── Studio shell (wrapper) ── */
+:global([data-theme="dark"]) .studioShell {
+  background: #1e1e1e;
+  border-color: #3c3c3c;
+}
+
+/* ── Studio sub-header & view tabs ── */
+:global([data-theme="dark"]) .studioSubHeader {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioViewTabs {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioPromptRow {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+/* ── Studio workspace cards ── */
+:global([data-theme="dark"]) .studioWorkspaceCard {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+}
+
+/* ── Studio right panel (inspector) ── */
+:global([data-theme="dark"]) .studioRight {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioRightSection {
+  background: #1e1e1e;
+  border-color: #3c3c3c;
+}
+
+/* Divider between inspector & toolbox sections */
+:global([data-theme="dark"]) .studioRightSection + .studioRightSection {
+  border-top: 1px solid #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioLeft {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+/* ── Toolbars ── */
+:global([data-theme="dark"]) .studioToolBar {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioToolButtonActive {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+:global([data-theme="dark"]) .studioToolButton :global(.anticon),
+:global([data-theme="dark"]) .studioToolButtonActive :global(.anticon) {
+  color: #c5c5c5;
+}
+
+:global([data-theme="dark"]) .studioToolButton:hover :global(.anticon) {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .studioToolButtonActive :global(.anticon) {
+  color: #3794ff;
+}
+
+/* ── Studio command bar text ── */
+:global([data-theme="dark"]) .studioCommandStatus {
+  color: #6e7681;
+}
+
+:global([data-theme="dark"]) .studioCommandTitle {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioCommandWorkspace {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioCommandMeta {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioCommandDivider {
+  background: #3c3c3c;
+}
+
+/* ── Ribbon groups ── */
+:global([data-theme="dark"]) .studioRibbonGroup {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonGroupSmall {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonGroupPrimary {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonGroupMuted {
+  background: #252526;
+  border-color: #3c3c3c;
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioRibbonGroupActions {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonGroupTitle {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioRibbonItem {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioRibbonItemLabel {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioRibbonItemMuted {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioRibbonItemMutedLabel {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioRibbonHint {
+  color: #6e7681;
+}
+
+:global([data-theme="dark"]) .studioRibbonHintIcon {
+  color: #c5c5c5;
+}
+
+:global([data-theme="dark"]) .studioRibbonDivider {
+  background: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonButton {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioRibbonButton:hover {
+  background: #333333;
+  border-color: #505050;
+}
+
+:global([data-theme="dark"]) .studioRibbonButtonIconOnly {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioRibbonButtonIconOnly:hover {
+  background: #333333;
+  border-color: #505050;
+}
+
+/* ── Ribbon toggles ── */
+:global([data-theme="dark"]) .studioRibbonToggle {
+  color: #cccccc !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioRibbonToggle:hover {
+  background: #2a2d2e !important;
+}
+
+:global([data-theme="dark"]) .studioRibbonToggleActive {
+  background: rgba(55, 148, 255, 0.18) !important;
+  color: #ffffff !important;
+  border-color: #3794ff !important;
+}
+
+/* ── Shortcut bar ── */
+:global([data-theme="dark"]) .studioShortcutBar {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioShortcutButtonActive {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global([data-theme="dark"]) .studioShortcutLabel {
+  color: #9da0a6;
+}
+
+/* ── Layer inline group pill backgrounds ── */
+:global([data-theme="dark"]) .studioLayerInlineGroup {
+  background: #2d2d2d;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioLayerInlineGroup :global(.ant-checkbox-wrapper) {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioLayerInlineItem {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioLayerInlineItem:hover {
+  background: #333333 !important;
+}
+
+:global([data-theme="dark"]) .studioLayerInlineItemActive {
+  background: #094771 !important;
+  border-color: #3794ff !important;
+}
+
+/* ── Relationship chooser ── */
+:global([data-theme="dark"]) .relationshipChooser {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .relationshipChooserLabel {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .relationshipChooserOption {
+  background: #333333;
+  border-color: rgba(250, 140, 22, 0.35);
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .relationshipChooserOption:hover {
+  background: #3c3c3c;
+}
+
+/* ── Edge Inspector (dark) ── */
+:global([data-theme="dark"]) .edgeInspector {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5) !important;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorLabel {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .edgeInspectorSelect {
+  background: #333333;
+  border-color: #555;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtn {
+  background: #333333;
+  border-color: #555;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtn:hover {
+  background: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtnActive {
+  background: #3d3000;
+  border-color: rgba(250, 140, 22, 0.5);
+  color: #faad14;
+}
+
+:global([data-theme="dark"]) .edgeInspectorBtnDanger {
+  background: #3a1010;
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff7875;
+}
+
+/* ── Palette & toolbox panels ── */
+:global([data-theme="dark"]) .studioPaletteItem {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioPaletteItemButton {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioPaletteItemButton:hover {
+  background: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioPaletteItemButtonActive {
+  border-color: #3794ff !important;
+  box-shadow: 0 0 0 2px rgba(55, 148, 255, 0.2) !important;
+  background: #094771 !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxPanel {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
+  border-top: 1px solid #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxHeader {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioToolboxTitle {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioToolboxSectionTitle {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioToolboxEmpty {
+  color: #6e7681;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButton {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButton :global(.anticon) {
+  color: #c5c5c5;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButton:hover {
+  background: #3c3c3c !important;
+  border-color: #4f4f4f !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButton:hover :global(.anticon) {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButtonActive {
+  border-color: #3794ff !important;
+  background: #094771 !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconButtonActive :global(.anticon) {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .studioToolboxIcon {
+  background: #1e1e1e !important;
+}
+
+:global([data-theme="dark"]) .studioToolboxIconImage {
+  filter: brightness(0.85) contrast(1.15);
+}
+
+/* ── Layer toggles & legends ── */
+:global([data-theme="dark"]) .studioLayerToggleGroup {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioLegendItem {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioLegendCompactLabel {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioLegendCompactItem {
+  opacity: 0.85;
+}
+
+/* ── Tool helper & create hint overlays ── */
+:global([data-theme="dark"]) .studioToolHelper {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .studioCreateHint {
+  background: #2d2d2d !important;
+  border-color: #3c3c3c !important;
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioPlacementGhost {
+  border-color: #3794ff;
+  background: rgba(55, 148, 255, 0.08);
+}
+
+/* ── Type icon ── */
+:global([data-theme="dark"]) .studioTypeIcon {
+  color: #d4d4d4;
+}
+
+/* ── Status bar ── */
+:global([data-theme="dark"]) .studioStatusBar {
+  border-color: #3c3c3c;
+}
+
+/* ── Breadcrumb bar ── */
+:global([data-theme="dark"]) .studioBreadcrumbBar {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
+}
+
+:global([data-theme="dark"]) .studioBreadcrumbItem {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .studioBreadcrumbItemActive {
+  color: #d4d4d4;
+}
+
+/* ── Notification banner ── */
+:global([data-theme="dark"]) .studioNotificationPanel {
+  background: #2d2d2d !important;
+}
+
+/* ── Editor tabs ── */
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-nav) {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-tab) {
+  background: #2d2d2d;
+  color: #cccccc;
+}
+
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-tab:hover) {
+  background: #333333;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-tab-active) {
+  background: #1e1e1e;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-content-holder) {
+  background: #1e1e1e;
+}
+
+:global([data-theme="dark"]) .editorTabs :global(.ant-tabs-nav::before) {
+  border-color: #3c3c3c !important;
+}
+
+/* ── Bottom & right panels ── */
+:global([data-theme="dark"]) .rightPanel {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .rightCollapsedBar {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .bottomPanel {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .bottomPaletteContainer {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .bottomPaletteHeader {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .bottomPaletteContent {
+  background: #252526;
+}
+
+:global([data-theme="dark"]) .bottomPaletteScroll {
+  background: #252526;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+:global([data-theme="dark"]) .bottomPanelHeader {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .bottomCollapsedBar {
+  background: #252526;
+  border-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .panelTab,
+:global([data-theme="dark"]) .panelTabActive {
+  color: #9da0a6;
+}
+
+:global([data-theme="dark"]) .panelTab:hover {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .panelTabActive {
+  background: rgba(55, 148, 255, 0.12);
+  border-color: #3c3c3c;
+  color: #d4d4d4;
+}
+
+/* ── Header search ── */
+:global([data-theme="dark"]) .headerSearch :global(.ant-input),
+:global([data-theme="dark"]) .headerSearch :global(.ant-input-affix-wrapper) {
+  background: #3c3c3c !important;
+  border-color: #3c3c3c !important;
+  color: #d4d4d4 !important;
+}
+
+:global([data-theme="dark"]) .headerSearch :global(.ant-input::placeholder) {
+  color: #6e7681 !important;
+}
+
+:global([data-theme="dark"]) .headerSearch :global(.ant-input-affix-wrapper:focus),
+:global([data-theme="dark"]) .headerSearch :global(.ant-input-affix-wrapper-focused) {
+  border-color: #3794ff !important;
+}
+
+/* ── Toolbox tabs in dark ── */
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-nav) {
+  border-bottom-color: #3c3c3c;
+}
+
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-tab) {
+  color: #9da0a6;
+  background: transparent;
+}
+
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-tab:hover) {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-tab-active) {
+  border-bottom: 2px solid #3794ff;
+}
+
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-ink-bar) {
+  background: #3794ff !important;
+}
+
+/* ── Studio palette / mode tabs ── */
+:global([data-theme="dark"]) .studioViewTabs :global(.ant-tabs-tab) {
+  color: #cccccc;
+}
+
+:global([data-theme="dark"]) .studioViewTabs :global(.ant-tabs-tab:hover) {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .studioViewTabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: #3794ff !important;
+}
+

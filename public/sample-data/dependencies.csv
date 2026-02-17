@@ -1,0 +1,14 @@
+from,to,dependencyStrength,dependencyType
+role-ceo,role-coo,hard,sync
+role-ceo,role-cfo,hard,sync
+role-ceo,role-cto,hard,sync
+role-coo,role-hrd,hard,sync
+role-cfo,role-finmgr,hard,sync
+role-cto,role-engdir,hard,sync
+role-cto,role-pmdir,hard,sync
+role-engdir,role-engmgr,hard,sync
+role-engmgr,role-techlead,hard,sync
+role-techlead,role-swe2,hard,sync
+role-engmgr,role-swe1,hard,sync
+role-pmdir,role-designer,hard,sync
+role-pmdir,role-techlead,soft,async

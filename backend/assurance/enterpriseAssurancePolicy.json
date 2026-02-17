@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "enabledDomains": {
+    "repositoryValidation": true,
+    "relationshipValidation": true,
+    "integrityAudit": true,
+    "viewGovernance": true
+  },
+  "failOnSeverities": ["Error"],
+  "severityOverrides": {}
+}
