@@ -76,6 +76,7 @@ import ObjectTableTab from './ObjectTableTab';
 import PlateauViewerTab from './PlateauViewerTab';
 import RoadmapViewerTab from './RoadmapViewerTab';
 import StudioShell from './StudioShell';
+import ModelLibraryTab from './model-library/ModelLibraryTab.tsx';
 import styles from './style.module.less';
 import ViewDefinitionTab from './ViewDefinitionTab';
 
@@ -202,6 +203,9 @@ type OpenWorkspaceTabArgs =
   | {
       type: 'roadmap';
       roadmapId: string;
+    }
+  | {
+      type: 'model-library';
     };
 
 type IdeShellApi = {
@@ -1323,6 +1327,19 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         } catch {
           // Best-effort only.
         }
+
+        setTabs((prev) => {
+          if (prev.some((t) => t.key === key)) return prev;
+          return [...prev, { key, label, kind: 'workspace', content }];
+        });
+        setActiveKey(key);
+        return;
+      }
+
+      if (args.type === 'model-library') {
+        const key = 'model-library';
+        const label = 'Model Library';
+        const content = <ModelLibraryTab />;
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;

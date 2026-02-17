@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- Model Library icon: 2x2 card grid representing a palette/toolbox -->
+  <rect x="1" y="1" width="6" height="6" rx="1.2" fill="#69b1ff" opacity="0.85"/>
+  <rect x="9" y="1" width="6" height="6" rx="1.2" fill="#95de64" opacity="0.85"/>
+  <rect x="1" y="9" width="6" height="6" rx="1.2" fill="#ffd666" opacity="0.85"/>
+  <rect x="9" y="9" width="6" height="6" rx="1.2" fill="#ff9c6e" opacity="0.85"/>
+  <!-- Small shape accents inside each cell -->
+  <rect x="2.5" y="2.5" width="3" height="3" rx="0.5" fill="white" opacity="0.6"/>
+  <circle cx="12" cy="4" r="1.5" fill="white" opacity="0.6"/>
+  <polygon points="4,10.5 5.5,13 2.5,13" fill="white" opacity="0.6"/>
+  <line x1="10.5" y1="12" x2="13.5" y2="12" stroke="white" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+</svg>

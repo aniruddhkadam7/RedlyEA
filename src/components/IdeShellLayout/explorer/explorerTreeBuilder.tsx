@@ -136,9 +136,9 @@ const metamodelIcon = iconAsset(
   '/icons/explorer/metamodel-blueprint.svg',
   'metamodel',
 );
-const reportIcon = iconAsset('/icons/explorer-modern/report.png', 'report');
+const reportIcon = iconAsset('/icons/explorer/report.svg', 'report');
 const settingsIcon = iconAsset(
-  '/icons/explorer-modern/settings.png',
+  '/icons/explorer/settings.svg',
   'settings',
 );
 const fallbackGenericIcon = React.createElement(FolderOutlined);
@@ -587,6 +587,7 @@ export type ExplorerTreeResult = {
  * │   ├── Matrices (App vs Cap, App vs Tech, Cap vs Proc, Risk vs App)
  * │   ├── Diagrams (Business, Application, Technology, Strategy)
  * │   └── Roadmaps (Current, Target, Transition)
+ * ├── Model Library (catalog browser for drag-to-diagram)
  * ├── Framework Packages (Industry, Security, Custom)
  * ├── Baselines (Snapshots, Archived)
  * ├── Reports (Impact, Cost, Risk, Compliance)
@@ -635,7 +636,7 @@ export function buildExplorerTree(
 
   // --- 1. Repository ---
   const repositoryIcon = iconAsset(
-    '/icons/explorer-modern/repository.png',
+    '/icons/explorer/repository.svg',
     'repository',
   );
   const repositoryNode: DataNode = collectionNode(
@@ -1303,7 +1304,7 @@ export function buildExplorerTree(
   );
 
   const architecturesIcon = iconAsset(
-    '/icons/explorer-modern/architecture.png',
+    '/icons/explorer/architecture.svg',
     'architectures',
   );
   const architecturesNode: DataNode = collectionNode(
@@ -1312,6 +1313,20 @@ export function buildExplorerTree(
     architecturesIcon,
     [architectureNode],
   );
+
+  // --- 3b. Model Library ---
+  const modelLibraryIcon = iconAsset(
+    '/icons/explorer/model-library.svg',
+    'model-library',
+  );
+  const modelLibraryNode: DataNode = {
+    key: EXPLORER_KEYS.modelLibrary,
+    title: 'Model Library',
+    icon: modelLibraryIcon,
+    isLeaf: true,
+    className: 'explorer-node explorer-node-model-library',
+    data: { modelLibrary: true },
+  };
 
   // --- 4. Framework Packages ---
   const frameworkPackagesNode: DataNode = collectionNode(
@@ -1349,7 +1364,7 @@ export function buildExplorerTree(
   );
 
   const baselinesIcon = iconAsset(
-    '/icons/explorer-modern/baseline.png',
+    '/icons/explorer/baseline.svg',
     'baselines',
   );
   const baselinesNode: DataNode = collectionNode(
@@ -1465,6 +1480,7 @@ export function buildExplorerTree(
         repositoryNode,
         metamodelNode,
         architecturesNode,
+        modelLibraryNode,
         frameworkPackagesNode,
         baselinesNode,
         reportsNode,

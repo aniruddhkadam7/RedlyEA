@@ -2031,6 +2031,10 @@ const ExplorerTree: React.FC = () => {
           }
           break;
         }
+        case 'model-library': {
+          openWorkspaceTab({ type: 'model-library' });
+          break;
+        }
         default:
           break;
       }
