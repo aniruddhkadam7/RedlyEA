@@ -69,6 +69,7 @@ export const EXPLORER_KEYS = {
   repository: 'section:repository',
   metamodel: 'section:metamodel',
   architectures: 'section:architectures',
+  modelLibrary: 'section:model-library',
   frameworkPackages: 'section:framework-packages',
   baselines: 'section:baselines',
   reports: 'section:reports',
