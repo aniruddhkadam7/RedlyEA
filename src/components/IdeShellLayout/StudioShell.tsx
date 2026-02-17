@@ -110,7 +110,6 @@ import {
 } from '@/repository/customFrameworkConfig';
 import { canCreateObjectTypeForLifecycleCoverage } from '@/repository/lifecycleCoveragePolicy';
 import { isObjectTypeAllowedForReferenceFramework } from '@/repository/referenceFrameworkPolicy';
-import { enableToolbox } from '@/features/model-library/featureFlags';
 import { useIdeShell } from './index';
 import styles from './style.module.less';
 
@@ -1142,7 +1141,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     !presentationView;
   const _canModelMode = studioModeLevel === 'Model' && !presentationView;
   const presentationReadOnly = viewReadOnly || presentationView;
-  const showToolbox = canDiagramMode && enableToolbox;
+  const showToolbox = false;
   const toolboxInteractionDisabled = viewReadOnly || !canDiagramMode;
   const [toolboxCollapsed, setToolboxCollapsed] = React.useState(false);
   const [toolboxExpanded, setToolboxExpanded] = React.useState(false);

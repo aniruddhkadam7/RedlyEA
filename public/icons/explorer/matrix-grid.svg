@@ -1,4 +1,12 @@
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <rect x="2" y="2" width="12" height="12" rx="1.5" fill="#7ca5dd" stroke="#3f679d" stroke-width="1"/>
-  <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="#3f679d" stroke-width="1"/>
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <rect x="1.5" y="1.5" width="13" height="13" rx="1.2" fill="#dce8f5" stroke="#4a7ab5" stroke-width="0.7"/>
+  <rect x="1.5" y="1.5" width="13" height="3.2" rx="1.2" fill="#5a8ec4" stroke="#4a7ab5" stroke-width="0.7"/>
+  <rect x="1.5" y="3.5" width="13" height="1.2" fill="#5a8ec4"/>
+  <line x1="5.5" y1="1.5" x2="5.5" y2="14.5" stroke="#4a7ab5" stroke-width="0.5" opacity="0.4"/>
+  <line x1="10" y1="1.5" x2="10" y2="14.5" stroke="#4a7ab5" stroke-width="0.5" opacity="0.4"/>
+  <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="#4a7ab5" stroke-width="0.5" opacity="0.4"/>
+  <line x1="1.5" y1="11.2" x2="14.5" y2="11.2" stroke="#4a7ab5" stroke-width="0.5" opacity="0.4"/>
+  <circle cx="3.5" cy="3.1" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="7.8" cy="3.1" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="12.2" cy="3.1" r="0.6" fill="white" opacity="0.7"/>
 </svg>

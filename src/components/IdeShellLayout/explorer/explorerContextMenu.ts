@@ -197,7 +197,6 @@ export type ExplorerNodeKind =
   | 'roadmap'
   | 'plateau'
   | 'catalog'
-  | 'model-library'
   | 'matrix'
   | 'report'
   | 'setting'
@@ -218,7 +217,6 @@ export function classifyNodeKey(
   if (key.startsWith('metamodel:type:') || key.startsWith('metamodel:reldef:'))
     return 'metamodel-type';
   if (nodeData?.catalogKey) return 'catalog';
-  if (nodeData?.modelLibrary) return 'model-library';
   if (nodeData?.matrixKey) return 'matrix';
   if (nodeData?.reportType) return 'report';
   if (nodeData?.settingKey) return 'setting';
