@@ -1,6 +1,10 @@
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="4" cy="4" r="2" fill="#e2ad3b" stroke="#875f1f" stroke-width="1"/>
-  <circle cx="12" cy="4" r="2" fill="#5a88cd" stroke="#2b4f8b" stroke-width="1"/>
-  <circle cx="8" cy="12" r="2" fill="#d66965" stroke="#8a3836" stroke-width="1"/>
-  <path d="M5.8 5.1l4.4 0M10.8 5.5l-1.9 4.2M7.2 9.7L5.2 5.4" stroke="#5c6f8e" stroke-width="1"/>
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <rect x="1" y="1" width="14" height="14" rx="1.5" fill="#fef9ed" stroke="#c4a25e" stroke-width="0.7"/>
+  <rect x="2.5" y="2.5" width="4" height="2.5" rx="0.8" fill="#69b1ff" stroke="#2b7cd4" stroke-width="0.6"/>
+  <rect x="9.5" y="2.5" width="4" height="2.5" rx="0.8" fill="#95de64" stroke="#52a031" stroke-width="0.6"/>
+  <rect x="5" y="10" width="5.5" height="2.5" rx="0.8" fill="#ffd666" stroke="#c4941e" stroke-width="0.6"/>
+  <line x1="6.5" y1="5" x2="7.8" y2="10" stroke="#888" stroke-width="0.7" stroke-dasharray="1.5 1"/>
+  <line x1="11.5" y1="5" x2="9.5" y2="10" stroke="#888" stroke-width="0.7" stroke-dasharray="1.5 1"/>
+  <polygon points="7.5,9 8.2,10.2 7.2,10.2" fill="#888"/>
+  <polygon points="9.8,9 10.3,10.2 9.3,10.2" fill="#888"/>
 </svg>

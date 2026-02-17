@@ -22,10 +22,6 @@
     component: './workspace',
   },
   {
-    path: '/workspace/model-library',
-    component: './model-library',
-  },
-  {
     path: '/applications',
     component: './applications',
   },

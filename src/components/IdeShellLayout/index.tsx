@@ -76,7 +76,7 @@ import ObjectTableTab from './ObjectTableTab';
 import PlateauViewerTab from './PlateauViewerTab';
 import RoadmapViewerTab from './RoadmapViewerTab';
 import StudioShell from './StudioShell';
-import ModelLibraryTab from './model-library/ModelLibraryTab.tsx';
+import ModelLibraryTab from './model-library/ModelLibraryTab';
 import styles from './style.module.less';
 import ViewDefinitionTab from './ViewDefinitionTab';
 

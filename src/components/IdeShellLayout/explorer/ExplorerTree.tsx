@@ -1989,8 +1989,15 @@ const ExplorerTree: React.FC = () => {
             elementType?: string;
             viewId?: string;
             catalogKey?: string;
+            modelLibrary?: boolean;
           }
         | undefined;
+
+      if (data?.modelLibrary || key === EXPLORER_KEYS.modelLibrary) {
+        openWorkspaceTab({ type: 'model-library' });
+        return;
+      }
+
       const kind = classifyNodeKey(key, meta?.data);
 
       switch (kind) {
@@ -2029,10 +2036,6 @@ const ExplorerTree: React.FC = () => {
                 data.catalogKey as import('../CatalogTableTab').CatalogKind,
             });
           }
-          break;
-        }
-        case 'model-library': {
-          openWorkspaceTab({ type: 'model-library' });
           break;
         }
         default:
