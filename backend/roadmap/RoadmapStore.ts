@@ -1,5 +1,4 @@
-import type { Plateau } from './Plateau';
-import { listPlateaus, getPlateauRevision } from './PlateauStore';
+import { getPlateauRevision, listPlateaus } from './PlateauStore';
 import type { Roadmap, RoadmapCreateRequest } from './Roadmap';
 
 const DEFAULT_ROADMAP_ID = 'architecture-roadmap';
@@ -8,7 +7,8 @@ let roadmapRevision = 0;
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const freezeRoadmap = (roadmap: Roadmap): Roadmap => Object.freeze(roadmap);
-const generateRoadmapId = () => `roadmap-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+const generateRoadmapId = () =>
+  `roadmap-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
 const buildDefaultRoadmap = (): Roadmap => {
   const plateaus = listPlateaus();
@@ -18,7 +18,8 @@ const buildDefaultRoadmap = (): Roadmap => {
   const roadmap: Roadmap = {
     id: DEFAULT_ROADMAP_ID,
     name: 'Architecture Roadmap',
-    description: 'Ordered sequence of plateaus showing architectural evolution over time.',
+    description:
+      'Ordered sequence of plateaus showing architectural evolution over time.',
     plateauIds,
     readOnly: true,
     createdAt,
@@ -31,7 +32,10 @@ const buildDefaultRoadmap = (): Roadmap => {
 export const getDefaultRoadmapId = () => DEFAULT_ROADMAP_ID;
 
 export function listRoadmaps(): readonly Roadmap[] {
-  return [buildDefaultRoadmap(), ...roadmaps.map((r) => freezeRoadmap(clone(r)))];
+  return [
+    buildDefaultRoadmap(),
+    ...roadmaps.map((r) => freezeRoadmap(clone(r))),
+  ];
 }
 
 export function getRoadmapById(id: string): Roadmap | null {

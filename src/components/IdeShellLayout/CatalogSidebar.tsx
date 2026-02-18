@@ -7,10 +7,10 @@ import {
 } from '@ant-design/icons';
 import { useLocation } from '@umijs/max';
 import React from 'react';
+import { useIdeShell } from './index';
 import NavigationSidebar, {
   type NavigationSidebarGroup,
 } from './NavigationSidebar';
-import { useIdeShell } from './index';
 
 const CATALOG_DOMAINS: Array<{
   key: string;

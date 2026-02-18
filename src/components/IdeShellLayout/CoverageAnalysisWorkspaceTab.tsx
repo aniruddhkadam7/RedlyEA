@@ -1,9 +1,17 @@
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Form,
+  Select,
+  Space,
+  Typography,
+} from 'antd';
 import React from 'react';
-import { Alert, Button, Card, Divider, Form, Select, Space, Typography } from 'antd';
-
-import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
-import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
-
+import { createAnalysisResult } from '@/analysis/analysisResultsStore';
+import { message } from '@/ea/eaConsole';
+import { getAllRelationships } from '@/services/ea/relationships';
 import {
   getRepositoryApplications,
   getRepositoryCapabilities,
@@ -11,10 +19,9 @@ import {
   getRepositoryProgrammes,
   getRepositoryTechnologies,
 } from '@/services/ea/repository';
-import { getAllRelationships } from '@/services/ea/relationships';
-import { createAnalysisResult } from '@/analysis/analysisResultsStore';
+import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
+import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
 import { useIdeShell } from './index';
-import { message } from '@/ea/eaConsole';
 
 type ElementOption = {
   id: string;
@@ -25,7 +32,9 @@ type ElementOption = {
 const normalizeId = (v: string) => (v ?? '').trim();
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(compareStrings);
+const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(
+  compareStrings,
+);
 
 const CoverageAnalysisWorkspaceTab: React.FC = () => {
   const { openWorkspaceTab } = useIdeShell();
@@ -46,7 +55,11 @@ const CoverageAnalysisWorkspaceTab: React.FC = () => {
 
     try {
       const values = await form.validateFields();
-      const includedRelationshipTypes = (values.includedRelationshipTypes as string[]).slice().sort(compareStrings);
+      const includedRelationshipTypes = (
+        values.includedRelationshipTypes as string[]
+      )
+        .slice()
+        .sort(compareStrings);
 
       const [caps, procs, apps, tech, progs, relsResp] = await Promise.all([
         getRepositoryCapabilities(),
@@ -64,20 +77,32 @@ const CoverageAnalysisWorkspaceTab: React.FC = () => {
       if (tech?.success) all.push(...(tech.data ?? []));
       if (progs?.success) all.push(...(progs.data ?? []));
 
-      if (!relsResp?.success) throw new Error(relsResp?.errorMessage || 'Failed to load relationships.');
+      if (!relsResp?.success)
+        throw new Error(
+          relsResp?.errorMessage || 'Failed to load relationships.',
+        );
 
-      const relationships = (relsResp.data ?? []).filter((r) => includedRelationshipTypes.includes(r.relationshipType));
+      const relationships = (relsResp.data ?? []).filter((r) =>
+        includedRelationshipTypes.includes(r.relationshipType),
+      );
 
       const elementCountsByType = new Map<string, number>();
       const elementIds = new Set<string>();
 
       const elementIndex: ElementOption[] = all
-        .map((e) => ({ id: normalizeId(e.id), name: e.name || e.id, elementType: e.elementType }))
+        .map((e) => ({
+          id: normalizeId(e.id),
+          name: e.name || e.id,
+          elementType: e.elementType,
+        }))
         .filter((e) => e.id.length > 0);
 
       for (const e of elementIndex) {
         elementIds.add(e.id);
-        elementCountsByType.set(e.elementType, (elementCountsByType.get(e.elementType) ?? 0) + 1);
+        elementCountsByType.set(
+          e.elementType,
+          (elementCountsByType.get(e.elementType) ?? 0) + 1,
+        );
       }
 
       const relationshipCountsByType = new Map<string, number>();
@@ -110,10 +135,18 @@ const CoverageAnalysisWorkspaceTab: React.FC = () => {
           orphanedElementCount,
           elementCountsByType: [...elementCountsByType.entries()]
             .map(([elementType, count]) => ({ elementType, count }))
-            .sort((a, b) => (b.count - a.count ? b.count - a.count : compareStrings(a.elementType, b.elementType))),
+            .sort((a, b) =>
+              b.count - a.count
+                ? b.count - a.count
+                : compareStrings(a.elementType, b.elementType),
+            ),
           relationshipCountsByType: [...relationshipCountsByType.entries()]
             .map(([relationshipType, count]) => ({ relationshipType, count }))
-            .sort((a, b) => (b.count - a.count ? b.count - a.count : compareStrings(a.relationshipType, b.relationshipType))),
+            .sort((a, b) =>
+              b.count - a.count
+                ? b.count - a.count
+                : compareStrings(a.relationshipType, b.relationshipType),
+            ),
         },
       });
 
@@ -146,15 +179,37 @@ const CoverageAnalysisWorkspaceTab: React.FC = () => {
           <Form.Item
             label="Included relationship types"
             name="includedRelationshipTypes"
-            rules={[{ required: true, message: 'Select at least one relationship type' }]}
+            rules={[
+              {
+                required: true,
+                message: 'Select at least one relationship type',
+              },
+            ]}
           >
-            <Select mode="multiple" options={relationshipTypeOptions.map((t) => ({ value: t, label: t }))} />
+            <Select
+              mode="multiple"
+              options={relationshipTypeOptions.map((t) => ({
+                value: t,
+                label: t,
+              }))}
+            />
           </Form.Item>
 
-          {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} /> : null}
+          {error ? (
+            <Alert
+              type="error"
+              showIcon
+              message={error}
+              style={{ marginBottom: 12 }}
+            />
+          ) : null}
 
           <Space>
-            <Button type="primary" onClick={() => void runAnalysis()} loading={running}>
+            <Button
+              type="primary"
+              onClick={() => void runAnalysis()}
+              loading={running}
+            >
               Run analysis
             </Button>
           </Space>

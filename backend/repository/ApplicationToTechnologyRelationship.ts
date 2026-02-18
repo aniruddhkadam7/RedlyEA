@@ -15,15 +15,16 @@ export type ResilienceLevel = 'High' | 'Medium' | 'Low';
  * - No network topology is modeled.
  * - No deployment scripts or execution semantics are implied.
  */
-export type ApplicationToTechnologyRelationship = BaseArchitectureRelationship & {
-  relationshipType: 'DEPLOYED_ON';
+export type ApplicationToTechnologyRelationship =
+  BaseArchitectureRelationship & {
+    relationshipType: 'DEPLOYED_ON';
 
-  sourceElementType: 'Application';
-  targetElementType: 'Technology';
+    sourceElementType: 'Application';
+    targetElementType: 'Technology';
 
-  direction: 'OUTGOING';
+    direction: 'OUTGOING';
 
-  hostingRole: HostingRole;
-  environment: HostingEnvironment;
-  resilienceLevel: ResilienceLevel;
-};
+    hostingRole: HostingRole;
+    environment: HostingEnvironment;
+    resilienceLevel: ResilienceLevel;
+  };

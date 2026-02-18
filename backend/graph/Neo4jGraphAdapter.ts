@@ -1,10 +1,9 @@
 import type { Driver, Session } from 'neo4j-driver';
 import neo4j from 'neo4j-driver';
-
-import type { GraphAbstractionLayer } from './GraphAbstractionLayer';
+import { DomainError } from '../reliability/DomainError';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
 import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-import { DomainError } from '../reliability/DomainError';
+import type { GraphAbstractionLayer } from './GraphAbstractionLayer';
 
 export type Neo4jGraphAdapterConfig = {
   /** neo4j-driver instance (owned/closed by the caller). */
@@ -20,20 +19,25 @@ export type Neo4jGraphAdapterConfig = {
   edgeRelType?: string;
 };
 
-const normalizeId = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
-const normalizeType = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
+const normalizeType = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
 const toNative = (value: unknown): any => {
   if (neo4j.isInt(value)) {
     // Prefer number when safe; otherwise return string to preserve determinism.
-    return (value as any).inSafeRange() ? (value as any).toNumber() : (value as any).toString();
+    return (value as any).inSafeRange()
+      ? (value as any).toNumber()
+      : (value as any).toString();
   }
 
   if (Array.isArray(value)) return value.map((v) => toNative(v));
 
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = toNative(v);
+    for (const [k, v] of Object.entries(value as Record<string, unknown>))
+      out[k] = toNative(v);
     return out;
   }
 
@@ -42,7 +46,10 @@ const toNative = (value: unknown): any => {
 
 const relationshipSortOrder = `ORDER BY relType ASC, sourceId ASC, targetId ASC, relId ASC`;
 
-const toBackendUnavailableError = (operation: string, err: unknown): DomainError => {
+const toBackendUnavailableError = (
+  operation: string,
+  err: unknown,
+): DomainError => {
   const neo4jCode = (err as any)?.code;
   const message = err instanceof Error ? err.message : String(err);
   return new DomainError({
@@ -79,10 +86,15 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
   }
 
   private session(): Session {
-    return this.driver.session({ database: this.database, defaultAccessMode: neo4j.session.READ });
+    return this.driver.session({
+      database: this.database,
+      defaultAccessMode: neo4j.session.READ,
+    });
   }
 
-  async getOutgoingEdges(nodeId: string): Promise<readonly BaseArchitectureRelationship[]> {
+  async getOutgoingEdges(
+    nodeId: string,
+  ): Promise<readonly BaseArchitectureRelationship[]> {
     const id = normalizeId(nodeId);
     if (!id) return [];
 
@@ -105,10 +117,14 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
 
       return result.records.map((rec) => {
         const rel = rec.get('r') as any;
-        const props = toNative(rel?.properties ?? {}) as Record<string, unknown>;
+        const props = toNative(rel?.properties ?? {}) as Record<
+          string,
+          unknown
+        >;
 
         const relationshipType = normalizeType(rec.get('relType'));
-        const relationshipId = normalizeId(rec.get('relId')) || normalizeId(props.id);
+        const relationshipId =
+          normalizeId(rec.get('relId')) || normalizeId(props.id);
 
         return {
           ...props,
@@ -128,7 +144,9 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
     }
   }
 
-  async getIncomingEdges(nodeId: string): Promise<readonly BaseArchitectureRelationship[]> {
+  async getIncomingEdges(
+    nodeId: string,
+  ): Promise<readonly BaseArchitectureRelationship[]> {
     const id = normalizeId(nodeId);
     if (!id) return [];
 
@@ -151,10 +169,14 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
 
       return result.records.map((rec) => {
         const rel = rec.get('r') as any;
-        const props = toNative(rel?.properties ?? {}) as Record<string, unknown>;
+        const props = toNative(rel?.properties ?? {}) as Record<
+          string,
+          unknown
+        >;
 
         const relationshipType = normalizeType(rec.get('relType'));
-        const relationshipId = normalizeId(rec.get('relId')) || normalizeId(props.id);
+        const relationshipId =
+          normalizeId(rec.get('relId')) || normalizeId(props.id);
 
         return {
           ...props,
@@ -201,7 +223,9 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
     }
   }
 
-  async getNodesByType(type: string): Promise<readonly BaseArchitectureElement[]> {
+  async getNodesByType(
+    type: string,
+  ): Promise<readonly BaseArchitectureElement[]> {
     const t = normalizeType(type);
     if (!t) return [];
 
@@ -213,11 +237,16 @@ export class Neo4jGraphAdapter implements GraphAbstractionLayer {
         ORDER BY coalesce(n.name, '') ASC, n.id ASC
       `.trim();
 
-      const result = await session.executeRead((tx) => tx.run(cypher, { type: t }));
+      const result = await session.executeRead((tx) =>
+        tx.run(cypher, { type: t }),
+      );
       return result.records
         .map((rec) => {
           const node = rec.get('n') as any;
-          const props = toNative(node?.properties ?? {}) as Record<string, unknown>;
+          const props = toNative(node?.properties ?? {}) as Record<
+            string,
+            unknown
+          >;
           return props as BaseArchitectureElement;
         })
         .filter((e) => normalizeId((e as any).id).length > 0);

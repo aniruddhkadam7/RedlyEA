@@ -96,7 +96,10 @@ export type MenuProvider = (ctx: MenuContext) => MenuItem[];
  */
 const providers = new Map<ContextSource, MenuProvider>();
 
-export function registerMenuProvider(source: ContextSource, provider: MenuProvider): void {
+export function registerMenuProvider(
+  source: ContextSource,
+  provider: MenuProvider,
+): void {
   providers.set(source, provider);
 }
 
@@ -122,11 +125,17 @@ export function buildMenu(ctx: MenuContext): MenuItem[] {
 // Permission Filter (recursive for submenus)
 // ---------------------------------------------------------------------------
 
-function filterByPermission(items: MenuItem[], role: RepositoryRole): MenuItem[] {
+function filterByPermission(
+  items: MenuItem[],
+  role: RepositoryRole,
+): MenuItem[] {
   const result: MenuItem[] = [];
   for (const item of items) {
     // Dividers pass through
-    if (item.divider) { result.push(item); continue; }
+    if (item.divider) {
+      result.push(item);
+      continue;
+    }
 
     // Permission check
     if (item.requiredPermission) {
@@ -167,7 +176,8 @@ function cleanDividers(items: MenuItem[]): MenuItem[] {
     cleaned.push(item);
   }
   // strip trailing
-  while (cleaned.length > 0 && cleaned[cleaned.length - 1].divider) cleaned.pop();
+  while (cleaned.length > 0 && cleaned[cleaned.length - 1].divider)
+    cleaned.pop();
   return cleaned;
 }
 
@@ -175,7 +185,10 @@ function cleanDividers(items: MenuItem[]): MenuItem[] {
 // Position Adjustment (spec §9)
 // ---------------------------------------------------------------------------
 
-export interface MenuPosition { x: number; y: number }
+export interface MenuPosition {
+  x: number;
+  y: number;
+}
 
 const MENU_WIDTH_ESTIMATE = 220;
 const MENU_HEIGHT_ESTIMATE = 320;
@@ -183,7 +196,11 @@ const MENU_HEIGHT_ESTIMATE = 320;
 /**
  * Adjust menu position so it doesn't overflow the viewport.
  */
-export function adjustMenuPosition(pos: MenuPosition, menuWidth?: number, menuHeight?: number): MenuPosition {
+export function adjustMenuPosition(
+  pos: MenuPosition,
+  menuWidth?: number,
+  menuHeight?: number,
+): MenuPosition {
   const w = menuWidth ?? MENU_WIDTH_ESTIMATE;
   const h = menuHeight ?? MENU_HEIGHT_ESTIMATE;
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;

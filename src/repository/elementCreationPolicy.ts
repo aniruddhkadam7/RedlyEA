@@ -161,7 +161,7 @@ export const ELEMENT_CREATION_POLICY = {
  */
 export function guardInitializationForModeling(
   initialization: RepositoryInitializationState | null | undefined,
-  action: 'create' | 'import' | 'bulk-edit',
+  _action: 'create' | 'import' | 'bulk-edit',
 ): InitializationGuard {
   if (!initialization || initialization.status === 'initialized') {
     return { ok: true };

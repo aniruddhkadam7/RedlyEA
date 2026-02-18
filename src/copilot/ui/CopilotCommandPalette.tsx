@@ -1,7 +1,6 @@
-import React from 'react';
-
 import { RobotOutlined, SearchOutlined } from '@ant-design/icons';
 import { Input, List, Modal, Space, Tag, Tooltip, Typography } from 'antd';
+import React from 'react';
 
 import { trackCopilotEvent } from '@/copilot/telemetry';
 
@@ -15,7 +14,8 @@ const COMMANDS: CommandItem[] = [
   {
     id: 'explain_application',
     title: 'Explain this application',
-    description: 'Summarize purpose, dependencies, and responsibilities (read-only).',
+    description:
+      'Summarize purpose, dependencies, and responsibilities (read-only).',
   },
   {
     id: 'simulate_outage_impact',
@@ -30,7 +30,8 @@ const COMMANDS: CommandItem[] = [
   {
     id: 'suggest_missing_relationships',
     title: 'Suggest missing relationships',
-    description: 'Propose candidate relationships for review (no auto-creation).',
+    description:
+      'Propose candidate relationships for review (no auto-creation).',
   },
 ];
 
@@ -54,13 +55,18 @@ const CopilotCommandPalette: React.FC = () => {
     };
 
     window.addEventListener('keydown', onKeyDown, { capture: true });
-    return () => window.removeEventListener('keydown', onKeyDown, { capture: true } as any);
+    return () =>
+      window.removeEventListener('keydown', onKeyDown, {
+        capture: true,
+      } as any);
   }, []);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return COMMANDS;
-    return COMMANDS.filter((c) => `${c.title} ${c.description}`.toLowerCase().includes(q));
+    return COMMANDS.filter((c) =>
+      `${c.title} ${c.description}`.toLowerCase().includes(q),
+    );
   }, [query]);
 
   return (

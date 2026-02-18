@@ -1,5 +1,9 @@
-import type { ViewApprovalStatus, ViewDefinition, ViewType } from './ViewDefinition';
 import { getRelationshipEndpointRule } from '../relationships/RelationshipSemantics';
+import type {
+  ViewApprovalStatus,
+  ViewDefinition,
+  ViewType,
+} from './ViewDefinition';
 
 export type ViewTemplateId =
   | 'template.application-dependency'
@@ -43,7 +47,8 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
   {
     id: 'template.application-dependency',
     name: 'Application Dependency View',
-    description: 'Directed application dependencies for impact analysis and governance.',
+    description:
+      'Directed application dependencies for impact analysis and governance.',
     viewType: 'ApplicationDependency',
     architectureLayer: 'Application',
     allowedElementTypes: ['Application'],
@@ -55,7 +60,8 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
   {
     id: 'template.capability-map',
     name: 'Capability Map',
-    description: 'Business capability decomposition and traceability to processes (optionally to applications).',
+    description:
+      'Business capability decomposition and traceability to processes (optionally to applications).',
     viewType: 'CapabilityMap',
     architectureLayer: 'Business',
     allowedElementTypes: ['Capability', 'BusinessProcess'],
@@ -66,7 +72,8 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
   {
     id: 'template.application-landscape',
     name: 'Application Landscape',
-    description: 'Inventory-style application landscape (no relationships by default).',
+    description:
+      'Inventory-style application landscape (no relationships by default).',
     viewType: 'ApplicationLandscape',
     architectureLayer: 'Application',
     allowedElementTypes: ['Application'],
@@ -77,7 +84,8 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
   {
     id: 'template.technology-landscape',
     name: 'Technology Landscape',
-    description: 'Inventory-style technology landscape (no relationships by default).',
+    description:
+      'Inventory-style technology landscape (no relationships by default).',
     viewType: 'TechnologyLandscape',
     architectureLayer: 'Technology',
     allowedElementTypes: ['Technology'],
@@ -88,7 +96,8 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
   {
     id: 'template.application-to-technology',
     name: 'Application → Technology Traceability',
-    description: 'Cross-layer traceability from applications to the technologies they are deployed on.',
+    description:
+      'Cross-layer traceability from applications to the technologies they are deployed on.',
     viewType: 'ImpactView',
     architectureLayer: 'CrossLayer',
     allowedElementTypes: ['Application', 'Technology'],
@@ -105,7 +114,12 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
     viewType: 'ImpactView',
     architectureLayer: 'CrossLayer',
     allowedElementTypes: ['Capability', 'BusinessProcess', 'Application'],
-    allowedRelationshipTypes: ['DECOMPOSES_TO', 'COMPOSED_OF', 'REALIZED_BY', 'SERVED_BY'],
+    allowedRelationshipTypes: [
+      'DECOMPOSES_TO',
+      'COMPOSED_OF',
+      'REALIZED_BY',
+      'SERVED_BY',
+    ],
     layoutType: 'Hierarchical',
     orientation: 'TopDown',
     maxDepthConfig: { configurable: true, defaultValue: 2 },
@@ -117,24 +131,40 @@ export const STANDARD_VIEW_TEMPLATES: readonly ViewTemplate[] = [
       'End-to-end traceability across business, application, and technology layers, including programme impacts when available.',
     viewType: 'ImpactView',
     architectureLayer: 'CrossLayer',
-    allowedElementTypes: ['Programme', 'Capability', 'BusinessProcess', 'Application', 'Technology'],
-    allowedRelationshipTypes: ['IMPACTS', 'DECOMPOSES_TO', 'COMPOSED_OF', 'REALIZED_BY', 'SERVED_BY', 'DEPLOYED_ON'],
+    allowedElementTypes: [
+      'Programme',
+      'Capability',
+      'BusinessProcess',
+      'Application',
+      'Technology',
+    ],
+    allowedRelationshipTypes: [
+      'IMPACTS',
+      'DECOMPOSES_TO',
+      'COMPOSED_OF',
+      'REALIZED_BY',
+      'SERVED_BY',
+      'DEPLOYED_ON',
+    ],
     layoutType: 'Layered',
     orientation: 'LeftToRight',
     maxDepthConfig: { configurable: true, defaultValue: 3 },
   },
 ] as const;
 
-export const STANDARD_VIEW_TEMPLATE_BY_ID: Readonly<Record<ViewTemplateId, ViewTemplate>> =
-  STANDARD_VIEW_TEMPLATES.reduce(
-    (acc, t) => {
-      acc[t.id] = t;
-      return acc;
-    },
-    {} as Record<ViewTemplateId, ViewTemplate>,
-  );
+export const STANDARD_VIEW_TEMPLATE_BY_ID: Readonly<
+  Record<ViewTemplateId, ViewTemplate>
+> = STANDARD_VIEW_TEMPLATES.reduce(
+  (acc, t) => {
+    acc[t.id] = t;
+    return acc;
+  },
+  {} as Record<ViewTemplateId, ViewTemplate>,
+);
 
-export function getStandardViewTemplate(templateId: ViewTemplateId): ViewTemplate {
+export function getStandardViewTemplate(
+  templateId: ViewTemplateId,
+): ViewTemplate {
   return STANDARD_VIEW_TEMPLATE_BY_ID[templateId];
 }
 
@@ -147,7 +177,8 @@ const normalizeList = (values: readonly string[]) =>
     ),
   ).sort((a, b) => a.localeCompare(b));
 
-const union = (a: readonly string[], b: readonly string[]) => normalizeList([...a, ...b]);
+const union = (a: readonly string[], b: readonly string[]) =>
+  normalizeList([...a, ...b]);
 
 /**
  * Instantiate a template into a ViewDefinition.
@@ -178,14 +209,19 @@ export function instantiateViewFromTemplate(
   const template = getStandardViewTemplate(templateId);
 
   const baseAllowedElementTypes = normalizeList(template.allowedElementTypes);
-  const allowedRelationshipTypes = normalizeList(template.allowedRelationshipTypes);
+  const allowedRelationshipTypes = normalizeList(
+    template.allowedRelationshipTypes,
+  );
 
   // Ensure endpoint element types for declared relationship types are included (deterministic union).
   let allowedElementTypes = baseAllowedElementTypes;
   for (const relType of allowedRelationshipTypes) {
     const rule = getRelationshipEndpointRule(relType);
     if (!rule) continue;
-    allowedElementTypes = union(allowedElementTypes, [...rule.from, ...rule.to]);
+    allowedElementTypes = union(allowedElementTypes, [
+      ...rule.from,
+      ...rule.to,
+    ]);
   }
 
   const maxDepth =

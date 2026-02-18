@@ -1,11 +1,17 @@
-import { PageContainer, ProFormSelect, ProFormText, ProFormTextArea, StepsForm } from '@ant-design/pro-components';
+import {
+  PageContainer,
+  ProFormSelect,
+  ProFormText,
+  ProFormTextArea,
+  StepsForm,
+} from '@ant-design/pro-components';
 import { history, useModel } from '@umijs/max';
 import { Button, Card, Divider, Result, Typography } from 'antd';
 import React, { useMemo, useState } from 'react';
 
 import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
+import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
 import { message } from '@/ea/eaConsole';
 
 const createViewId = (): string => {
@@ -32,7 +38,10 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
   onCreated,
 }) => {
   const { initialState } = useModel('@@initialState');
-  const createdBy = initialState?.currentUser?.name || initialState?.currentUser?.userid || 'ui';
+  const createdBy =
+    initialState?.currentUser?.name ||
+    initialState?.currentUser?.userid ||
+    'ui';
   const [createdView, setCreatedView] = useState<ViewInstance | null>(null);
 
   const layoutOptions = [
@@ -41,7 +50,9 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
     { label: 'Grid', value: 'grid' },
   ];
 
-  const defaultLayoutForViewpoint = (viewpointId: string | undefined): 'hierarchical' | 'radial' | 'grid' => {
+  const defaultLayoutForViewpoint = (
+    viewpointId: string | undefined,
+  ): 'hierarchical' | 'radial' | 'grid' => {
     const vp = viewpointId ? ViewpointRegistry.get(viewpointId) : null;
     if (!vp) return 'grid';
     if (vp.defaultLayout === 'dagre') return 'hierarchical';
@@ -58,10 +69,12 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
 
   const content = (
     <Card>
-      <Typography.Title level={4}>Create View (Viewpoint-first)</Typography.Title>
+      <Typography.Title level={4}>
+        Create View (Viewpoint-first)
+      </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Select a viewpoint; the view is a projection contract only. No repository writes, no inference, no layout
-        persistence.
+        Select a viewpoint; the view is a projection contract only. No
+        repository writes, no inference, no layout persistence.
       </Typography.Paragraph>
 
       <StepsForm
@@ -75,7 +88,9 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
           const viewId = createViewId();
           const timestamp = nowIso();
 
-          const layout = (values?.layout as string | undefined) ?? defaultLayoutForViewpoint(viewpointId);
+          const layout =
+            (values?.layout as string | undefined) ??
+            defaultLayoutForViewpoint(viewpointId);
 
           const view: ViewInstance = {
             id: viewId,
@@ -107,7 +122,11 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
           },
         }}
       >
-        <StepsForm.StepForm name="viewpoint" title="Viewpoint" initialValues={{ viewpointId: viewpointOptions[0]?.value }}>
+        <StepsForm.StepForm
+          name="viewpoint"
+          title="Viewpoint"
+          initialValues={{ viewpointId: viewpointOptions[0]?.value }}
+        >
           <ProFormSelect
             name="viewpointId"
             label="Viewpoint"
@@ -117,13 +136,19 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
 
           <Card>
             <Typography.Paragraph type="secondary">
-              Viewpoints are strict contracts: only allowed elements/relationships are projected; scope defaults to entire repository; layout metadata starts empty.
+              Viewpoints are strict contracts: only allowed
+              elements/relationships are projected; scope defaults to entire
+              repository; layout metadata starts empty.
             </Typography.Paragraph>
           </Card>
         </StepsForm.StepForm>
 
         <StepsForm.StepForm name="metadata" title="Name & Description">
-          <ProFormText name="name" label="View name" rules={[{ required: true }]} />
+          <ProFormText
+            name="name"
+            label="View name"
+            rules={[{ required: true }]}
+          />
           <ProFormTextArea
             name="description"
             label="Description"
@@ -140,13 +165,14 @@ export const CreateViewWizard: React.FC<CreateViewWizardProps> = ({
             extra="Stored with the view; runtime uses this to render diagrams."
           />
         </StepsForm.StepForm>
-
       </StepsForm>
 
       {showCreatedPreview && createdView ? (
         <>
           <Divider />
-          <Typography.Title level={5}>Created View (not saved)</Typography.Title>
+          <Typography.Title level={5}>
+            Created View (not saved)
+          </Typography.Title>
           <pre>{JSON.stringify(createdView, null, 2)}</pre>
         </>
       ) : null}

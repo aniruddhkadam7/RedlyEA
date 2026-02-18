@@ -1,15 +1,22 @@
 import type { GraphAbstractionLayer } from '../graph/GraphAbstractionLayer';
 import { getGraphAbstractionLayer } from '../graph/GraphAbstractionLayerStore';
-
-import type { ImpactAnalysisRequest, ImpactAnalysisDirection } from './ImpactAnalysisRequest';
-import type { ImpactPath, DependencyStrength, ImpactCriticality } from './ImpactPath';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-import type { ImpactedElementEvidence } from './ImpactedElementDeriver';
-import { telemetry } from '../telemetry/Telemetry';
 import { DomainError } from '../reliability/DomainError';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import { telemetry } from '../telemetry/Telemetry';
+import type {
+  ImpactAnalysisDirection,
+  ImpactAnalysisRequest,
+} from './ImpactAnalysisRequest';
+import type { ImpactedElementEvidence } from './ImpactedElementDeriver';
+import type {
+  DependencyStrength,
+  ImpactCriticality,
+  ImpactPath,
+} from './ImpactPath';
 
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-const normalizeId = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
 const normalizeList = (values: readonly string[]) =>
   Array.from(
@@ -36,7 +43,11 @@ const fnv1aHex = (input: string): string => {
   return (hash >>> 0).toString(16).padStart(8, '0');
 };
 
-const stablePathId = (requestId: string, orderedElementIds: readonly string[], orderedRelationshipIds: readonly string[]) => {
+const stablePathId = (
+  requestId: string,
+  orderedElementIds: readonly string[],
+  orderedRelationshipIds: readonly string[],
+) => {
   const basis = `${requestId}|${orderedElementIds.join('>')}|${orderedRelationshipIds.join('>')}`;
   return `path_${fnv1aHex(basis)}`;
 };
@@ -44,8 +55,11 @@ const stablePathId = (requestId: string, orderedElementIds: readonly string[], o
 const relationshipSortKey = (r: BaseArchitectureRelationship) =>
   `${(r.relationshipType ?? '').trim()}|${normalizeId(r.sourceElementId)}|${normalizeId(r.targetElementId)}|${normalizeId(r.id)}`;
 
-const dependencyStrengthFor = (r: BaseArchitectureRelationship): DependencyStrength => {
-  const v = (r as unknown as { dependencyStrength?: unknown }).dependencyStrength;
+const dependencyStrengthFor = (
+  r: BaseArchitectureRelationship,
+): DependencyStrength => {
+  const v = (r as unknown as { dependencyStrength?: unknown })
+    .dependencyStrength;
   if (v === 'Hard' || v === 'Soft') return v;
   return 'Unknown';
 };
@@ -111,7 +125,12 @@ export class ImpactAnalysisEngine {
       return {
         evidence: [],
         warnings: ['Invalid request: rootElementId is required.'],
-        stats: { expandedNodeCount: 0, enumeratedPathCount: 0, aborted: false, integrityIssueCount: 0 },
+        stats: {
+          expandedNodeCount: 0,
+          enumeratedPathCount: 0,
+          aborted: false,
+          integrityIssueCount: 0,
+        },
       };
     }
 
@@ -120,16 +139,30 @@ export class ImpactAnalysisEngine {
       return {
         evidence: [],
         warnings: ['Invalid request: maxDepth must be > 0.'],
-        stats: { expandedNodeCount: 0, enumeratedPathCount: 0, aborted: false, integrityIssueCount: 0 },
+        stats: {
+          expandedNodeCount: 0,
+          enumeratedPathCount: 0,
+          aborted: false,
+          integrityIssueCount: 0,
+        },
       };
     }
 
-    const allowedRelationshipTypes = new Set(normalizeList(request.includedRelationshipTypes));
+    const allowedRelationshipTypes = new Set(
+      normalizeList(request.includedRelationshipTypes),
+    );
     if (allowedRelationshipTypes.size === 0) {
       return {
         evidence: [],
-        warnings: ['Invalid request: includedRelationshipTypes must be non-empty.'],
-        stats: { expandedNodeCount: 0, enumeratedPathCount: 0, aborted: false, integrityIssueCount: 0 },
+        warnings: [
+          'Invalid request: includedRelationshipTypes must be non-empty.',
+        ],
+        stats: {
+          expandedNodeCount: 0,
+          enumeratedPathCount: 0,
+          aborted: false,
+          integrityIssueCount: 0,
+        },
       };
     }
 
@@ -152,10 +185,16 @@ export class ImpactAnalysisEngine {
     let maxDepthReached = 0;
     let integrityIssueCount = 0;
 
-    const timeoutMs = typeof options.timeoutMs === 'number' ? Math.max(1, Math.trunc(options.timeoutMs)) : undefined;
+    const timeoutMs =
+      typeof options.timeoutMs === 'number'
+        ? Math.max(1, Math.trunc(options.timeoutMs))
+        : undefined;
     const deadlineAtMs = timeoutMs ? startedAtMs + timeoutMs : undefined;
 
-    const ensureAbort = (reason: 'UserAbort' | 'Safeguards' | 'Timeout', message: string) => {
+    const ensureAbort = (
+      reason: 'UserAbort' | 'Safeguards' | 'Timeout',
+      message: string,
+    ) => {
       if (aborted) return;
       aborted = true;
       abortedReason = reason;
@@ -163,13 +202,17 @@ export class ImpactAnalysisEngine {
     };
 
     const abortIfSignaled = () => {
-      if (options.abortSignal?.aborted) ensureAbort('UserAbort', 'Traversal aborted: user requested abort.');
+      if (options.abortSignal?.aborted)
+        ensureAbort('UserAbort', 'Traversal aborted: user requested abort.');
     };
 
     const abortIfTimedOut = () => {
       if (!deadlineAtMs) return;
       if (telemetry.nowMs() >= deadlineAtMs) {
-        ensureAbort('Timeout', `Traversal aborted: timeoutMs=${timeoutMs} exceeded.`);
+        ensureAbort(
+          'Timeout',
+          `Traversal aborted: timeoutMs=${timeoutMs} exceeded.`,
+        );
       }
     };
 
@@ -202,7 +245,11 @@ export class ImpactAnalysisEngine {
 
     const expandedNodeSet = new Set<string>();
 
-    type Step = { nextElementId: string; relationshipId: string; relationship: BaseArchitectureRelationship };
+    type Step = {
+      nextElementId: string;
+      relationshipId: string;
+      relationship: BaseArchitectureRelationship;
+    };
 
     const relationshipById = new Map<string, BaseArchitectureRelationship>();
     const stepCache = new Map<string, Step[]>();
@@ -234,9 +281,13 @@ export class ImpactAnalysisEngine {
 
       if (includesDownstream(request.direction)) {
         const outgoing = (await this.graph.getOutgoingEdges(currentId))
-          .filter((r) => allowedRelationshipTypes.has((r.relationshipType ?? '').trim()))
+          .filter((r) =>
+            allowedRelationshipTypes.has((r.relationshipType ?? '').trim()),
+          )
           .slice()
-          .sort((a, b) => compareStrings(relationshipSortKey(a), relationshipSortKey(b)));
+          .sort((a, b) =>
+            compareStrings(relationshipSortKey(a), relationshipSortKey(b)),
+          );
 
         for (const r of outgoing) {
           abortIfSignaled();
@@ -245,8 +296,14 @@ export class ImpactAnalysisEngine {
 
           const relationshipId = normalizeId(r.id);
           const nextElementId = normalizeId(r.targetElementId);
-          const sourceType = typeof r.sourceElementType === 'string' ? r.sourceElementType.trim() : '';
-          const targetType = typeof r.targetElementType === 'string' ? r.targetElementType.trim() : '';
+          const sourceType =
+            typeof r.sourceElementType === 'string'
+              ? r.sourceElementType.trim()
+              : '';
+          const targetType =
+            typeof r.targetElementType === 'string'
+              ? r.targetElementType.trim()
+              : '';
           if (!relationshipId || !nextElementId || !sourceType || !targetType) {
             integrityIssueCount += 1;
             if (integrityIssueCount <= 5) {
@@ -264,9 +321,13 @@ export class ImpactAnalysisEngine {
 
       if (includesUpstream(request.direction)) {
         const incoming = (await this.graph.getIncomingEdges(currentId))
-          .filter((r) => allowedRelationshipTypes.has((r.relationshipType ?? '').trim()))
+          .filter((r) =>
+            allowedRelationshipTypes.has((r.relationshipType ?? '').trim()),
+          )
           .slice()
-          .sort((a, b) => compareStrings(relationshipSortKey(a), relationshipSortKey(b)));
+          .sort((a, b) =>
+            compareStrings(relationshipSortKey(a), relationshipSortKey(b)),
+          );
 
         for (const r of incoming) {
           abortIfSignaled();
@@ -275,8 +336,14 @@ export class ImpactAnalysisEngine {
 
           const relationshipId = normalizeId(r.id);
           const nextElementId = normalizeId(r.sourceElementId);
-          const sourceType = typeof r.sourceElementType === 'string' ? r.sourceElementType.trim() : '';
-          const targetType = typeof r.targetElementType === 'string' ? r.targetElementType.trim() : '';
+          const sourceType =
+            typeof r.sourceElementType === 'string'
+              ? r.sourceElementType.trim()
+              : '';
+          const targetType =
+            typeof r.targetElementType === 'string'
+              ? r.targetElementType.trim()
+              : '';
           if (!relationshipId || !nextElementId || !sourceType || !targetType) {
             integrityIssueCount += 1;
             if (integrityIssueCount <= 5) {
@@ -295,7 +362,10 @@ export class ImpactAnalysisEngine {
       // Deterministic candidate order.
       steps.sort(
         (a, b) =>
-          compareStrings((a.relationship.relationshipType ?? '').trim(), (b.relationship.relationshipType ?? '').trim()) ||
+          compareStrings(
+            (a.relationship.relationshipType ?? '').trim(),
+            (b.relationship.relationshipType ?? '').trim(),
+          ) ||
           compareStrings(a.nextElementId, b.nextElementId) ||
           compareStrings(a.relationshipId, b.relationshipId),
       );
@@ -375,7 +445,8 @@ export class ImpactAnalysisEngine {
         ev.totalPathsAffectingElement += 1;
 
         if (containsHardDependency) ev.hardPathCount += 1;
-        else if (weakestDependencyStrength === 'Soft') ev.softOnlyPathCount += 1;
+        else if (weakestDependencyStrength === 'Soft')
+          ev.softOnlyPathCount += 1;
 
         if (index > ev.maxDepthObserved) ev.maxDepthObserved = index;
       }
@@ -383,7 +454,11 @@ export class ImpactAnalysisEngine {
       if (!options.includePaths) return;
 
       paths.push({
-        pathId: stablePathId(request.requestId, orderedElementIds, orderedRelationshipIds),
+        pathId: stablePathId(
+          request.requestId,
+          orderedElementIds,
+          orderedRelationshipIds,
+        ),
         orderedElementIds: orderedElementIds.slice(),
         orderedRelationshipIds: orderedRelationshipIds.slice(),
         pathLength,
@@ -448,7 +523,9 @@ export class ImpactAnalysisEngine {
     await dfs(rootId, 0);
 
     if (integrityIssueCount > 5) {
-      warnings.push(`Integrity issue: ${integrityIssueCount} malformed relationships were skipped during traversal.`);
+      warnings.push(
+        `Integrity issue: ${integrityIssueCount} malformed relationships were skipped during traversal.`,
+      );
     }
 
     telemetry.record({
@@ -469,7 +546,9 @@ export class ImpactAnalysisEngine {
     });
 
     // Deterministic output ordering.
-    const evidence = Array.from(evidenceByElementId.values()).sort((a, b) => compareStrings(a.elementId, b.elementId));
+    const evidence = Array.from(evidenceByElementId.values()).sort((a, b) =>
+      compareStrings(a.elementId, b.elementId),
+    );
 
     if (!options.includePaths) {
       return {
@@ -488,7 +567,10 @@ export class ImpactAnalysisEngine {
     paths.sort(
       (a, b) =>
         a.pathLength - b.pathLength ||
-        compareStrings(a.orderedElementIds.join('>'), b.orderedElementIds.join('>')) ||
+        compareStrings(
+          a.orderedElementIds.join('>'),
+          b.orderedElementIds.join('>'),
+        ) ||
         compareStrings(a.pathId, b.pathId),
     );
 

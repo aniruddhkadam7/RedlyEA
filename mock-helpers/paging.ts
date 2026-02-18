@@ -14,7 +14,8 @@ type Paginated<T> = {
   };
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 export const parsePagination = (
   req: Request,
@@ -25,8 +26,12 @@ export const parsePagination = (
   const rawLimit = Number((req.query as any)?.limit ?? defaultLimit);
   const rawOffset = Number((req.query as any)?.offset ?? 0);
 
-  const limit = Number.isFinite(rawLimit) ? clamp(rawLimit, 1, maxLimit) : defaultLimit;
-  const offset = Number.isFinite(rawOffset) ? Math.max(0, Math.floor(rawOffset)) : 0;
+  const limit = Number.isFinite(rawLimit)
+    ? clamp(rawLimit, 1, maxLimit)
+    : defaultLimit;
+  const offset = Number.isFinite(rawOffset)
+    ? Math.max(0, Math.floor(rawOffset))
+    : 0;
   return { limit, offset };
 };
 

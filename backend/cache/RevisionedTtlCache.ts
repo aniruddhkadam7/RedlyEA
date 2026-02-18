@@ -28,8 +28,10 @@ export class RevisionedTtlCache<T> {
     const ttlMs = Math.trunc(options.ttlMs);
     const maxEntries = Math.trunc(options.maxEntries);
 
-    if (!Number.isFinite(ttlMs) || ttlMs <= 0) throw new Error('RevisionedTtlCache: ttlMs must be > 0.');
-    if (!Number.isFinite(maxEntries) || maxEntries <= 0) throw new Error('RevisionedTtlCache: maxEntries must be > 0.');
+    if (!Number.isFinite(ttlMs) || ttlMs <= 0)
+      throw new Error('RevisionedTtlCache: ttlMs must be > 0.');
+    if (!Number.isFinite(maxEntries) || maxEntries <= 0)
+      throw new Error('RevisionedTtlCache: maxEntries must be > 0.');
 
     this.ttlMs = ttlMs;
     this.maxEntries = maxEntries;
@@ -68,10 +70,18 @@ export class RevisionedTtlCache<T> {
       this.entries.delete(firstKey);
     }
 
-    this.entries.set(key, { value, revisionKey, expiresAtMs: atMs + this.ttlMs });
+    this.entries.set(key, {
+      value,
+      revisionKey,
+      expiresAtMs: atMs + this.ttlMs,
+    });
   }
 
-  async getOrCompute(key: string, revisionKey: string, compute: () => Promise<T>): Promise<T> {
+  async getOrCompute(
+    key: string,
+    revisionKey: string,
+    compute: () => Promise<T>,
+  ): Promise<T> {
     const cached = this.get(key, revisionKey);
     if (cached !== null) return cached;
 

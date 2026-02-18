@@ -62,7 +62,10 @@ export class ImportExportAuditTrail {
     const startedAt = normalizeId(input.startedAt) || safeNowIso();
     const completedAt = normalizeId(input.completedAt) || safeNowIso();
 
-    const durationMs = Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
+    const durationMs = Math.max(
+      0,
+      Date.parse(completedAt) - Date.parse(startedAt),
+    );
 
     const record: ImportExportAuditRecord = {
       auditId,
@@ -88,7 +91,13 @@ export class ImportExportAuditTrail {
     return record;
   }
 
-  listRecent(limit = 50, filter?: { operation?: ImportExportOperation; outcome?: ImportExportOutcome }): ImportExportAuditRecord[] {
+  listRecent(
+    limit = 50,
+    filter?: {
+      operation?: ImportExportOperation;
+      outcome?: ImportExportOutcome;
+    },
+  ): ImportExportAuditRecord[] {
     const safeLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
     const operation = filter?.operation;
     const outcome = filter?.outcome;
@@ -109,14 +118,18 @@ export class ImportExportAuditTrail {
     return this.records.find((r) => r.auditId === id) ?? null;
   }
 
-  private normalizeScope(scope: ImportAuditScope | ExportAuditScope): ImportAuditScope | ExportAuditScope {
+  private normalizeScope(
+    scope: ImportAuditScope | ExportAuditScope,
+  ): ImportAuditScope | ExportAuditScope {
     // Keep scope lossless but safe. No datasets allowed.
     if ((scope as any)?.format === 'CSV') {
       const s = scope as ExportAuditScope;
       return {
         exportType: normalizeId(s.exportType) || 'Unknown',
         includedElementTypes: coerceStringList(s.includedElementTypes),
-        includedRelationshipTypes: coerceStringList(s.includedRelationshipTypes),
+        includedRelationshipTypes: coerceStringList(
+          s.includedRelationshipTypes,
+        ),
         includeViews: Boolean(s.includeViews),
         includeGovernanceArtifacts: Boolean(s.includeGovernanceArtifacts),
         format: 'CSV',
@@ -125,34 +138,47 @@ export class ImportExportAuditTrail {
 
     const s = scope as ImportAuditScope;
     const st = normalizeId(s.sourceType) as ImportAuditScope['sourceType'];
-    const sourceType: ImportAuditScope['sourceType'] = st === 'ArchiMate' || st === 'ToolSpecific' ? st : 'CSV';
+    const sourceType: ImportAuditScope['sourceType'] =
+      st === 'ArchiMate' || st === 'ToolSpecific' ? st : 'CSV';
 
     return {
       sourceType,
       csvEntity: normalizeId(s.csvEntity ?? '') || undefined,
       sourceDescription: normalizeId(s.sourceDescription ?? '') || undefined,
-      payloadBytes: typeof s.payloadBytes === 'number' && Number.isFinite(s.payloadBytes) ? Math.max(0, s.payloadBytes) : undefined,
+      payloadBytes:
+        typeof s.payloadBytes === 'number' && Number.isFinite(s.payloadBytes)
+          ? Math.max(0, s.payloadBytes)
+          : undefined,
     };
   }
 
-  private normalizeResult(result: ImportExportResultSummary): ImportExportResultSummary {
-    const outcome: ImportExportOutcome = result.outcome === 'FAILURE' ? 'FAILURE' : 'SUCCESS';
+  private normalizeResult(
+    result: ImportExportResultSummary,
+  ): ImportExportResultSummary {
+    const outcome: ImportExportOutcome =
+      result.outcome === 'FAILURE' ? 'FAILURE' : 'SUCCESS';
 
     const digest = this.normalizeErrorDigest(result.errorDigest);
 
     return {
       outcome,
       importedElementsCount: this.safeCount(result.importedElementsCount),
-      importedRelationshipsCount: this.safeCount(result.importedRelationshipsCount),
+      importedRelationshipsCount: this.safeCount(
+        result.importedRelationshipsCount,
+      ),
       exportedElementsCount: this.safeCount(result.exportedElementsCount),
-      exportedRelationshipsCount: this.safeCount(result.exportedRelationshipsCount),
+      exportedRelationshipsCount: this.safeCount(
+        result.exportedRelationshipsCount,
+      ),
       warningCount: this.safeCount(result.warningCount),
       errorCount: this.safeCount(result.errorCount),
       ...(digest.length > 0 ? { errorDigest: digest } : {}),
     };
   }
 
-  private normalizeErrorDigest(digest: ImportExportErrorDigest[] | undefined): ImportExportErrorDigest[] {
+  private normalizeErrorDigest(
+    digest: ImportExportErrorDigest[] | undefined,
+  ): ImportExportErrorDigest[] {
     if (!Array.isArray(digest) || digest.length === 0) return [];
 
     const out: ImportExportErrorDigest[] = [];
@@ -161,7 +187,11 @@ export class ImportExportAuditTrail {
       out.push({
         code: normalizeId((d as any).code ?? '') || undefined,
         message: safeTruncate((d as any).message ?? '', 240),
-        line: typeof (d as any).line === 'number' && Number.isFinite((d as any).line) ? Math.trunc((d as any).line) : undefined,
+        line:
+          typeof (d as any).line === 'number' &&
+          Number.isFinite((d as any).line)
+            ? Math.trunc((d as any).line)
+            : undefined,
         column: normalizeId((d as any).column ?? '') || undefined,
       });
     }

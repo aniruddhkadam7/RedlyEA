@@ -2,7 +2,11 @@ import type { BaseArchitectureElement } from './BaseArchitectureElement';
 
 export type ApplicationType = 'COTS' | 'Custom' | 'SaaS' | 'Legacy';
 
-export type BusinessCriticality = 'Mission-Critical' | 'High' | 'Medium' | 'Low';
+export type BusinessCriticality =
+  | 'Mission-Critical'
+  | 'High'
+  | 'Medium'
+  | 'Low';
 
 export type DeploymentModel = 'On-Prem' | 'Cloud' | 'Hybrid';
 

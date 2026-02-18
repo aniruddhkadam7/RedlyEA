@@ -13,14 +13,14 @@
 
 // Engine
 export {
-  buildMenu,
-  registerMenuProvider,
   adjustMenuPosition,
+  buildMenu,
   type ContextSource,
   type MenuContext,
   type MenuItem,
-  type MenuProvider,
   type MenuPosition,
+  type MenuProvider,
+  registerMenuProvider,
 } from './contextMenuEngine';
 
 // Registry (side-effect: registers all providers)
@@ -32,9 +32,7 @@ export {
   useContextMenu,
   useContextMenuTrigger,
 } from './ContextMenuProvider';
-
-// Rendered overlay
-export { default as GlobalContextMenu } from './GlobalContextMenu';
-
 // Action handler factory
 export { createGlobalActionHandler } from './contextMenuActions';
+// Rendered overlay
+export { default as GlobalContextMenu } from './GlobalContextMenu';

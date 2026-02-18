@@ -1,13 +1,15 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { ExplorerTree } from '../explorer';
+import React from 'react';
 import { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
+import { ExplorerTree } from '../explorer';
 
 let mockEaRepositoryState: any = {};
 let mockIdeSelectionState: any = {};
 
 jest.mock('@umijs/max', () => ({
-  useModel: () => ({ initialState: { currentUser: { name: 'test', userid: 'test' } } }),
+  useModel: () => ({
+    initialState: { currentUser: { name: 'test', userid: 'test' } },
+  }),
 }));
 
 jest.mock('../index', () => ({
@@ -64,9 +66,21 @@ jest.mock('../../../backend/roadmap/RoadmapStore', () => ({
 describe('ExplorerTree Enterprise cardinality', () => {
   beforeEach(() => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'Enterprise One' } });
-    repo.addObject({ id: 'ent-2', type: 'Enterprise', attributes: { name: 'Enterprise Two' } });
-    repo.addObject({ id: 'ent-3', type: 'Enterprise', attributes: { name: 'Enterprise Three' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'Enterprise One' },
+    });
+    repo.addObject({
+      id: 'ent-2',
+      type: 'Enterprise',
+      attributes: { name: 'Enterprise Two' },
+    });
+    repo.addObject({
+      id: 'ent-3',
+      type: 'Enterprise',
+      attributes: { name: 'Enterprise Three' },
+    });
 
     mockEaRepositoryState = {
       eaRepository: repo,

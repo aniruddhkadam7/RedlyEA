@@ -19,7 +19,12 @@ export type ExportConstraint = {
   description: string;
 
   /** Optional: which exportTypes this constraint applies to. */
-  appliesToExportTypes?: readonly ('Repository' | 'View' | 'Analysis' | 'FullProject')[];
+  appliesToExportTypes?: readonly (
+    | 'Repository'
+    | 'View'
+    | 'Analysis'
+    | 'FullProject'
+  )[];
 };
 
 export type InteroperabilityProfile = {
@@ -101,12 +106,14 @@ export const INTEROPERABILITY_PROFILES: readonly InteroperabilityProfile[] = [
       {
         id: 'explicit-ids-required',
         severity: 'Error',
-        description: 'All elements and relationships must have explicit stable IDs.',
+        description:
+          'All elements and relationships must have explicit stable IDs.',
       },
       {
         id: 'typed-relationships-required',
         severity: 'Error',
-        description: 'Relationship endpoints must carry explicit element types (sourceElementType/targetElementType).',
+        description:
+          'Relationship endpoints must carry explicit element types (sourceElementType/targetElementType).',
       },
     ]),
 
@@ -190,12 +197,14 @@ export const INTEROPERABILITY_PROFILES: readonly InteroperabilityProfile[] = [
       {
         id: 'csv-schema-v1',
         severity: 'Error',
-        description: 'CSV must conform to csv-import/1 schemas with case-sensitive headers and deterministic column order.',
+        description:
+          'CSV must conform to csv-import/1 schemas with case-sensitive headers and deterministic column order.',
       },
       {
         id: 'no-missing-required-cells',
         severity: 'Error',
-        description: 'Required cells must be populated; blank required fields are not allowed.',
+        description:
+          'Required cells must be populated; blank required fields are not allowed.',
       },
     ]),
 
@@ -206,15 +215,18 @@ export const INTEROPERABILITY_PROFILES: readonly InteroperabilityProfile[] = [
   },
 ] as const;
 
-export const INTEROPERABILITY_PROFILE_BY_ID: Readonly<Record<InteroperabilityProfileId, InteroperabilityProfile>> =
-  INTEROPERABILITY_PROFILES.reduce(
-    (acc, p) => {
-      acc[p.profileId] = p;
-      return acc;
-    },
-    {} as Record<InteroperabilityProfileId, InteroperabilityProfile>,
-  );
+export const INTEROPERABILITY_PROFILE_BY_ID: Readonly<
+  Record<InteroperabilityProfileId, InteroperabilityProfile>
+> = INTEROPERABILITY_PROFILES.reduce(
+  (acc, p) => {
+    acc[p.profileId] = p;
+    return acc;
+  },
+  {} as Record<InteroperabilityProfileId, InteroperabilityProfile>,
+);
 
-export function getInteroperabilityProfile(profileId: InteroperabilityProfileId): InteroperabilityProfile {
+export function getInteroperabilityProfile(
+  profileId: InteroperabilityProfileId,
+): InteroperabilityProfile {
   return INTEROPERABILITY_PROFILE_BY_ID[profileId];
 }

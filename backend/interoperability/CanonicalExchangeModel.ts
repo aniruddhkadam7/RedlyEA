@@ -2,17 +2,17 @@ import type { ArchitectureDecisionRecord } from '../adr/ArchitectureDecisionReco
 import type { GovernanceRule } from '../governance/GovernanceRule';
 import type { Project } from '../project/project';
 import type { Application } from '../repository/Application';
-import type { BusinessProcess } from '../repository/BusinessProcess';
-import type { Capability } from '../repository/Capability';
-import type { Programme } from '../repository/Programme';
-import type { Technology } from '../repository/Technology';
-import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
 import type { ApplicationDependencyRelationship } from '../repository/ApplicationDependencyRelationship';
 import type { ApplicationToTechnologyRelationship } from '../repository/ApplicationToTechnologyRelationship';
+import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import type { BusinessProcess } from '../repository/BusinessProcess';
+import type { Capability } from '../repository/Capability';
 import type { CapabilityToProcessRelationship } from '../repository/CapabilityToProcessRelationship';
 import type { ProcessToApplicationRelationship } from '../repository/ProcessToApplicationRelationship';
+import type { Programme } from '../repository/Programme';
 import type { ProgrammeImpactRelationship } from '../repository/ProgrammeImpactRelationship';
+import type { Technology } from '../repository/Technology';
 import type { ViewDefinition } from '../views/ViewDefinition';
 
 /**

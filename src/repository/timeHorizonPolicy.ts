@@ -7,7 +7,9 @@ export type TimeHorizonWindow = {
   forwardYears: number;
 };
 
-export const getTimeHorizonWindow = (timeHorizon: TimeHorizon | null | undefined): TimeHorizonWindow => {
+export const getTimeHorizonWindow = (
+  timeHorizon: TimeHorizon | null | undefined,
+): TimeHorizonWindow => {
   switch (timeHorizon) {
     case 'Current':
       return { maxAnalysisDepth: 3, forwardYears: 0 };
@@ -61,7 +63,12 @@ export const isRoadmapItemInTimeHorizon = (args: {
     }
 
     const ls = (args.lifecycleStatus ?? '').toLowerCase();
-    if (ls.includes('active') || ls.includes('in progress') || ls.includes('inprogress')) return true;
+    if (
+      ls.includes('active') ||
+      ls.includes('in progress') ||
+      ls.includes('inprogress')
+    )
+      return true;
 
     // Conservative: keep unknowns visible.
     return true;

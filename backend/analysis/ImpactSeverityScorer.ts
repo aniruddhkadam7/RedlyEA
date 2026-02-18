@@ -1,4 +1,8 @@
-import type { ElementCriticality, ImpactSeverityScore, SeverityLabel } from './ImpactSeverityScore';
+import type {
+  ElementCriticality,
+  ImpactSeverityScore,
+  SeverityLabel,
+} from './ImpactSeverityScore';
 
 export type ImpactSeverityScoringInput = {
   elementId: string;
@@ -8,7 +12,8 @@ export type ImpactSeverityScoringInput = {
   elementCriticality: ElementCriticality;
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 const toNonNegativeInt = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
@@ -24,7 +29,6 @@ const criticalityMultiplier = (criticality: ElementCriticality): number => {
       return 1.0;
     case 'Low':
       return 0.85;
-    case 'Unknown':
     default:
       return 1.0;
   }
@@ -77,8 +81,16 @@ export class ImpactSeverityScorer {
     const softOnlyPathCount = toNonNegativeInt(input.softOnlyPathCount);
 
     const normalizedHard = clamp(hardPathCount, 0, totalPaths);
-    const normalizedSoftOnly = clamp(softOnlyPathCount, 0, totalPaths - normalizedHard);
-    const unknownCount = clamp(totalPaths - normalizedHard - normalizedSoftOnly, 0, totalPaths);
+    const normalizedSoftOnly = clamp(
+      softOnlyPathCount,
+      0,
+      totalPaths - normalizedHard,
+    );
+    const unknownCount = clamp(
+      totalPaths - normalizedHard - normalizedSoftOnly,
+      0,
+      totalPaths,
+    );
 
     const impactUnits =
       normalizedHard * this.hardWeight +
@@ -104,7 +116,9 @@ export class ImpactSeverityScorer {
     };
   }
 
-  scoreMany(inputs: readonly ImpactSeverityScoringInput[]): ImpactSeverityScore[] {
+  scoreMany(
+    inputs: readonly ImpactSeverityScoringInput[],
+  ): ImpactSeverityScore[] {
     // Deterministic: preserve input order, but callers can sort if desired.
     return (inputs ?? []).map((i) => this.score(i));
   }

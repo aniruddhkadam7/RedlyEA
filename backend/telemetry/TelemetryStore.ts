@@ -53,12 +53,17 @@ export class TelemetryStore {
     const e: TelemetryEvent = { ts: event.ts ?? nowIso(), ...event };
 
     this.events.push(e);
-    if (this.events.length > this.maxEvents) this.events.splice(0, this.events.length - this.maxEvents);
+    if (this.events.length > this.maxEvents)
+      this.events.splice(0, this.events.length - this.maxEvents);
 
     const durationMs = safeNumber(e.durationMs);
     if (durationMs !== null) {
       const key = String(e.name);
-      const agg = this.durationsByName.get(key) ?? { count: 0, sumMs: 0, maxMs: 0 };
+      const agg = this.durationsByName.get(key) ?? {
+        count: 0,
+        sumMs: 0,
+        maxMs: 0,
+      };
       agg.count += 1;
       agg.sumMs += durationMs;
       if (durationMs > agg.maxMs) agg.maxMs = durationMs;
@@ -71,7 +76,11 @@ export class TelemetryStore {
       if (v === null) continue;
 
       const k = `${String(e.name)}|${metricName}`;
-      const agg = this.numericByNameMetric.get(k) ?? { count: 0, sum: 0, max: 0 };
+      const agg = this.numericByNameMetric.get(k) ?? {
+        count: 0,
+        sum: 0,
+        max: 0,
+      };
       agg.count += 1;
       agg.sum += v;
       if (v > agg.max) agg.max = v;
@@ -87,8 +96,19 @@ export class TelemetryStore {
 
   snapshot(): {
     generatedAt: string;
-    durationsByName: Array<{ name: string; count: number; avgMs: number; maxMs: number }>;
-    metricsByName: Array<{ name: string; metric: string; count: number; avg: number; max: number }>;
+    durationsByName: Array<{
+      name: string;
+      count: number;
+      avgMs: number;
+      maxMs: number;
+    }>;
+    metricsByName: Array<{
+      name: string;
+      metric: string;
+      count: number;
+      avg: number;
+      max: number;
+    }>;
     recentEvents: readonly TelemetryEvent[];
   } {
     const durationsByName = Array.from(this.durationsByName.entries())
@@ -111,7 +131,10 @@ export class TelemetryStore {
           max: agg.max,
         };
       })
-      .sort((a, b) => compareStrings(a.name, b.name) || compareStrings(a.metric, b.metric));
+      .sort(
+        (a, b) =>
+          compareStrings(a.name, b.name) || compareStrings(a.metric, b.metric),
+      );
 
     return {
       generatedAt: nowIso(),

@@ -6,16 +6,16 @@ import {
 import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import React from 'react';
+import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import {
   EA_LAYERS,
-  OBJECT_TYPE_DEFINITIONS,
-  RELATIONSHIP_TYPE_DEFINITIONS,
   type EaLayer,
+  OBJECT_TYPE_DEFINITIONS,
   type ObjectType,
+  RELATIONSHIP_TYPE_DEFINITIONS,
   type RelationshipType,
 } from '@/pages/dependency-view/utils/eaMetaModel';
 import styles from './style.module.less';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
 
 const objectTypeNodesForLayer = (layer: EaLayer): DataNode[] => {
   const items = (Object.keys(OBJECT_TYPE_DEFINITIONS) as ObjectType[]).filter(
@@ -30,9 +30,9 @@ const objectTypeNodesForLayer = (layer: EaLayer): DataNode[] => {
 };
 
 const relationshipTypeNodesForLayer = (layer: EaLayer): DataNode[] => {
-  const items = (Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as RelationshipType[]).filter(
-    (t) => RELATIONSHIP_TYPE_DEFINITIONS[t].layer === layer,
-  );
+  const items = (
+    Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as RelationshipType[]
+  ).filter((t) => RELATIONSHIP_TYPE_DEFINITIONS[t].layer === layer);
   // Hide legacy/generic relationship types from the metamodel UI.
   const visible = items.filter((t) => t !== 'DEPENDS_ON');
   visible.sort((a, b) => a.localeCompare(b));
@@ -98,13 +98,16 @@ const MetamodelTree: React.FC = () => {
         ]}
         /* Intentionally keep visual selection empty (no blue highlight). */
         selectedKeys={[]}
-        switcherIcon={({ expanded }) => (expanded ? <CaretDownOutlined /> : <CaretRightOutlined />)}
+        switcherIcon={({ expanded }) =>
+          expanded ? <CaretDownOutlined /> : <CaretRightOutlined />
+        }
         onSelect={(selectedKeys: React.Key[], info) => {
           const key = selectedKeys?.[0];
           if (typeof key !== 'string') return;
 
           // Metamodel rule (IDE standard): caret/switcher click only expands/collapses.
-          const target = (info?.nativeEvent?.target as HTMLElement | null) ?? null;
+          const target =
+            (info?.nativeEvent?.target as HTMLElement | null) ?? null;
           if (target?.closest?.('.ant-tree-switcher')) return;
 
           setSelection({ kind: 'metamodel', keys: [key] });

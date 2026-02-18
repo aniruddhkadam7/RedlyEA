@@ -19,9 +19,14 @@ export type ApplicationStructureCsvParseResult =
   | ApplicationStructureCsvParseSuccess
   | ApplicationStructureCsvParseFailure;
 
-const normalizeHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]/g, '');
+const normalizeHeader = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]/g, '');
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 const parseCsv = (inputText: string): string[][] => {
   const text = stripBom(inputText);
@@ -89,7 +94,8 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
@@ -110,7 +116,8 @@ export function parseAndValidateApplicationStructureCsv(
     if (h) indexByColumn.set(h, idx);
   });
 
-  const departmentIdx = indexByColumn.get('department') ?? indexByColumn.get('dept');
+  const departmentIdx =
+    indexByColumn.get('department') ?? indexByColumn.get('dept');
   const applicationIdIdx = indexByColumn.get('applicationid');
   const applicationNameIdx = indexByColumn.get('applicationname');
 
@@ -140,14 +147,23 @@ export function parseAndValidateApplicationStructureCsv(
 
     const department = (row[deptIdx!] ?? '').trim();
     const applicationId = (row[appIdIdx!] ?? '').trim();
-    const applicationName = applicationNameIdx === undefined ? undefined : (row[applicationNameIdx] ?? '').trim();
+    const applicationName =
+      applicationNameIdx === undefined
+        ? undefined
+        : (row[applicationNameIdx] ?? '').trim();
 
     if (!department) errors.push(`Row ${displayRow}: department is required.`);
-    if (!applicationId) errors.push(`Row ${displayRow}: application_id is required.`);
+    if (!applicationId)
+      errors.push(`Row ${displayRow}: application_id is required.`);
 
     const attributes: Record<string, unknown> = {};
     for (const [col, idx] of indexByColumn) {
-      if (idx === departmentIdx || idx === applicationIdIdx || idx === applicationNameIdx) continue;
+      if (
+        idx === departmentIdx ||
+        idx === applicationIdIdx ||
+        idx === applicationNameIdx
+      )
+        continue;
       const value = (row[idx] ?? '').trim();
       if (value !== '') attributes[col] = value;
     }

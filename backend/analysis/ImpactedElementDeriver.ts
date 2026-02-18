@@ -63,11 +63,14 @@ export class ImpactedElementDeriver {
           evidence.softOnlyPathCount += 1;
         }
 
-        if (index > evidence.maxDepthObserved) evidence.maxDepthObserved = index;
+        if (index > evidence.maxDepthObserved)
+          evidence.maxDepthObserved = index;
       }
     }
 
-    return Array.from(byElementId.values()).sort((a, b) => compareStrings(a.elementId, b.elementId));
+    return Array.from(byElementId.values()).sort((a, b) =>
+      compareStrings(a.elementId, b.elementId),
+    );
   }
 }
 

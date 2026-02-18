@@ -7,8 +7,6 @@ import {
 import type { Settings as LayoutSettings } from "@ant-design/pro-components";
 import { ProDescriptions } from "@ant-design/pro-components";
 import type { RunTimeLayoutConfig } from "@umijs/max";
-import { Link, useLocation } from "@umijs/max";
-import React from "react";
 import {
   Checkbox,
   Collapse,
@@ -21,57 +19,57 @@ import {
   Select,
   Tree,
   Typography,
-  theme as antdTheme,
 } from "antd";
 import type { DataNode } from "antd/es/tree";
-import { AvatarDropdown, AvatarName } from "@/components";
-import IdeShellLayout from "@/components/IdeShellLayout";
-import { ExplorerTree } from "@/components/IdeShellLayout/explorer";
-import CatalogSidebar from "@/components/IdeShellLayout/CatalogSidebar";
-import DiagramsTree from "@/components/IdeShellLayout/DiagramsTree";
-import AnalysisTree from "@/components/IdeShellLayout/AnalysisTree";
-import MetamodelSidebar from "@/components/IdeShellLayout/MetamodelSidebar";
-import SettingsPanel from "@/components/IdeShellLayout/SettingsPanel";
-import defaultSettings from "../config/defaultSettings";
-import {
-  EA_LAYERS,
-  OBJECT_TYPE_DEFINITIONS,
-  RELATIONSHIP_TYPE_DEFINITIONS,
-  type EaLayer,
-  type ObjectType,
-  type RelationshipType,
-} from "@/pages/dependency-view/utils/eaMetaModel";
-import {
-  EaRepositoryProvider,
-  useEaRepository,
-} from "@/ea/EaRepositoryContext";
-import { EaProjectProvider } from "@/ea/EaProjectContext";
-import ProjectGate from "@/ea/ProjectGate";
-import { IdeSelectionProvider } from "@/ide/IdeSelectionContext";
-import RepositoryGate from "@/repository/RepositoryGate";
-import FirstLaunch from "@/pages/first-launch";
-import {
-  canCreateObjectTypeForLifecycleCoverage,
-  defaultLifecycleStateForLifecycleCoverage,
-} from "@/repository/lifecycleCoveragePolicy";
-import {
-  isLifecycleStateAllowedForReferenceFramework,
-  isObjectTypeAllowedForReferenceFramework,
-} from "@/repository/referenceFrameworkPolicy";
-import {
-  isCustomFrameworkModelingEnabled,
-  isObjectTypeEnabledForFramework,
-} from "@/repository/customFrameworkConfig";
-import { runtimeEnv } from "@/runtime/runtimeEnv";
-import { message } from "@/ea/eaConsole";
-import { ThemeProvider } from "@/theme/ThemeContext";
+import React from "react";
 import {
   ContextMenuProvider,
   GlobalContextMenu,
 } from "@/components/ContextMenu";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import IdeShellLayout from "@/components/IdeShellLayout";
+import AnalysisTree from "@/components/IdeShellLayout/AnalysisTree";
+import CatalogSidebar from "@/components/IdeShellLayout/CatalogSidebar";
+import DiagramsTree from "@/components/IdeShellLayout/DiagramsTree";
+import { ExplorerTree } from "@/components/IdeShellLayout/explorer";
+import MetamodelSidebar from "@/components/IdeShellLayout/MetamodelSidebar";
+import SettingsPanel from "@/components/IdeShellLayout/SettingsPanel";
+import { EaProjectProvider } from "@/ea/EaProjectContext";
+import {
+  EaRepositoryProvider,
+  useEaRepository,
+} from "@/ea/EaRepositoryContext";
+import { message } from "@/ea/eaConsole";
+import ProjectGate from "@/ea/ProjectGate";
+import { IdeSelectionProvider } from "@/ide/IdeSelectionContext";
+import type { EaRepository } from "@/pages/dependency-view/utils/eaRepository";
+import {
+  EA_LAYERS,
+  type EaLayer,
+  OBJECT_TYPE_DEFINITIONS,
+  type ObjectType,
+  RELATIONSHIP_TYPE_DEFINITIONS,
+  type RelationshipType,
+} from "@/pages/dependency-view/utils/eaMetaModel";
+import FirstLaunch from "@/pages/first-launch";
+import {
+  isCustomFrameworkModelingEnabled,
+  isObjectTypeEnabledForFramework,
+} from "@/repository/customFrameworkConfig";
+import {
+  canCreateObjectTypeForLifecycleCoverage,
+  defaultLifecycleStateForLifecycleCoverage,
+} from "@/repository/lifecycleCoveragePolicy";
+import RepositoryGate from "@/repository/RepositoryGate";
+import {
+  isLifecycleStateAllowedForReferenceFramework,
+  isObjectTypeAllowedForReferenceFramework,
+} from "@/repository/referenceFrameworkPolicy";
+import { runtimeEnv } from "@/runtime/runtimeEnv";
+import { ThemeProvider } from "@/theme/ThemeContext";
+import defaultSettings from "../config/defaultSettings";
 
-const isDev = process.env.NODE_ENV === "development";
+const _isDev = process.env.NODE_ENV === "development";
 
 const defaultLifecycleStateForFramework = (
   referenceFramework: string | null | undefined,
@@ -127,9 +125,9 @@ const buildMetamodelTreeData = (): DataNode[] => {
     },
   );
 
-  for (const [layer, list] of objectTypesByLayer)
+  for (const [_layer, list] of objectTypesByLayer)
     list.sort((a, b) => a.localeCompare(b));
-  for (const [layer, list] of relationshipTypesByLayer)
+  for (const [_layer, list] of relationshipTypesByLayer)
     list.sort((a, b) => a.localeCompare(b));
 
   return EA_LAYERS.map((layer) => ({
@@ -262,14 +260,17 @@ const defaultIdPrefixForType = (type: ObjectType) => {
   }
 };
 
-const EaExplorerSiderContent: React.FC<{
+interface _EaExplorerSiderContentInnerProps {
   view?: "explorer" | "metamodel" | "catalogues" | "diagrams";
-}> = ({ view = "explorer" }) => {
-  const { eaRepository, setEaRepository, trySetEaRepository, metadata } =
-    useEaRepository();
-  if (!eaRepository) return null;
+  eaRepository: EaRepository;
+  metadata: any;
+  trySetEaRepository: any;
+}
 
-  const location = useLocation();
+const _EaExplorerSiderContentInner: React.FC<
+  _EaExplorerSiderContentInnerProps
+> = ({ view = "explorer", eaRepository, metadata, trySetEaRepository }) => {
+  // Initialize all hooks BEFORE any conditional logic
   const [activeKeys, setActiveKeys] = React.useState<string[]>([
     "Workspace",
     "Metamodel",
@@ -280,9 +281,10 @@ const EaExplorerSiderContent: React.FC<{
   const [selection, setSelection] = React.useState<DrawerSelection | undefined>(
     undefined,
   );
-  const isReadOnlyMode = false;
 
   const treeData = React.useMemo(() => buildMetamodelTreeData(), []);
+
+  const isReadOnlyMode = false;
 
   const onMetamodelSelect = (selectedKeys: React.Key[]) => {
     const key = selectedKeys[0];
@@ -296,9 +298,9 @@ const EaExplorerSiderContent: React.FC<{
   const catalogueTreeData = React.useMemo<DataNode[]>(() => {
     const byType = (type: ObjectType) => {
       const items = Array.from(eaRepository.objects.values()).filter(
-        (o) => o.type === type && !isSoftDeleted(o.attributes),
+        (o: any) => o.type === type && !isSoftDeleted(o.attributes),
       );
-      items.sort((a, b) => {
+      items.sort((a: any, b: any) => {
         const aName =
           typeof a.attributes.name === "string" && a.attributes.name.trim()
             ? String(a.attributes.name)
@@ -496,186 +498,6 @@ const EaExplorerSiderContent: React.FC<{
       message.info(
         "Create new elements from the EA Toolbox. Explorer is for browsing and reuse.",
       );
-      return;
-      if (isReadOnlyMode) {
-        message.warning("Read-only mode: creation is disabled.");
-        return;
-      }
-      if (metadata?.referenceFramework === "Custom") {
-        if (
-          !isCustomFrameworkModelingEnabled(
-            "Custom",
-            metadata?.frameworkConfig ?? undefined,
-          )
-        ) {
-          message.warning(
-            "Custom framework: define at least one element type in Metamodel to enable modeling.",
-          );
-          return;
-        }
-        if (
-          !isObjectTypeEnabledForFramework(
-            "Custom",
-            metadata?.frameworkConfig ?? undefined,
-            type,
-          )
-        ) {
-          message.warning(
-            `Custom framework: element type "${type}" is not enabled.`,
-          );
-          return;
-        }
-      }
-
-      if (
-        !isObjectTypeAllowedForReferenceFramework(
-          metadata?.referenceFramework,
-          type,
-        )
-      ) {
-        message.warning(
-          `Type "${type}" is not enabled for the selected Reference Framework.`,
-        );
-        return;
-      }
-
-      const lifecycleGuard = canCreateObjectTypeForLifecycleCoverage(
-        metadata?.lifecycleCoverage,
-        type,
-      );
-      if (!lifecycleGuard.ok) {
-        message.warning(lifecycleGuard.reason);
-        return;
-      }
-
-      const existingIds = new Set<string>(eaRepository.objects.keys());
-      const prefix = defaultIdPrefixForType(type);
-      const nextNumber = (() => {
-        const re = new RegExp(
-          `^${prefix.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}(\\d+)$`,
-        );
-        let max = 0;
-        for (const id of existingIds) {
-          const m = id.match(re);
-          if (!m) continue;
-          const n = Number.parseInt(m[1], 10);
-          if (!Number.isNaN(n)) max = Math.max(max, n);
-        }
-        return max + 1;
-      })();
-
-      const id = makeUniqueId(existingIds, `${prefix}${nextNumber}`);
-      let name = "";
-      let lifecycleState = "";
-      let hideFromDiagrams = false;
-      let admPhase = "";
-      const lifecycleOptions = lifecycleOptionsForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
-      const lifecyclePlaceholder = defaultLifecycleStateForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
-
-      Modal.confirm({
-        title: `Create ${type}`,
-        okText: "Create",
-        cancelText: "Cancel",
-        content: (
-          <Form layout="vertical">
-            <Form.Item label="ID">
-              <Input value={id} readOnly />
-            </Form.Item>
-            <Form.Item label="Name" required>
-              <Input
-                placeholder="Enter name"
-                onChange={(e) => {
-                  name = e.target.value;
-                }}
-              />
-            </Form.Item>
-            <Form.Item label="Lifecycle State" required>
-              <Select
-                placeholder={`Select lifecycle state (suggested: ${lifecyclePlaceholder})`}
-                options={lifecycleOptions.map((v) => ({ value: v, label: v }))}
-                onChange={(v) => {
-                  lifecycleState = String(v);
-                }}
-              />
-            </Form.Item>
-            {metadata?.referenceFramework === "TOGAF" ? (
-              <Form.Item label="ADM Phase" required>
-                <Input
-                  placeholder="Enter ADM phase (e.g., A)"
-                  onChange={(e) => {
-                    admPhase = e.target.value;
-                  }}
-                />
-              </Form.Item>
-            ) : null}
-            <Form.Item>
-              <Checkbox
-                onChange={(e) => {
-                  hideFromDiagrams = e.target.checked;
-                }}
-              >
-                Hide from diagrams initially
-              </Checkbox>
-            </Form.Item>
-          </Form>
-        ),
-        onOk: () => {
-          const finalName = name.trim();
-          if (!finalName) {
-            message.error("Name is required.");
-            return Promise.reject();
-          }
-          const finalLifecycle = (lifecycleState ?? "").trim();
-          if (!finalLifecycle) {
-            message.error("Lifecycle state is required.");
-            return Promise.reject();
-          }
-          if (
-            !isLifecycleStateAllowedForReferenceFramework(
-              metadata?.referenceFramework,
-              finalLifecycle,
-            )
-          ) {
-            message.warning(
-              "Lifecycle state is not allowed for the selected Reference Framework.",
-            );
-            return Promise.reject();
-          }
-          if (metadata?.referenceFramework === "TOGAF") {
-            const finalPhase = admPhase.trim();
-            if (!finalPhase) {
-              message.error("ADM phase is required for TOGAF.");
-              return Promise.reject();
-            }
-          }
-
-          const attributes: Record<string, unknown> = {
-            name: finalName,
-            lifecycleState: finalLifecycle,
-            ...(hideFromDiagrams ? { hiddenFromDiagrams: true } : {}),
-          };
-          if (metadata?.referenceFramework === "TOGAF") {
-            attributes.admPhase = admPhase.trim();
-          }
-
-          const next = eaRepository.clone();
-          const res = next.addObject({ id, type, attributes });
-          if (!res.ok) {
-            message.error(res.error);
-            return Promise.reject();
-          }
-          const applied = trySetEaRepository(next);
-          if (!applied.ok) return Promise.reject();
-          selectCatalogueObject(id);
-          return Promise.resolve();
-        },
-      });
     },
     [
       eaRepository,
@@ -905,10 +727,10 @@ const EaExplorerSiderContent: React.FC<{
         return;
       }
       const impacted = eaRepository.relationships.filter(
-        (r) => r.fromId === objectId || r.toId === objectId,
+        (r: any) => r.fromId === objectId || r.toId === objectId,
       );
       const impactedCount = impacted.length;
-      const impactedPreview = impacted.slice(0, 10).map((r) => {
+      const impactedPreview = impacted.slice(0, 10).map((r: any) => {
         const source = eaRepository.objects.get(r.fromId);
         const target = eaRepository.objects.get(r.toId);
         const sourceName =
@@ -952,7 +774,7 @@ const EaExplorerSiderContent: React.FC<{
                 </Typography.Text>
               ) : (
                 <ul style={{ margin: "6px 0 0 16px" }}>
-                  {impactedPreview.map((line) => (
+                  {impactedPreview.map((line: any) => (
                     <li key={line}>{line}</li>
                   ))}
                   {impactedCount > impactedPreview.length ? (
@@ -1015,7 +837,7 @@ const EaExplorerSiderContent: React.FC<{
       }
 
       if (objectSelection) {
-        const selectedType = eaRepository.objects.get(
+        const _selectedType = eaRepository.objects.get(
           objectSelection.objectId,
         )?.type;
         items.push(
@@ -1369,6 +1191,23 @@ const EaExplorerSiderContent: React.FC<{
   );
 };
 
+const _EaExplorerSiderContent: React.FC<{
+  view?: "explorer" | "metamodel" | "catalogues" | "diagrams";
+}> = ({ view = "explorer" }) => {
+  const { eaRepository, trySetEaRepository, metadata } = useEaRepository();
+
+  if (!eaRepository) return null;
+
+  return (
+    <_EaExplorerSiderContentInner
+      view={view}
+      eaRepository={eaRepository}
+      metadata={metadata}
+      trySetEaRepository={trySetEaRepository}
+    />
+  );
+};
+
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
@@ -1383,6 +1222,7 @@ export async function getInitialState(): Promise<{
     density: "compact" | "normal";
   };
 }> {
+  // @ts-ignore - Dynamic imports supported at runtime despite TS config
   const { ensureLocalUser } = await import("@/repository/localUserBootstrap");
   const bootstrap = ensureLocalUser();
 
@@ -1434,20 +1274,18 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
           shell={
             <ProjectGate
               shell={
-                <>
-                  <IdeShellLayout
-                    sidebars={{
-                      catalog: <CatalogSidebar />,
-                      explorer: <ExplorerTree />,
-                      diagrams: <DiagramsTree />,
-                      analysis: <AnalysisTree />,
-                      metamodel: <MetamodelSidebar />,
-                      settings: <SettingsPanel />,
-                    }}
-                  >
-                    {children}
-                  </IdeShellLayout>
-                </>
+                <IdeShellLayout
+                  sidebars={{
+                    catalog: <CatalogSidebar />,
+                    explorer: <ExplorerTree />,
+                    diagrams: <DiagramsTree />,
+                    analysis: <AnalysisTree />,
+                    metamodel: <MetamodelSidebar />,
+                    settings: <SettingsPanel />,
+                  }}
+                >
+                  {children}
+                </IdeShellLayout>
               }
             >
               <FirstLaunch />

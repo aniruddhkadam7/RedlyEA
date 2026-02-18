@@ -23,6 +23,8 @@ export type ArchitectureDecisionRecord = {
   decisionDate: string;
 };
 
-export type ArchitectureDecisionRecordUpsertInput = Partial<Omit<ArchitectureDecisionRecord, 'adrId'>> & {
+export type ArchitectureDecisionRecordUpsertInput = Partial<
+  Omit<ArchitectureDecisionRecord, 'adrId'>
+> & {
   adrId?: string;
 };

@@ -22,4 +22,5 @@ export const COPILOT_SAFETY_RULES: CopilotSafetyRule[] = [
   },
 ];
 
-export const COPILOT_TRUST_BANNER = 'Copilot never changes your architecture automatically.';
+export const COPILOT_TRUST_BANNER =
+  'Copilot never changes your architecture automatically.';

@@ -1,5 +1,5 @@
-import { ensureLocalUser } from './localUserBootstrap';
 import type { LocalUser } from './localUser';
+import { ensureLocalUser } from './localUserBootstrap';
 
 export const getCurrentUserOrThrow = (): LocalUser => {
   const res = ensureLocalUser();

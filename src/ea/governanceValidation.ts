@@ -1,13 +1,11 @@
-import { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
-
-import { validateArchitectureRepository } from '../../backend/analysis/RepositoryValidation';
+import type { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
+import { getLifecycleStateFromAttributes } from '@/repository/lifecycleCoveragePolicy';
+import type { LifecycleCoverage } from '@/repository/repositoryMetadata';
 import { validateRelationshipRepository } from '../../backend/analysis/RelationshipValidation';
+import { validateArchitectureRepository } from '../../backend/analysis/RepositoryValidation';
 import { ArchitectureRepository } from '../../backend/repository/ArchitectureRepository';
 import { createRelationshipRepository } from '../../backend/repository/RelationshipRepository';
-
-import type { LifecycleCoverage } from '@/repository/repositoryMetadata';
 import type { ModelingState } from './DesignWorkspaceStore';
-import { getLifecycleStateFromAttributes } from '@/repository/lifecycleCoveragePolicy';
 
 export type GovernanceSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'BLOCKER';
 
@@ -24,14 +22,23 @@ export type GovernanceIssue = {
   message: string;
   severity: GovernanceSeverity;
   subjectId?: string;
-  scope?: 'Capability Map' | 'Application Landscape' | 'Technology Stack' | 'Unknown';
+  scope?:
+    | 'Capability Map'
+    | 'Application Landscape'
+    | 'Technology Stack'
+    | 'Unknown';
 };
 
 export type GovernanceDebt = {
   summary: GovernanceDebtSummary;
   repoReport: {
     observedAt: string;
-    findings: Array<Omit<ReturnType<typeof validateArchitectureRepository>['findings'][number], 'severity'> & { severity: GovernanceSeverity }>;
+    findings: Array<
+      Omit<
+        ReturnType<typeof validateArchitectureRepository>['findings'][number],
+        'severity'
+      > & { severity: GovernanceSeverity }
+    >;
     summary: {
       total: number;
       bySeverity: Record<GovernanceSeverity, number>;
@@ -40,7 +47,12 @@ export type GovernanceDebt = {
   };
   relationshipReport: {
     observedAt: string;
-    findings: Array<Omit<ReturnType<typeof validateRelationshipRepository>['findings'][number], 'severity'> & { severity: GovernanceSeverity }>;
+    findings: Array<
+      Omit<
+        ReturnType<typeof validateRelationshipRepository>['findings'][number],
+        'severity'
+      > & { severity: GovernanceSeverity }
+    >;
     summary: {
       total: number;
       bySeverity: Record<GovernanceSeverity, number>;
@@ -51,8 +63,10 @@ export type GovernanceDebt = {
   lifecycleTagMissingIds: GovernanceIssue[];
 };
 
-const getString = (value: unknown): string => (typeof value === 'string' ? value : '');
-const getNumber = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+const getString = (value: unknown): string =>
+  typeof value === 'string' ? value : '';
+const getNumber = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : 0;
 const getBool = (value: unknown): boolean => value === true;
 
 const TECHNICAL_TERMS = [
@@ -112,7 +126,10 @@ const findTechnicalTerm = (text: string): string | null => {
   const normalized = String(text ?? '').toLowerCase();
   if (!normalized.trim()) return null;
   for (const term of TECHNICAL_TERMS) {
-    const pattern = new RegExp(`\\b${term.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`, 'i');
+    const pattern = new RegExp(
+      `\\b${term.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`,
+      'i',
+    );
     if (pattern.test(normalized)) return term;
   }
   return null;
@@ -122,7 +139,10 @@ const findPhysicalTerm = (text: string): string | null => {
   const normalized = String(text ?? '').toLowerCase();
   if (!normalized.trim()) return null;
   for (const term of PHYSICAL_TERMS) {
-    const pattern = new RegExp(`\\b${term.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`, 'i');
+    const pattern = new RegExp(
+      `\\b${term.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`,
+      'i',
+    );
     if (pattern.test(normalized)) return term;
   }
   return null;
@@ -164,28 +184,49 @@ const isVerbBasedProcessName = (name: string): boolean => {
   const trimmed = String(name ?? '').trim();
   if (!trimmed) return false;
   const first = trimmed.split(/\s+/)[0];
-  return PROCESS_VERBS.some((verb) => verb.toLowerCase() === first.toLowerCase());
+  return PROCESS_VERBS.some(
+    (verb) => verb.toLowerCase() === first.toLowerCase(),
+  );
 };
 
-const normalizeId = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown): string =>
+  typeof value === 'string' ? value.trim() : '';
 
-const isSoftDeleted = (attrs: Record<string, unknown> | null | undefined) => (attrs as any)?._deleted === true;
+const isSoftDeleted = (attrs: Record<string, unknown> | null | undefined) =>
+  (attrs as any)?._deleted === true;
 
-const KNOWN_MODELING_STATES = new Set<ModelingState>(['DRAFT', 'COMMITTED', 'REVIEW_READY', 'APPROVED']);
+const KNOWN_MODELING_STATES = new Set<ModelingState>([
+  'DRAFT',
+  'COMMITTED',
+  'REVIEW_READY',
+  'APPROVED',
+]);
 
-const normalizeModelingState = (attrs: Record<string, unknown> | null | undefined): ModelingState => {
+const normalizeModelingState = (
+  attrs: Record<string, unknown> | null | undefined,
+): ModelingState => {
   const raw = (attrs as any)?.modelingState as ModelingState | undefined;
   return raw && KNOWN_MODELING_STATES.has(raw) ? raw : 'COMMITTED';
 };
 
-const canEscalateSeverity = (state: ModelingState): boolean => state === 'REVIEW_READY' || state === 'APPROVED';
+const canEscalateSeverity = (state: ModelingState): boolean =>
+  state === 'REVIEW_READY' || state === 'APPROVED';
 
 const toGovernanceSeverity = (
   baseSeverity: 'Info' | 'Warning' | 'Error',
   state: ModelingState,
 ): GovernanceSeverity => {
-  const mapped: GovernanceSeverity = baseSeverity === 'Info' ? 'INFO' : baseSeverity === 'Warning' ? 'WARNING' : 'ERROR';
-  if ((mapped === 'ERROR' || mapped === 'BLOCKER') && !canEscalateSeverity(state)) return 'WARNING';
+  const mapped: GovernanceSeverity =
+    baseSeverity === 'Info'
+      ? 'INFO'
+      : baseSeverity === 'Warning'
+        ? 'WARNING'
+        : 'ERROR';
+  if (
+    (mapped === 'ERROR' || mapped === 'BLOCKER') &&
+    !canEscalateSeverity(state)
+  )
+    return 'WARNING';
   return mapped;
 };
 
@@ -210,7 +251,9 @@ export const TRACEABILITY_CHECK_IDS = [
   'PROCESS_MISSING_CAPABILITY_PARENT',
 ] as const;
 
-const MANDATORY_RELATIONSHIP_CHECK_SET = new Set<string>(MANDATORY_RELATIONSHIP_CHECK_IDS);
+const MANDATORY_RELATIONSHIP_CHECK_SET = new Set<string>(
+  MANDATORY_RELATIONSHIP_CHECK_IDS,
+);
 const TRACEABILITY_CHECK_SET = new Set<string>(TRACEABILITY_CHECK_IDS);
 
 const applyMandatoryRelationshipSeverity = (
@@ -245,7 +288,10 @@ const SCOPE_CAPABILITY = new Set<string>([
   'Programme',
   'Project',
 ]);
-const SCOPE_APPLICATION = new Set<string>(['Application', 'ApplicationService']);
+const SCOPE_APPLICATION = new Set<string>([
+  'Application',
+  'ApplicationService',
+]);
 const SCOPE_TECHNOLOGY = new Set<string>([
   'Technology',
   'Node',
@@ -259,7 +305,9 @@ const SCOPE_TECHNOLOGY = new Set<string>([
   'CloudService',
 ]);
 
-const scopeForElementType = (type: string | null | undefined): GovernanceIssue['scope'] => {
+const scopeForElementType = (
+  type: string | null | undefined,
+): GovernanceIssue['scope'] => {
   if (!type) return 'Unknown';
   if (SCOPE_TECHNOLOGY.has(type)) return 'Technology Stack';
   if (SCOPE_APPLICATION.has(type)) return 'Application Landscape';
@@ -267,10 +315,25 @@ const scopeForElementType = (type: string | null | undefined): GovernanceIssue['
   return 'Unknown';
 };
 
-const scopeForRelationshipTypes = (sourceType?: string, targetType?: string): GovernanceIssue['scope'] => {
-  if (SCOPE_TECHNOLOGY.has(String(sourceType)) || SCOPE_TECHNOLOGY.has(String(targetType))) return 'Technology Stack';
-  if (SCOPE_APPLICATION.has(String(sourceType)) || SCOPE_APPLICATION.has(String(targetType))) return 'Application Landscape';
-  if (SCOPE_CAPABILITY.has(String(sourceType)) || SCOPE_CAPABILITY.has(String(targetType))) return 'Capability Map';
+const scopeForRelationshipTypes = (
+  sourceType?: string,
+  targetType?: string,
+): GovernanceIssue['scope'] => {
+  if (
+    SCOPE_TECHNOLOGY.has(String(sourceType)) ||
+    SCOPE_TECHNOLOGY.has(String(targetType))
+  )
+    return 'Technology Stack';
+  if (
+    SCOPE_APPLICATION.has(String(sourceType)) ||
+    SCOPE_APPLICATION.has(String(targetType))
+  )
+    return 'Application Landscape';
+  if (
+    SCOPE_CAPABILITY.has(String(sourceType)) ||
+    SCOPE_CAPABILITY.has(String(targetType))
+  )
+    return 'Capability Map';
   return 'Unknown';
 };
 
@@ -279,7 +342,12 @@ const increment = (obj: Record<string, number>, key: string) => {
 };
 
 const toBackendElementType = (eaType: string): string => {
-  if (eaType === 'Capability' || eaType === 'SubCapability' || eaType === 'CapabilityCategory') return 'Capability';
+  if (
+    eaType === 'Capability' ||
+    eaType === 'SubCapability' ||
+    eaType === 'CapabilityCategory'
+  )
+    return 'Capability';
   if (eaType === 'BusinessProcess') return 'BusinessProcess';
   if (eaType === 'BusinessService') return 'BusinessService';
   if (eaType === 'Application') return 'Application';
@@ -295,7 +363,10 @@ const toBackendElementType = (eaType: string): string => {
 export function buildGovernanceDebt(
   eaRepository: EaRepository,
   nowDate: Date = new Date(),
-  options?: { lifecycleCoverage?: LifecycleCoverage | null; governanceMode?: 'Strict' | 'Advisory' | null },
+  options?: {
+    lifecycleCoverage?: LifecycleCoverage | null;
+    governanceMode?: 'Strict' | 'Advisory' | null;
+  },
 ): GovernanceDebt {
   const repo = new ArchitectureRepository();
   const now = nowDate.toISOString();
@@ -319,9 +390,16 @@ export function buildGovernanceDebt(
       }
     }
 
-    const name = typeof attrs.name === 'string' && attrs.name.trim() ? attrs.name.trim() : obj.id;
+    const name =
+      typeof attrs.name === 'string' && attrs.name.trim()
+        ? attrs.name.trim()
+        : obj.id;
 
-    if (obj.type === 'Capability' || obj.type === 'CapabilityCategory' || obj.type === 'SubCapability') {
+    if (
+      obj.type === 'Capability' ||
+      obj.type === 'CapabilityCategory' ||
+      obj.type === 'SubCapability'
+    ) {
       repo.addElement('capabilities', {
         id: obj.id,
         name,
@@ -375,11 +453,15 @@ export function buildGovernanceDebt(
         vendor: getString(attrs.vendor),
         version: getString(attrs.version),
         hostingModel: (attrs.hostingModel as any) || 'OnPrem',
-        technologyStack: Array.isArray(attrs.technologyStack) ? attrs.technologyStack : [],
+        technologyStack: Array.isArray(attrs.technologyStack)
+          ? attrs.technologyStack
+          : [],
         userCountEstimate: getNumber(attrs.userCountEstimate),
         criticality: (attrs.criticality as any) || 'Medium',
         dataClassification: (attrs.dataClassification as any) || 'Internal',
-        integrations: Array.isArray(attrs.integrations) ? attrs.integrations : [],
+        integrations: Array.isArray(attrs.integrations)
+          ? attrs.integrations
+          : [],
       } as any);
       continue;
     }
@@ -604,7 +686,9 @@ export function buildGovernanceDebt(
   }
 
   // Enterprise-grade governance rules (Strict mode consumes these via summary.total).
-  const extraRepoFindings: Array<ReturnType<typeof validateArchitectureRepository>['findings'][number]> = [];
+  const extraRepoFindings: Array<
+    ReturnType<typeof validateArchitectureRepository>['findings'][number]
+  > = [];
 
   const addRepoFinding = (args: {
     checkId: string;
@@ -615,7 +699,9 @@ export function buildGovernanceDebt(
     collection: string;
   }) => {
     const severity: 'Info' | 'Warning' | 'Error' =
-      options?.governanceMode === 'Advisory' && args.severity === 'Error' ? 'Warning' : args.severity;
+      options?.governanceMode === 'Advisory' && args.severity === 'Error'
+        ? 'Warning'
+        : args.severity;
     extraRepoFindings.push({
       id: `${args.checkId}:${args.elementId}`,
       checkId: args.checkId,
@@ -635,30 +721,50 @@ export function buildGovernanceDebt(
     return normalizeModelingState(obj?.attributes);
   };
 
-  const getRelationshipModelingState = (sourceId: string, targetId: string, relationshipType?: string): ModelingState => {
+  const getRelationshipModelingState = (
+    sourceId: string,
+    targetId: string,
+    relationshipType?: string,
+  ): ModelingState => {
     const rel = eaRelationships.find(
-      (r) => r.fromId === sourceId && r.toId === targetId && (!relationshipType || r.type === relationshipType),
+      (r) =>
+        r.fromId === sourceId &&
+        r.toId === targetId &&
+        (!relationshipType || r.type === relationshipType),
     );
     if (rel) return normalizeModelingState(rel.attributes);
     const sourceState = getElementModelingState(sourceId);
     const targetState = getElementModelingState(targetId);
-    return canEscalateSeverity(sourceState) || canEscalateSeverity(targetState) ? 'REVIEW_READY' : 'COMMITTED';
+    return canEscalateSeverity(sourceState) || canEscalateSeverity(targetState)
+      ? 'REVIEW_READY'
+      : 'COMMITTED';
   };
 
-  const aggregateRepoFindings = (findings: Array<ReturnType<typeof validateArchitectureRepository>['findings'][number]>) => {
-    const grouped = new Map<string, {
-      checkId: string;
-      scope: GovernanceIssue['scope'];
-      severity: GovernanceSeverity;
-      count: number;
-      examples: string[];
-      collection: string;
-    }>();
+  const aggregateRepoFindings = (
+    findings: Array<
+      ReturnType<typeof validateArchitectureRepository>['findings'][number]
+    >,
+  ) => {
+    const grouped = new Map<
+      string,
+      {
+        checkId: string;
+        scope: GovernanceIssue['scope'];
+        severity: GovernanceSeverity;
+        count: number;
+        examples: string[];
+        collection: string;
+      }
+    >();
     for (const f of findings) {
       const scope = scopeForElementType(f.elementType);
       const key = `${String(f.checkId)}|${scope ?? 'Unknown'}`;
       const modelingState = getElementModelingState(f.elementId);
-      const severity = applyMandatoryRelationshipSeverity(String(f.checkId), modelingState, f.severity);
+      const severity = applyMandatoryRelationshipSeverity(
+        String(f.checkId),
+        modelingState,
+        f.severity,
+      );
       const entry = grouped.get(key);
       if (!entry) {
         grouped.set(key, {
@@ -672,7 +778,8 @@ export function buildGovernanceDebt(
         continue;
       }
       entry.count += 1;
-      if (severityRank(severity) > severityRank(entry.severity)) entry.severity = severity;
+      if (severityRank(severity) > severityRank(entry.severity))
+        entry.severity = severity;
       if (entry.examples.length < 3) entry.examples.push(String(f.elementId));
     }
     return Array.from(grouped.values()).map((g) => ({
@@ -688,15 +795,20 @@ export function buildGovernanceDebt(
   };
 
   const aggregateRelationshipFindings = (
-    findings: Array<ReturnType<typeof validateRelationshipRepository>['findings'][number]>,
+    findings: Array<
+      ReturnType<typeof validateRelationshipRepository>['findings'][number]
+    >,
   ) => {
-    const grouped = new Map<string, {
-      checkId: string;
-      scope: GovernanceIssue['scope'];
-      severity: GovernanceSeverity;
-      count: number;
-      examples: string[];
-    }>();
+    const grouped = new Map<
+      string,
+      {
+        checkId: string;
+        scope: GovernanceIssue['scope'];
+        severity: GovernanceSeverity;
+        count: number;
+        examples: string[];
+      }
+    >();
     for (const f of findings) {
       const scope =
         f.subjectKind === 'Element'
@@ -711,9 +823,16 @@ export function buildGovernanceDebt(
               String(f.targetElementId ?? ''),
               String(f.relationshipType ?? ''),
             );
-      const severity = applyMandatoryRelationshipSeverity(String(f.checkId), modelingState, f.severity);
+      const severity = applyMandatoryRelationshipSeverity(
+        String(f.checkId),
+        modelingState,
+        f.severity,
+      );
       const entry = grouped.get(key);
-      const sample = f.subjectKind === 'Element' ? f.subjectId : `${f.sourceElementId ?? '?'}→${f.targetElementId ?? '?'}`;
+      const sample =
+        f.subjectKind === 'Element'
+          ? f.subjectId
+          : `${f.sourceElementId ?? '?'}→${f.targetElementId ?? '?'}`;
       if (!entry) {
         grouped.set(key, {
           checkId: String(f.checkId),
@@ -725,7 +844,8 @@ export function buildGovernanceDebt(
         continue;
       }
       entry.count += 1;
-      if (severityRank(severity) > severityRank(entry.severity)) entry.severity = severity;
+      if (severityRank(severity) > severityRank(entry.severity))
+        entry.severity = severity;
       if (entry.examples.length < 3) entry.examples.push(String(sample));
     }
     return Array.from(grouped.values()).map((g) => ({
@@ -740,8 +860,19 @@ export function buildGovernanceDebt(
     }));
   };
 
-  const aggregateIssuesByScope = (issues: GovernanceIssue[], label: string): GovernanceIssue[] => {
-    const grouped = new Map<string, { scope: GovernanceIssue['scope']; severity: GovernanceSeverity; count: number; examples: string[] }>();
+  const aggregateIssuesByScope = (
+    issues: GovernanceIssue[],
+    label: string,
+  ): GovernanceIssue[] => {
+    const grouped = new Map<
+      string,
+      {
+        scope: GovernanceIssue['scope'];
+        severity: GovernanceSeverity;
+        count: number;
+        examples: string[];
+      }
+    >();
     for (const issue of issues) {
       const scope = issue.scope ?? 'Unknown';
       const key = scope ?? 'Unknown';
@@ -756,8 +887,10 @@ export function buildGovernanceDebt(
         continue;
       }
       entry.count += 1;
-      if (severityRank(issue.severity) > severityRank(entry.severity)) entry.severity = issue.severity;
-      if (entry.examples.length < 3) entry.examples.push(issue.subjectId || issue.message);
+      if (severityRank(issue.severity) > severityRank(entry.severity))
+        entry.severity = issue.severity;
+      if (entry.examples.length < 3)
+        entry.examples.push(issue.subjectId || issue.message);
     }
     return Array.from(grouped.values()).map((g) => ({
       message: `${g.scope ?? 'Unknown'}: ${g.count} ${label} issue(s). Examples: ${g.examples.join(', ')}.`,
@@ -767,14 +900,21 @@ export function buildGovernanceDebt(
     }));
   };
 
-  const displayName = (obj: { id: string; attributes?: Record<string, unknown> } | null | undefined): string => {
+  const displayName = (
+    obj:
+      | { id: string; attributes?: Record<string, unknown> }
+      | null
+      | undefined,
+  ): string => {
     if (!obj) return '';
     const raw = (obj.attributes as any)?.name;
     const name = typeof raw === 'string' ? raw.trim() : '';
     return name || obj.id;
   };
 
-  const activeObjects = Array.from(eaRepository.objects.values()).filter((o) => !isSoftDeleted(o.attributes));
+  const activeObjects = Array.from(eaRepository.objects.values()).filter(
+    (o) => !isSoftDeleted(o.attributes),
+  );
 
   const eaRelationships = eaRepository.relationships;
 
@@ -782,14 +922,18 @@ export function buildGovernanceDebt(
     const from = getObj(rel.fromId);
     const to = getObj(rel.toId);
     if (!from || !to) return null;
-    if (isSoftDeleted(from.attributes) || isSoftDeleted(to.attributes)) return null;
+    if (isSoftDeleted(from.attributes) || isSoftDeleted(to.attributes))
+      return null;
     return { from, to };
   };
 
   // 1) Ownership: every Capability, Application, Programme must be owned by exactly one Enterprise.
   // 0) Required fields (repository-level).
   for (const obj of activeObjects) {
-    const name = typeof (obj.attributes as any)?.name === 'string' ? String((obj.attributes as any).name).trim() : '';
+    const name =
+      typeof (obj.attributes as any)?.name === 'string'
+        ? String((obj.attributes as any).name).trim()
+        : '';
     if (!name) {
       addRepoFinding({
         checkId: 'EA_REQUIRED_NAME',
@@ -801,9 +945,10 @@ export function buildGovernanceDebt(
       });
     }
 
-    const ownerId = typeof (obj.attributes as any)?.ownerId === 'string'
-      ? String((obj.attributes as any).ownerId).trim()
-      : '';
+    const ownerId =
+      typeof (obj.attributes as any)?.ownerId === 'string'
+        ? String((obj.attributes as any).ownerId).trim()
+        : '';
     if (!ownerId) {
       addRepoFinding({
         checkId: 'EA_REQUIRED_OWNER',
@@ -817,12 +962,19 @@ export function buildGovernanceDebt(
     }
 
     // Allow self-ownership for owner types to support bootstrapping.
-    if ((obj.type === 'Enterprise' || obj.type === 'Department') && ownerId === obj.id) {
+    if (
+      (obj.type === 'Enterprise' || obj.type === 'Department') &&
+      ownerId === obj.id
+    ) {
       continue;
     }
 
     const owner = getObj(ownerId);
-    if (!owner || isSoftDeleted(owner.attributes) || (owner.type !== 'Enterprise' && owner.type !== 'Department')) {
+    if (
+      !owner ||
+      isSoftDeleted(owner.attributes) ||
+      (owner.type !== 'Enterprise' && owner.type !== 'Department')
+    ) {
       addRepoFinding({
         checkId: 'EA_INVALID_OWNER',
         severity: 'Error',
@@ -835,7 +987,12 @@ export function buildGovernanceDebt(
   }
 
   // 1) Ownership: every Capability, Application, Programme must be owned by exactly one Enterprise.
-  const ownedTypes = new Set<string>(['Capability', 'SubCapability', 'Application', 'Programme']);
+  const ownedTypes = new Set<string>([
+    'Capability',
+    'SubCapability',
+    'Application',
+    'Programme',
+  ]);
   for (const obj of activeObjects) {
     if (!ownedTypes.has(obj.type)) continue;
 
@@ -855,7 +1012,12 @@ export function buildGovernanceDebt(
         message: `${obj.type} ‘${displayName(obj)}’ must have ${expected} via OWNS (found ${got}).`,
         elementId: obj.id,
         elementType: obj.type,
-        collection: obj.type === 'Application' ? 'applications' : obj.type === 'Programme' ? 'programmes' : 'capabilities',
+        collection:
+          obj.type === 'Application'
+            ? 'applications'
+            : obj.type === 'Programme'
+              ? 'programmes'
+              : 'capabilities',
       });
     }
   }
@@ -898,7 +1060,10 @@ export function buildGovernanceDebt(
       });
     }
 
-    if (isItOwned((attrs as any)?.ownerRole) || isItOwned((attrs as any)?.owningUnit)) {
+    if (
+      isItOwned((attrs as any)?.ownerRole) ||
+      isItOwned((attrs as any)?.owningUnit)
+    ) {
       addRepoFinding({
         checkId: 'EA_CAPABILITY_NO_IT_OWNERSHIP',
         severity: 'Error',
@@ -923,7 +1088,9 @@ export function buildGovernanceDebt(
   }
 
   // 3b) Business Process names must be verb-based.
-  for (const proc of activeObjects.filter((o) => o.type === 'BusinessProcess')) {
+  for (const proc of activeObjects.filter(
+    (o) => o.type === 'BusinessProcess',
+  )) {
     const attrs = proc.attributes ?? {};
     const name = getString(attrs.name) || proc.id;
     if (!isVerbBasedProcessName(name)) {
@@ -975,7 +1142,9 @@ export function buildGovernanceDebt(
   }
 
   // 4) Application Service belongs to exactly one Application and must be used.
-  for (const svc of activeObjects.filter((o) => o.type === 'ApplicationService')) {
+  for (const svc of activeObjects.filter(
+    (o) => o.type === 'ApplicationService',
+  )) {
     const providers = eaRelationships.filter((r) => {
       if (r.type !== 'PROVIDED_BY') return false;
       if (normalizeId(r.fromId) !== svc.id) return false;
@@ -998,7 +1167,10 @@ export function buildGovernanceDebt(
       if (r.type !== 'USED_BY') return false;
       if (normalizeId(r.fromId) !== svc.id) return false;
       const endpoints = activeRelEndpoints(r);
-      return endpoints?.to.type === 'Application' || endpoints?.to.type === 'BusinessProcess';
+      return (
+        endpoints?.to.type === 'Application' ||
+        endpoints?.to.type === 'BusinessProcess'
+      );
     });
 
     if (usages.length < 1) {
@@ -1023,10 +1195,17 @@ export function buildGovernanceDebt(
     const toLayer = toBackendElementType(endpoints.to.type);
 
     const isBusiness = (t: string) =>
-      t === 'Enterprise' || t === 'Department' || t === 'Capability' || t === 'BusinessService' || t === 'BusinessProcess';
+      t === 'Enterprise' ||
+      t === 'Department' ||
+      t === 'Capability' ||
+      t === 'BusinessService' ||
+      t === 'BusinessProcess';
     const isTechnology = (t: string) => t === 'Technology';
 
-    if ((isTechnology(fromLayer) && isBusiness(toLayer)) || (isBusiness(fromLayer) && isTechnology(toLayer))) {
+    if (
+      (isTechnology(fromLayer) && isBusiness(toLayer)) ||
+      (isBusiness(fromLayer) && isTechnology(toLayer))
+    ) {
       addRepoFinding({
         checkId: 'EA_FORBIDDEN_TECHNOLOGY_BUSINESS_LINK',
         severity: 'Error',
@@ -1059,10 +1238,18 @@ export function buildGovernanceDebt(
     const sourceId = String(rel.fromId ?? '').trim();
     const targetId = String(rel.toId ?? '').trim();
     if (!sourceId || !targetId) continue;
-    if (!supportedElementIds.has(sourceId) || !supportedElementIds.has(targetId)) continue;
+    if (
+      !supportedElementIds.has(sourceId) ||
+      !supportedElementIds.has(targetId)
+    )
+      continue;
 
-    const sourceType = toBackendElementType(eaRepository.objects.get(sourceId)?.type ?? '');
-    const targetType = toBackendElementType(eaRepository.objects.get(targetId)?.type ?? '');
+    const sourceType = toBackendElementType(
+      eaRepository.objects.get(sourceId)?.type ?? '',
+    );
+    const targetType = toBackendElementType(
+      eaRepository.objects.get(targetId)?.type ?? '',
+    );
 
     const relationshipAny: any = {
       id: `rel_${i}`,
@@ -1088,15 +1275,26 @@ export function buildGovernanceDebt(
       relationshipAny.relationshipType === 'CONSUMES' ||
       relationshipAny.relationshipType === 'DEPENDS_ON'
     ) {
-      relationshipAny.dependencyStrength = (rel as any)?.attributes?.dependencyStrength;
+      relationshipAny.dependencyStrength = (
+        rel as any
+      )?.attributes?.dependencyStrength;
       relationshipAny.dependencyType = (rel as any)?.attributes?.dependencyType;
-      relationshipAny.runtimeCritical = (rel as any)?.attributes?.runtimeCritical;
+      relationshipAny.runtimeCritical = (
+        rel as any
+      )?.attributes?.runtimeCritical;
     }
 
     const addRes = relationships.addRelationship(relationshipAny);
     if (!addRes.ok) {
-      const modelingState = getRelationshipModelingState(sourceId, targetId, relationshipAny.relationshipType);
-      const scope = scopeForRelationshipTypes(String(sourceType ?? ''), String(targetType ?? ''));
+      const modelingState = getRelationshipModelingState(
+        sourceId,
+        targetId,
+        relationshipAny.relationshipType,
+      );
+      const scope = scopeForRelationshipTypes(
+        String(sourceType ?? ''),
+        String(targetType ?? ''),
+      );
       invalidRelationshipInserts.push({
         message: `${relationshipAny.relationshipType || '(unknown)'} ${sourceId} -> ${targetId}: ${addRes.error}`,
         severity: toGovernanceSeverity('Error', modelingState),
@@ -1107,8 +1305,16 @@ export function buildGovernanceDebt(
   }
 
   const baseRepoReport = validateArchitectureRepository(repo, nowDate);
-  const repoFindings = aggregateRepoFindings([...baseRepoReport.findings, ...extraRepoFindings]);
-  const repoBySeverity: Record<GovernanceSeverity, number> = { INFO: 0, WARNING: 0, ERROR: 0, BLOCKER: 0 };
+  const repoFindings = aggregateRepoFindings([
+    ...baseRepoReport.findings,
+    ...extraRepoFindings,
+  ]);
+  const repoBySeverity: Record<GovernanceSeverity, number> = {
+    INFO: 0,
+    WARNING: 0,
+    ERROR: 0,
+    BLOCKER: 0,
+  };
   const repoByCheckId: Record<string, number> = {};
   for (const f of repoFindings) {
     increment(repoBySeverity, f.severity);
@@ -1125,9 +1331,20 @@ export function buildGovernanceDebt(
     },
   };
 
-  const baseRelationshipReport = validateRelationshipRepository(repo, relationships, nowDate);
-  const relationshipFindings = aggregateRelationshipFindings(baseRelationshipReport.findings);
-  const relationshipBySeverity: Record<GovernanceSeverity, number> = { INFO: 0, WARNING: 0, ERROR: 0, BLOCKER: 0 };
+  const baseRelationshipReport = validateRelationshipRepository(
+    repo,
+    relationships,
+    nowDate,
+  );
+  const relationshipFindings = aggregateRelationshipFindings(
+    baseRelationshipReport.findings,
+  );
+  const relationshipBySeverity: Record<GovernanceSeverity, number> = {
+    INFO: 0,
+    WARNING: 0,
+    ERROR: 0,
+    BLOCKER: 0,
+  };
   const relationshipByCheckId: Record<string, number> = {};
   for (const f of relationshipFindings) {
     increment(relationshipBySeverity, f.severity);
@@ -1145,8 +1362,12 @@ export function buildGovernanceDebt(
   };
 
   const mandatoryFindingCount = repoReport.summary.total ?? 0;
-  const relationshipErrorCount = (relationshipReport.summary.bySeverity.ERROR ?? 0) + (relationshipReport.summary.bySeverity.BLOCKER ?? 0);
-  const relationshipWarningCount = (relationshipReport.summary.bySeverity.WARNING ?? 0) + (relationshipReport.summary.bySeverity.INFO ?? 0);
+  const relationshipErrorCount =
+    (relationshipReport.summary.bySeverity.ERROR ?? 0) +
+    (relationshipReport.summary.bySeverity.BLOCKER ?? 0);
+  const relationshipWarningCount =
+    (relationshipReport.summary.bySeverity.WARNING ?? 0) +
+    (relationshipReport.summary.bySeverity.INFO ?? 0);
   const invalidRelationshipInsertCount = invalidRelationshipInserts.filter(
     (issue) => issue.severity === 'ERROR' || issue.severity === 'BLOCKER',
   ).length;
@@ -1170,7 +1391,13 @@ export function buildGovernanceDebt(
     },
     repoReport,
     relationshipReport,
-    invalidRelationshipInserts: aggregateIssuesByScope(invalidRelationshipInserts, 'Relationship insert'),
-    lifecycleTagMissingIds: aggregateIssuesByScope(lifecycleTagMissingIds, 'Lifecycle tag'),
+    invalidRelationshipInserts: aggregateIssuesByScope(
+      invalidRelationshipInserts,
+      'Relationship insert',
+    ),
+    lifecycleTagMissingIds: aggregateIssuesByScope(
+      lifecycleTagMissingIds,
+      'Lifecycle tag',
+    ),
   };
 }

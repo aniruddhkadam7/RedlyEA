@@ -29,8 +29,6 @@ import type {
   RedlyMetadata,
   RedlyNode,
   RedlyScope,
-  RedlyValidationResult,
-  RedlyViewport,
 } from './RedlyFileFormat';
 import {
   REDLY_FILE_EXTENSION,

@@ -50,18 +50,25 @@ const ContextMenuCtx = React.createContext<ContextMenuAPI | null>(null);
 // Provider
 // ---------------------------------------------------------------------------
 
-export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [menuState, setMenuState] = React.useState<ContextMenuState | null>(null);
+export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [menuState, setMenuState] = React.useState<ContextMenuState | null>(
+    null,
+  );
   const handlerRef = React.useRef<ActionHandler | null>(null);
   const ctxRef = React.useRef<MenuContext | null>(null);
 
-  const open = React.useCallback((ctx: MenuContext, onAction: ActionHandler) => {
-    const items = buildMenu(ctx);
-    if (items.length === 0) return; // nothing to show
-    handlerRef.current = onAction;
-    ctxRef.current = ctx;
-    setMenuState({ items, position: { x: ctx.x, y: ctx.y }, context: ctx });
-  }, []);
+  const open = React.useCallback(
+    (ctx: MenuContext, onAction: ActionHandler) => {
+      const items = buildMenu(ctx);
+      if (items.length === 0) return; // nothing to show
+      handlerRef.current = onAction;
+      ctxRef.current = ctx;
+      setMenuState({ items, position: { x: ctx.x, y: ctx.y }, context: ctx });
+    },
+    [],
+  );
 
   const close = React.useCallback(() => {
     setMenuState(null);
@@ -69,17 +76,22 @@ export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ctxRef.current = null;
   }, []);
 
-  const handleAction = React.useCallback((key: string) => {
-    const fn = handlerRef.current;
-    const ctx = ctxRef.current;
-    // Close first (spec §10 — close menu before executing action)
-    close();
-    if (fn && ctx) {
-      try { fn(key, ctx); } catch (err) {
-        console.error('[ContextMenu] action handler error:', err);
+  const handleAction = React.useCallback(
+    (key: string) => {
+      const fn = handlerRef.current;
+      const ctx = ctxRef.current;
+      // Close first (spec §10 — close menu before executing action)
+      close();
+      if (fn && ctx) {
+        try {
+          fn(key, ctx);
+        } catch (err) {
+          console.error('[ContextMenu] action handler error:', err);
+        }
       }
-    }
-  }, [close]);
+    },
+    [close],
+  );
 
   const api = React.useMemo<ContextMenuAPI>(
     () => ({ state: menuState, open, close, handleAction }),
@@ -87,9 +99,7 @@ export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 
   return (
-    <ContextMenuCtx.Provider value={api}>
-      {children}
-    </ContextMenuCtx.Provider>
+    <ContextMenuCtx.Provider value={api}>{children}</ContextMenuCtx.Provider>
   );
 };
 
@@ -102,7 +112,8 @@ export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ c
  */
 export function useContextMenu(): ContextMenuAPI {
   const api = React.useContext(ContextMenuCtx);
-  if (!api) throw new Error('useContextMenu must be used within <ContextMenuProvider>');
+  if (!api)
+    throw new Error('useContextMenu must be used within <ContextMenuProvider>');
   return api;
 }
 
@@ -123,11 +134,18 @@ export function useContextMenuTrigger(
 ): (e: React.MouseEvent) => void {
   const { open } = useContextMenu();
 
-  return React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const partial = buildContext(e);
-    const ctx: MenuContext = { ...partial, x: e.clientX, y: e.clientY } as MenuContext;
-    open(ctx, onAction);
-  }, [buildContext, onAction, open]);
+  return React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const partial = buildContext(e);
+      const ctx: MenuContext = {
+        ...partial,
+        x: e.clientX,
+        y: e.clientY,
+      } as MenuContext;
+      open(ctx, onAction);
+    },
+    [buildContext, onAction, open],
+  );
 }

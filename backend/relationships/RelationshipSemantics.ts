@@ -13,7 +13,9 @@ export type RelationshipEndpointRule = {
  * - View definition validation (safe projections)
  * - View template instantiation (deterministic defaults)
  */
-export const RELATIONSHIP_ENDPOINT_RULES: Readonly<Record<string, RelationshipEndpointRule>> = {
+export const RELATIONSHIP_ENDPOINT_RULES: Readonly<
+  Record<string, RelationshipEndpointRule>
+> = {
   // Capability decomposition (business structure)
   DECOMPOSES_TO: { from: ['Capability'], to: ['Capability'] },
   COMPOSED_OF: {
@@ -32,7 +34,10 @@ export const RELATIONSHIP_ENDPOINT_RULES: Readonly<Record<string, RelationshipEn
   TRIGGERS: { from: ['BusinessProcess'], to: ['BusinessProcess'] },
 
   // Enterprise / organization
-  OWNS: { from: ['Enterprise'], to: ['Enterprise', 'Capability', 'Application', 'Programme'] },
+  OWNS: {
+    from: ['Enterprise'],
+    to: ['Enterprise', 'Capability', 'Application', 'Programme'],
+  },
   HAS: { from: ['Enterprise'], to: ['Department'] },
 
   // Capability realization by business process
@@ -41,7 +46,10 @@ export const RELATIONSHIP_ENDPOINT_RULES: Readonly<Record<string, RelationshipEn
   // Application services
   EXPOSES: { from: ['Application'], to: ['ApplicationService'] },
   PROVIDED_BY: { from: ['ApplicationService'], to: ['Application'] },
-  USED_BY: { from: ['ApplicationService'], to: ['Application', 'BusinessProcess'] },
+  USED_BY: {
+    from: ['ApplicationService'],
+    to: ['Application', 'BusinessProcess'],
+  },
   SUPPORTS: { from: ['ApplicationService'], to: ['BusinessService'] },
 
   // Application service dependencies
@@ -131,10 +139,15 @@ export const RELATIONSHIP_ENDPOINT_RULES: Readonly<Record<string, RelationshipEn
   IMPLEMENTS: { from: ['Project'], to: ['Application'] },
 
   // Implementation & Migration (legacy)
-  DELIVERS: { from: ['Programme'], to: ['Capability', 'Application', 'Technology'] },
+  DELIVERS: {
+    from: ['Programme'],
+    to: ['Capability', 'Application', 'Technology'],
+  },
 } as const;
 
-export function getRelationshipEndpointRule(type: string): RelationshipEndpointRule | null {
+export function getRelationshipEndpointRule(
+  type: string,
+): RelationshipEndpointRule | null {
   const key = (type ?? '').trim();
   return RELATIONSHIP_ENDPOINT_RULES[key] ?? null;
 }

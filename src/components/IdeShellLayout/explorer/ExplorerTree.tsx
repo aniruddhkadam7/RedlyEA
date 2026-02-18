@@ -20,8 +20,6 @@
 import {
   CheckOutlined,
   CloseOutlined,
-  EditOutlined,
-  FileTextOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { useModel } from '@umijs/max';
@@ -38,7 +36,6 @@ import {
   Select,
   Space,
   Tag,
-  Tooltip,
   Tree,
   Typography,
 } from 'antd';
@@ -113,11 +110,7 @@ import {
   getDefaultExpandedKeys,
   resolveArchitectureName,
 } from './explorerNodeRegistry';
-import {
-  assertCanPerform,
-  canPerform,
-  type ExplorerAction,
-} from './explorerPermissions';
+import { canPerform, type ExplorerAction } from './explorerPermissions';
 import {
   buildExplorerTree,
   type ExplorerTreeInput,
@@ -308,7 +301,7 @@ const ExplorerTree: React.FC = () => {
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   // §4 Multi-select for drag
-  const [checkedKeys, setCheckedKeys] = React.useState<React.Key[]>([]);
+  const [checkedKeys, _setCheckedKeys] = React.useState<React.Key[]>([]);
 
   // §8 Change type modal state
   const [changeTypeModalOpen, setChangeTypeModalOpen] = React.useState(false);
@@ -340,7 +333,7 @@ const ExplorerTree: React.FC = () => {
   const customFrameworkActive =
     (metadata?.enabledFrameworks?.includes('Custom') ?? false) ||
     metadata?.referenceFramework === 'Custom';
-  const customModelingEnabled = customFrameworkActive
+  const _customModelingEnabled = customFrameworkActive
     ? isCustomFrameworkModelingEnabled(
         'Custom',
         metadata?.frameworkConfig ?? undefined,
@@ -495,7 +488,7 @@ const ExplorerTree: React.FC = () => {
         const key = typeof node.key === 'string' ? node.key : '';
         const titleText = typeof node.title === 'string' ? node.title : '';
         const data = (node as any)?.data;
-        const nameText = data?.elementId ? '' : ''; // already in title
+        const _nameText = data?.elementId ? '' : ''; // already in title
         const searchTarget = titleText.toLowerCase();
 
         if (searchTarget.includes(term)) {
@@ -557,7 +550,7 @@ const ExplorerTree: React.FC = () => {
   }, [filteredTreeData, expandedKeys]);
 
   // --- Selected keys ---
-  const normalizeElementKey = React.useCallback((rawKey: string) => {
+  const _normalizeElementKey = React.useCallback((rawKey: string) => {
     const trimmed = rawKey
       .replace('element:', '')
       .replace('explorer:element:', '')
@@ -714,7 +707,11 @@ const ExplorerTree: React.FC = () => {
         lastModifiedBy: actor,
         lifecycleState: payload.lifecycleState,
       };
-      const res = next.addObject({ id: elementId, type: payload.type, attributes });
+      const res = next.addObject({
+        id: elementId,
+        type: payload.type,
+        attributes,
+      });
       if (!res.ok) {
         message.error(res.error);
         return false;
@@ -748,7 +745,11 @@ const ExplorerTree: React.FC = () => {
         kind: 'repository',
         keys: [EXPLORER_KEYS.element(elementId)],
       });
-      setSelectedElement({ id: elementId, type: payload.type, source: 'Explorer' });
+      setSelectedElement({
+        id: elementId,
+        type: payload.type,
+        source: 'Explorer',
+      });
       openPropertiesPanel({
         elementId,
         elementType: payload.type,
@@ -860,7 +861,10 @@ const ExplorerTree: React.FC = () => {
   ]);
 
   const scopedCreateTypeOptions = React.useMemo(() => {
-    if (!createElementModalAllowedTypes || createElementModalAllowedTypes.length === 0) {
+    if (
+      !createElementModalAllowedTypes ||
+      createElementModalAllowedTypes.length === 0
+    ) {
       return creatableTypeOptions;
     }
     return creatableTypeOptions.filter((option) =>
@@ -1786,7 +1790,10 @@ const ExplorerTree: React.FC = () => {
               typeof type === 'string' && creatableTypes.has(type),
           );
 
-          if ((action.allowedTypes?.length ?? 0) > 0 && contextTypes.length === 0) {
+          if (
+            (action.allowedTypes?.length ?? 0) > 0 &&
+            contextTypes.length === 0
+          ) {
             message.error(
               'No creatable element types are available for this container in the current framework.',
             );

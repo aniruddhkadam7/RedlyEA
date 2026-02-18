@@ -1,9 +1,13 @@
-import { createView, getViewRepository } from '../../backend/views/ViewRepositoryStore';
 import type { ViewDefinition } from '../../backend/views/ViewDefinition';
+import {
+  createView,
+  getViewRepository,
+} from '../../backend/views/ViewRepositoryStore';
 
 const makeId = (): string => {
   try {
-    if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
+    if (typeof globalThis.crypto?.randomUUID === 'function')
+      return globalThis.crypto.randomUUID();
   } catch {
     // ignore
   }
@@ -16,7 +20,9 @@ const upsertByName = (name: string, viewFactory: () => ViewDefinition) => {
   const repo = getViewRepository();
   const existing = repo
     .listAllViews()
-    .find((v) => (v.name ?? '').trim().toLowerCase() === name.trim().toLowerCase());
+    .find(
+      (v) => (v.name ?? '').trim().toLowerCase() === name.trim().toLowerCase(),
+    );
   if (existing) return;
 
   const view = viewFactory();
@@ -39,7 +45,8 @@ export function seedDefaultViewsForDomainScope(): void {
   upsertByName('Domain Capability Traceability', () => ({
     id: makeId(),
     name: 'Domain Capability Traceability',
-    description: 'Domain capability-to-process traceability (focused business view).',
+    description:
+      'Domain capability-to-process traceability (focused business view).',
     viewType: 'CapabilityMap',
     architectureLayer: 'Business',
     allowedElementTypes: ['Capability', 'BusinessProcess'],

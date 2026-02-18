@@ -1,12 +1,22 @@
-import crypto from 'crypto';
-
-import type { ImpactAnalysisRequest } from './ImpactAnalysisRequest';
-import type { ImpactAnalysisResponseData, ComposeImpactAnalysisResponseOptions } from './ImpactAnalysisApiComposer';
+import crypto from 'node:crypto';
+import {
+  asDomainError,
+  DomainError,
+  type DomainErrorCode,
+} from '../reliability/DomainError';
+import type {
+  ComposeImpactAnalysisResponseOptions,
+  ImpactAnalysisResponseData,
+} from './ImpactAnalysisApiComposer';
 import { composeImpactAnalysisResponse } from './ImpactAnalysisApiComposer';
 import type { ImpactQuerySafeguards } from './ImpactAnalysisEngine';
-import { asDomainError, DomainError, type DomainErrorCode } from '../reliability/DomainError';
+import type { ImpactAnalysisRequest } from './ImpactAnalysisRequest';
 
-export type AsyncAnalysisStatus = 'Pending' | 'Running' | 'Completed' | 'Aborted';
+export type AsyncAnalysisStatus =
+  | 'Pending'
+  | 'Running'
+  | 'Completed'
+  | 'Aborted';
 
 export type AsyncImpactAnalysisJobInfo = {
   jobId: string;
@@ -18,7 +28,11 @@ export type AsyncImpactAnalysisJobInfo = {
 
 type AsyncImpactAnalysisJobRecord = AsyncImpactAnalysisJobInfo & {
   request: ImpactAnalysisRequest;
-  options: { includePaths: boolean; safeguards?: Partial<ImpactQuerySafeguards>; timeoutMs?: number };
+  options: {
+    includePaths: boolean;
+    safeguards?: Partial<ImpactQuerySafeguards>;
+    timeoutMs?: number;
+  };
   abortController?: AbortController;
   result?: ImpactAnalysisResponseData;
   errorMessage?: string;
@@ -62,7 +76,9 @@ export class AsyncImpactAnalysisJobManager {
     const cutoff = nowMs - this.config.completedJobTtlMs;
     for (const [id, job] of this.jobsById) {
       if (job.status !== 'Completed' && job.status !== 'Aborted') continue;
-      const completedAtMs = job.completedAt ? Date.parse(job.completedAt) : Number.NaN;
+      const completedAtMs = job.completedAt
+        ? Date.parse(job.completedAt)
+        : Number.NaN;
       if (Number.isFinite(completedAtMs) && completedAtMs < cutoff) {
         this.jobsById.delete(id);
       }
@@ -73,7 +89,11 @@ export class AsyncImpactAnalysisJobManager {
 
     const candidates = Array.from(this.jobsById.values())
       .filter((j) => j.status === 'Completed' || j.status === 'Aborted')
-      .sort((a, b) => compareStrings(a.completedAt ?? '', b.completedAt ?? '') || compareStrings(a.createdAt, b.createdAt));
+      .sort(
+        (a, b) =>
+          compareStrings(a.completedAt ?? '', b.completedAt ?? '') ||
+          compareStrings(a.createdAt, b.createdAt),
+      );
 
     for (const job of candidates) {
       if (this.jobsById.size <= this.config.maxStoredJobs) break;
@@ -83,7 +103,11 @@ export class AsyncImpactAnalysisJobManager {
 
   createJob(input: {
     request: ImpactAnalysisRequest;
-    options: { includePaths: boolean; safeguards?: Partial<ImpactQuerySafeguards>; timeoutMs?: number };
+    options: {
+      includePaths: boolean;
+      safeguards?: Partial<ImpactQuerySafeguards>;
+      timeoutMs?: number;
+    };
   }): AsyncImpactAnalysisJobInfo {
     this.cleanup();
 
@@ -105,7 +129,10 @@ export class AsyncImpactAnalysisJobManager {
       options: {
         includePaths: input.options.includePaths === true,
         safeguards: input.options.safeguards,
-        timeoutMs: typeof input.options.timeoutMs === 'number' ? input.options.timeoutMs : undefined,
+        timeoutMs:
+          typeof input.options.timeoutMs === 'number'
+            ? input.options.timeoutMs
+            : undefined,
       },
     };
 
@@ -119,9 +146,12 @@ export class AsyncImpactAnalysisJobManager {
     return job ? this.toInfo(job) : null;
   }
 
-  getJobResult(
-    jobId: string,
-  ): { status: AsyncAnalysisStatus; result?: ImpactAnalysisResponseData; errorMessage?: string; errorCode?: DomainErrorCode } | null {
+  getJobResult(jobId: string): {
+    status: AsyncAnalysisStatus;
+    result?: ImpactAnalysisResponseData;
+    errorMessage?: string;
+    errorCode?: DomainErrorCode;
+  } | null {
     this.cleanup();
     const job = this.jobsById.get(jobId);
     if (!job) return null;
@@ -134,16 +164,23 @@ export class AsyncImpactAnalysisJobManager {
     };
   }
 
-  startJob(jobId: string): { ok: boolean; job?: AsyncImpactAnalysisJobInfo; errorMessage?: string } {
+  startJob(jobId: string): {
+    ok: boolean;
+    job?: AsyncImpactAnalysisJobInfo;
+    errorMessage?: string;
+  } {
     this.cleanup();
 
     const job = this.jobsById.get(jobId);
     if (!job) return { ok: false, errorMessage: 'Job not found.' };
 
-    if (job.status === 'Completed' || job.status === 'Aborted') return { ok: true, job: this.toInfo(job) };
+    if (job.status === 'Completed' || job.status === 'Aborted')
+      return { ok: true, job: this.toInfo(job) };
     if (job.status === 'Running') return { ok: true, job: this.toInfo(job) };
 
-    const runningCount = Array.from(this.jobsById.values()).filter((j) => j.status === 'Running').length;
+    const runningCount = Array.from(this.jobsById.values()).filter(
+      (j) => j.status === 'Running',
+    ).length;
     if (runningCount >= this.config.maxRunningJobs) {
       return {
         ok: false,
@@ -161,13 +198,17 @@ export class AsyncImpactAnalysisJobManager {
     return { ok: true, job: this.toInfo(job) };
   }
 
-  abortJob(jobId: string, reason?: string): { ok: boolean; job?: AsyncImpactAnalysisJobInfo; errorMessage?: string } {
+  abortJob(
+    jobId: string,
+    reason?: string,
+  ): { ok: boolean; job?: AsyncImpactAnalysisJobInfo; errorMessage?: string } {
     this.cleanup();
 
     const job = this.jobsById.get(jobId);
     if (!job) return { ok: false, errorMessage: 'Job not found.' };
 
-    if (job.status === 'Completed' || job.status === 'Aborted') return { ok: true, job: this.toInfo(job) };
+    if (job.status === 'Completed' || job.status === 'Aborted')
+      return { ok: true, job: this.toInfo(job) };
 
     job.abortReason = (reason ?? '').trim() || 'user_requested';
 
@@ -189,7 +230,9 @@ export class AsyncImpactAnalysisJobManager {
     return { ok: true, job: this.toInfo(job) };
   }
 
-  private toInfo(job: AsyncImpactAnalysisJobRecord): AsyncImpactAnalysisJobInfo {
+  private toInfo(
+    job: AsyncImpactAnalysisJobRecord,
+  ): AsyncImpactAnalysisJobInfo {
     return {
       jobId: job.jobId,
       status: job.status,
@@ -214,11 +257,16 @@ export class AsyncImpactAnalysisJobManager {
       job.result = result;
 
       // If the engine aborted (safeguards or user abort), mark job Aborted.
-      job.status = result.analysisStats.aborted || abortSignal?.aborted ? 'Aborted' : 'Completed';
+      job.status =
+        result.analysisStats.aborted || abortSignal?.aborted
+          ? 'Aborted'
+          : 'Completed';
       job.completedAt = nowIso();
 
       if (job.status === 'Aborted' && !job.errorMessage) {
-        job.errorMessage = abortSignal?.aborted ? 'Aborted by user.' : 'Aborted due to safeguards.';
+        job.errorMessage = abortSignal?.aborted
+          ? 'Aborted by user.'
+          : 'Aborted due to safeguards.';
         job.errorCode = undefined;
       }
     } catch (err) {
@@ -235,4 +283,5 @@ export class AsyncImpactAnalysisJobManager {
 }
 
 // Singleton in-memory manager for the running process.
-export const asyncImpactAnalysisJobManager = new AsyncImpactAnalysisJobManager();
+export const asyncImpactAnalysisJobManager =
+  new AsyncImpactAnalysisJobManager();

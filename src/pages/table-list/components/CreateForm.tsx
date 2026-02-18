@@ -9,8 +9,8 @@ import { FormattedMessage, useIntl } from '@umijs/max';
 import { useRequest } from 'ahooks';
 import { Button } from 'antd';
 import type { FC } from 'react';
-import { addRule } from '@/services/ant-design-pro/api';
 import { message } from '@/ea/eaConsole';
+import { addRule } from '@/services/ant-design-pro/api';
 
 interface CreateFormProps {
   reload?: ActionType['reload'];

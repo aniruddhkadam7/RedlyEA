@@ -1,4 +1,8 @@
-export type CopilotExpectedOutputType = 'explanation' | 'suggestion' | 'warning' | 'scenario';
+export type CopilotExpectedOutputType =
+  | 'explanation'
+  | 'suggestion'
+  | 'warning'
+  | 'scenario';
 
 /**
  * Explicit intent values (deterministic, no free-text prompts).

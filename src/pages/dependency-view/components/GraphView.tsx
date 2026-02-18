@@ -1,23 +1,24 @@
 // GLOBAL RULE: Diagram interactions are navigational only. No diagram interaction may create, modify, or infer architecture truth.
 import { Button } from 'antd';
+import cytoscape, { type Core } from 'cytoscape';
 import React, { useCallback, useEffect, useRef } from 'react';
-import cytoscape, { Core } from 'cytoscape';
-
-import type { ObjectType, RelationshipType } from '../utils/eaMetaModel';
-import type { EaRepository } from '../utils/eaRepository';
-import type { EaViewDefinition } from '../utils/eaViewDefinitions';
-import type { LifecycleCoverage } from '@/repository/repositoryMetadata';
-import { isObjectVisibleForLifecycleCoverage } from '@/repository/lifecycleCoveragePolicy';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import { useIdeShell } from '@/components/IdeShellLayout';
 import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
 import { message } from '@/ea/eaConsole';
+import { useIdeSelection } from '@/ide/IdeSelectionContext';
+import { isObjectVisibleForLifecycleCoverage } from '@/repository/lifecycleCoveragePolicy';
+import type { LifecycleCoverage } from '@/repository/repositoryMetadata';
+import type { ObjectType, RelationshipType } from '../utils/eaMetaModel';
+import type { EaRepository } from '../utils/eaRepository';
+import type { EaViewDefinition } from '../utils/eaViewDefinitions';
 
 const GRID_SIZE = 12;
 
 const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 
-const loadLayoutPositions = (viewId: string): Record<string, { x: number; y: number }> => {
+const loadLayoutPositions = (
+  viewId: string,
+): Record<string, { x: number; y: number }> => {
   return ViewLayoutStore.get(viewId);
 };
 
@@ -97,7 +98,9 @@ const filterGraphByDepth = (
 
   return {
     nodes: data.nodes.filter((n) => included.has(n.id)),
-    edges: data.edges.filter((e) => included.has(e.fromId) && included.has(e.toId)),
+    edges: data.edges.filter(
+      (e) => included.has(e.fromId) && included.has(e.toId),
+    ),
   };
 };
 
@@ -137,7 +140,10 @@ const GraphView = ({
     const viewId = viewDefinition?.id;
     if (viewId) clearLayoutPositions(viewId);
     try {
-      cy.layout({ name: defaultLayout ?? viewDefinition.defaultLayout ?? 'grid', avoidOverlap: true }).run();
+      cy.layout({
+        name: defaultLayout ?? viewDefinition.defaultLayout ?? 'grid',
+        avoidOverlap: true,
+      }).run();
       cy.fit(undefined, 24);
     } catch {
       // Best-effort only.
@@ -154,15 +160,21 @@ const GraphView = ({
     }
   }, []);
 
-  const preventExternalDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    // Canvas is read-only; block drag/drop to avoid accidental creation flows.
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
+  const preventExternalDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      // Canvas is read-only; block drag/drop to avoid accidental creation flows.
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    [],
+  );
 
-  const preventContextMenu = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-  }, []);
+  const preventContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+    },
+    [],
+  );
 
   const preventEditingShortcuts = useCallback((event: KeyboardEvent) => {
     const key = event.key?.toLowerCase();
@@ -192,9 +204,17 @@ const GraphView = ({
       const selected = nodeByIdRef.current.get(nodeId);
       if (selected) {
         setSelection({ kind: 'repositoryElement', keys: [selected.id] });
-        setSelectedElement({ id: selected.id, type: selected.objectType, source: 'Diagram' });
+        setSelectedElement({
+          id: selected.id,
+          type: selected.objectType,
+          source: 'Diagram',
+        });
         if (opts?.openProperties) {
-          openPropertiesPanel({ elementId: selected.id, elementType: selected.objectType, dock: 'right' });
+          openPropertiesPanel({
+            elementId: selected.id,
+            elementType: selected.objectType,
+            dock: 'right',
+          });
         }
       }
 
@@ -213,11 +233,11 @@ const GraphView = ({
       const pickOrigin = () => {
         if (focusedNodeIdRef.current) {
           const n = cy.getElementById(focusedNodeIdRef.current);
-          if (n && n.nonempty()) return n;
+          if (n?.nonempty()) return n;
         }
         if (selection?.selectedElementId) {
           const n = cy.getElementById(selection.selectedElementId);
-          if (n && n.nonempty()) return n;
+          if (n?.nonempty()) return n;
         }
         return nodes[0];
       };
@@ -351,15 +371,25 @@ const GraphView = ({
     let raf2: number | undefined;
 
     const allowedObjectTypeSet = new Set(viewDefinition.allowedObjectTypes);
-    const allowedRelationshipTypeSet = new Set(viewDefinition.allowedRelationshipTypes);
+    const allowedRelationshipTypeSet = new Set(
+      viewDefinition.allowedRelationshipTypes,
+    );
 
     const nodes: EaGraphNode[] = Array.from(eaRepository.objects.values())
       .filter((obj) => allowedObjectTypeSet.has(obj.type))
       .filter((obj) => obj.attributes.hiddenFromDiagrams !== true)
       .filter((obj) => obj.attributes._deleted !== true)
-      .filter((obj) => isObjectVisibleForLifecycleCoverage(lifecycleCoverage, obj.attributes ?? {}))
+      .filter((obj) =>
+        isObjectVisibleForLifecycleCoverage(
+          lifecycleCoverage,
+          obj.attributes ?? {},
+        ),
+      )
       .map((obj) => {
-        const name = typeof obj.attributes.name === 'string' && obj.attributes.name.trim() ? obj.attributes.name : obj.id;
+        const name =
+          typeof obj.attributes.name === 'string' && obj.attributes.name.trim()
+            ? obj.attributes.name
+            : obj.id;
         return {
           id: obj.id,
           label: name,
@@ -381,7 +411,8 @@ const GraphView = ({
       }));
 
     const data = { nodes, edges };
-    const resolvedRootId = rootNodeId && nodes.some((n) => n.id === rootNodeId) ? rootNodeId : '';
+    const resolvedRootId =
+      rootNodeId && nodes.some((n) => n.id === rootNodeId) ? rootNodeId : '';
 
     const filtered =
       viewMode === 'landscape'
@@ -431,14 +462,17 @@ const GraphView = ({
     const cy = cytoscape({
       container: containerRef.current,
       elements,
-      layout: { name: defaultLayout ?? viewDefinition.defaultLayout ?? 'grid', avoidOverlap: true },
+      layout: {
+        name: defaultLayout ?? viewDefinition.defaultLayout ?? 'grid',
+        avoidOverlap: true,
+      },
       // READ-ONLY data; layout moves are allowed for presentation only (no persistence)
-      autoungrabify: false,       // Allow dragging nodes to adjust layout locally
-      autounselectify: true,      // Disable selection state; taps still trigger highlighting
+      autoungrabify: false, // Allow dragging nodes to adjust layout locally
+      autounselectify: true, // Disable selection state; taps still trigger highlighting
       boxSelectionEnabled: false, // No box selection
-      selectionType: 'single',    // Single selection only
-      userPanningEnabled: true,   // Navigation only
-      userZoomingEnabled: true,   // Navigation only
+      selectionType: 'single', // Single selection only
+      userPanningEnabled: true, // Navigation only
+      userZoomingEnabled: true, // Navigation only
       // NOTE: Element creation is NOT supported on canvas.
       // Use Explorer context menu (Right-click on collection > + Create [Type])
       style: [
@@ -540,7 +574,9 @@ const GraphView = ({
 
     if (savedPositions && Object.keys(savedPositions).length > 0) {
       cy.batch(() => {
-        cy.nodes().positions((node) => savedPositions[node.id()] ?? node.position());
+        cy.nodes().positions(
+          (node) => savedPositions[node.id()] ?? node.position(),
+        );
       });
     }
 
@@ -598,7 +634,8 @@ const GraphView = ({
 
       cy.nodes().forEach((n) => {
         const pos = n.position();
-        const within = pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY;
+        const within =
+          pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY;
         if (within) {
           visibleNodes.add(n.id());
           if (n.hidden()) n.show();
@@ -638,19 +675,31 @@ const GraphView = ({
       const directDownstream = new Set<string>(outgoing.get(nodeId) ?? []);
 
       if (directUpstream.size > 0) {
-        const upstreamNodes = cy.nodes().filter((n) => directUpstream.has(n.id()));
+        const upstreamNodes = cy
+          .nodes()
+          .filter((n) => directUpstream.has(n.id()));
         const upstreamEdges = cy
           .edges()
-          .filter((e) => directUpstream.has(e.data('source')) && e.data('target') === nodeId);
+          .filter(
+            (e) =>
+              directUpstream.has(e.data('source')) &&
+              e.data('target') === nodeId,
+          );
         upstreamNodes.addClass('hover-upstream');
         upstreamEdges.addClass('hover-upstream');
       }
 
       if (directDownstream.size > 0) {
-        const downstreamNodes = cy.nodes().filter((n) => directDownstream.has(n.id()));
+        const downstreamNodes = cy
+          .nodes()
+          .filter((n) => directDownstream.has(n.id()));
         const downstreamEdges = cy
           .edges()
-          .filter((e) => e.data('source') === nodeId && directDownstream.has(e.data('target')));
+          .filter(
+            (e) =>
+              e.data('source') === nodeId &&
+              directDownstream.has(e.data('target')),
+          );
         downstreamNodes.addClass('hover-downstream');
         downstreamEdges.addClass('hover-downstream');
       }
@@ -717,7 +766,11 @@ const GraphView = ({
         visible: true,
         x: pos.x,
         y: pos.y,
-        lines: [`Relationship: ${relType}`, `Source: ${sourceName}`, `Target: ${targetName}`],
+        lines: [
+          `Relationship: ${relType}`,
+          `Source: ${sourceName}`,
+          `Target: ${targetName}`,
+        ],
       });
     };
 
@@ -799,14 +852,23 @@ const GraphView = ({
     if (!activeId) return;
 
     const node = cy.getElementById(activeId);
-    if (node && node.nonempty()) {
+    if (node?.nonempty()) {
       node.addClass('selected-from-explorer');
     }
   }, [selection?.selectedElementId]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, display: 'flex', gap: 8 }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          zIndex: 20,
+          display: 'flex',
+          gap: 8,
+        }}
+      >
         <Button size="small" onClick={handleResetLayout}>
           Reset Layout
         </Button>
@@ -817,11 +879,15 @@ const GraphView = ({
       <div
         id="graph-container"
         ref={containerRef}
-        style={{ width: '100%', height: '100%', backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 12px)' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 12px)',
+        }}
         onDragEnter={preventExternalDrop}
         onDragOver={preventExternalDrop}
         onDrop={preventExternalDrop}
-        tabIndex={0}
         onKeyDown={handleKeyDown}
       />
       {edgeTooltip.visible ? (
@@ -843,7 +909,7 @@ const GraphView = ({
           }}
         >
           {edgeTooltip.lines.map((line, idx) => (
-            <div key={idx}>{line}</div>
+            <div key={`line-${idx}-${line}`}>{line}</div>
           ))}
         </div>
       ) : null}

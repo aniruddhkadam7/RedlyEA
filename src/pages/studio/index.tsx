@@ -1,6 +1,6 @@
-import React from 'react';
 import { history, useParams } from '@umijs/max';
 import { Alert, Typography } from 'antd';
+import React from 'react';
 import { setStudioActiveRepositoryId } from '@/services/studio';
 
 const StudioRuntimePage: React.FC = () => {
@@ -73,7 +73,12 @@ const StudioRuntimePage: React.FC = () => {
   if (error) {
     return (
       <div style={{ padding: 24 }}>
-        <Alert type="error" showIcon message="Studio workspace error" description={error} />
+        <Alert
+          type="error"
+          showIcon
+          message="Studio workspace error"
+          description={error}
+        />
       </div>
     );
   }

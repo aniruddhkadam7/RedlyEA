@@ -1,16 +1,13 @@
-import crypto from 'crypto';
-
-import { createArchitectureRepository } from '../repository/ArchitectureRepository';
-import { createRelationshipRepository } from '../repository/RelationshipRepository';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-
-import type { Capability } from '../repository/Capability';
-import type { BusinessProcess } from '../repository/BusinessProcess';
+import crypto from 'node:crypto';
 import type { Application } from '../repository/Application';
-import type { Technology } from '../repository/Technology';
-import type { Programme } from '../repository/Programme';
-
 import type { RepositoryCollectionType } from '../repository/ArchitectureRepository';
+import { createArchitectureRepository } from '../repository/ArchitectureRepository';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import type { BusinessProcess } from '../repository/BusinessProcess';
+import type { Capability } from '../repository/Capability';
+import type { Programme } from '../repository/Programme';
+import { createRelationshipRepository } from '../repository/RelationshipRepository';
+import type { Technology } from '../repository/Technology';
 
 import { SeededRandom } from './SeededRandom';
 import type { SyntheticDataset } from './SyntheticDataset';
@@ -23,9 +20,15 @@ const uuid = (): string => {
   return crypto.createHash('sha1').update(basis).digest('hex');
 };
 
-const pick = <T>(arr: readonly T[], index: number): T => arr[Math.max(0, Math.min(arr.length - 1, index))];
+const pick = <T>(arr: readonly T[], index: number): T =>
+  arr[Math.max(0, Math.min(arr.length - 1, index))];
 
-type ElementKind = 'Programme' | 'Capability' | 'BusinessProcess' | 'Application' | 'Technology';
+type ElementKind =
+  | 'Programme'
+  | 'Capability'
+  | 'BusinessProcess'
+  | 'Application'
+  | 'Technology';
 
 type GeneratorOptions = {
   seed: number;
@@ -68,7 +71,12 @@ const defaults: GeneratorOptions = {
 const baseElement = (
   id: string,
   name: string,
-  layer: 'Business' | 'Application' | 'Technology' | 'Implementation & Migration' | 'Governance',
+  layer:
+    | 'Business'
+    | 'Application'
+    | 'Technology'
+    | 'Implementation & Migration'
+    | 'Governance',
 ) => {
   const ts = nowIso();
   return {
@@ -92,7 +100,11 @@ const baseElement = (
   };
 };
 
-const add = <T>(repo: any, collection: RepositoryCollectionType, element: T) => {
+const add = <T>(
+  repo: any,
+  collection: RepositoryCollectionType,
+  element: T,
+) => {
   const result = repo.addElement(collection as any, element as any);
   if (!result.ok) throw new Error(result.error);
 };
@@ -125,7 +137,9 @@ const relationshipBase = (args: {
   };
 };
 
-export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>): SyntheticDataset => {
+export const generateSyntheticDataset = (
+  overrides?: Partial<GeneratorOptions>,
+): SyntheticDataset => {
   const opts: GeneratorOptions = { ...defaults, ...(overrides ?? {}) };
   const rng = new SeededRandom(opts.seed);
 
@@ -148,12 +162,18 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
     const p: Programme = {
       ...baseElement(id, `Programme ${i + 1}`, 'Implementation & Migration'),
       elementType: 'Programme',
-      programmeType: pick(['Transformation', 'Compliance', 'Modernization'] as const, rng.nextInt(3)),
+      programmeType: pick(
+        ['Transformation', 'Compliance', 'Modernization'] as const,
+        rng.nextInt(3),
+      ),
       strategicObjective: 'Synthetic objective',
       startDate: nowIso(),
       endDate: nowIso(),
       budgetEstimate: 1_000_000 + rng.nextInt(5_000_000),
-      fundingStatus: pick(['Approved', 'Proposed', 'Rejected'] as const, rng.nextInt(3)),
+      fundingStatus: pick(
+        ['Approved', 'Proposed', 'Rejected'] as const,
+        rng.nextInt(3),
+      ),
       expectedBusinessImpact: 'Synthetic impact',
       riskLevel: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
     };
@@ -165,7 +185,8 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
   // Capabilities with a parent hierarchy (deep-ish, but no self-relationships required)
   // We produce a deterministic parent assignment respecting the requested depth/branching.
   const requestedCaps = Math.max(0, Math.trunc(opts.capabilities));
-  const maxCaps = opts.businessProcesses > 0 ? Math.max(1, requestedCaps) : requestedCaps;
+  const maxCaps =
+    opts.businessProcesses > 0 ? Math.max(1, requestedCaps) : requestedCaps;
   const capLevels = Math.max(1, Math.trunc(opts.capabilityHierarchyDepth));
 
   const capsByDepth: string[][] = Array.from({ length: capLevels }, () => []);
@@ -181,7 +202,10 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
       valueStream: 'Synthetic',
       inScope: true,
       impactedByChange: true,
-      strategicImportance: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
+      strategicImportance: pick(
+        ['High', 'Medium', 'Low'] as const,
+        rng.nextInt(3),
+      ),
       maturityLevel: pick([1, 2, 3, 4, 5] as const, rng.nextInt(5)),
     };
     add(repo, 'capabilities', root);
@@ -190,7 +214,12 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
     inc('Capability');
 
     for (let i = 2; i <= maxCaps; i += 1) {
-      const depth = Math.min(capLevels - 1, Math.floor(Math.log(i) / Math.log(Math.max(2, opts.capabilityBranching))));
+      const depth = Math.min(
+        capLevels - 1,
+        Math.floor(
+          Math.log(i) / Math.log(Math.max(2, opts.capabilityBranching)),
+        ),
+      );
       const parentPool = capsByDepth[Math.max(0, depth - 1)] ?? capsByDepth[0];
       const parentId = parentPool.length ? rng.pick(parentPool) : rootId;
 
@@ -204,7 +233,10 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
         valueStream: 'Synthetic',
         inScope: true,
         impactedByChange: rng.nextFloat() < 0.7,
-        strategicImportance: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
+        strategicImportance: pick(
+          ['High', 'Medium', 'Low'] as const,
+          rng.nextInt(3),
+        ),
         maturityLevel: pick([1, 2, 3, 4, 5] as const, rng.nextInt(5)),
       };
       add(repo, 'capabilities', cap);
@@ -220,12 +252,21 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
     const t: Technology = {
       ...baseElement(id, `Technology ${i + 1}`, 'Technology'),
       elementType: 'Technology',
-      technologyType: pick(['Infrastructure', 'Platform', 'Service'] as const, rng.nextInt(3)),
-      technologyCategory: pick(['Compute', 'Storage', 'Network', 'Middleware'] as const, rng.nextInt(4)),
+      technologyType: pick(
+        ['Infrastructure', 'Platform', 'Service'] as const,
+        rng.nextInt(3),
+      ),
+      technologyCategory: pick(
+        ['Compute', 'Storage', 'Network', 'Middleware'] as const,
+        rng.nextInt(4),
+      ),
       vendor: 'Synthetic',
       version: `v${1 + rng.nextInt(10)}.${rng.nextInt(10)}`,
       supportEndDate: nowIso(),
-      obsolescenceRisk: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
+      obsolescenceRisk: pick(
+        ['High', 'Medium', 'Low'] as const,
+        rng.nextInt(3),
+      ),
       standardApproved: rng.nextFloat() < 0.8,
     };
     add(repo, 'technologies', t);
@@ -240,12 +281,27 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
       ...baseElement(id, `Application ${i + 1}`, 'Application'),
       elementType: 'Application',
       applicationCode: `APP-${String(i + 1).padStart(6, '0')}`,
-      applicationType: pick(['COTS', 'Custom', 'SaaS', 'Legacy'] as const, rng.nextInt(4)),
-      businessCriticality: pick(['Mission-Critical', 'High', 'Medium', 'Low'] as const, rng.nextInt(4)),
+      applicationType: pick(
+        ['COTS', 'Custom', 'SaaS', 'Legacy'] as const,
+        rng.nextInt(4),
+      ),
+      businessCriticality: pick(
+        ['Mission-Critical', 'High', 'Medium', 'Low'] as const,
+        rng.nextInt(4),
+      ),
       availabilityTarget: 99 + rng.nextFloat(),
-      deploymentModel: pick(['On-Prem', 'Cloud', 'Hybrid'] as const, rng.nextInt(3)),
-      vendorLockInRisk: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
-      technicalDebtLevel: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
+      deploymentModel: pick(
+        ['On-Prem', 'Cloud', 'Hybrid'] as const,
+        rng.nextInt(3),
+      ),
+      vendorLockInRisk: pick(
+        ['High', 'Medium', 'Low'] as const,
+        rng.nextInt(3),
+      ),
+      technicalDebtLevel: pick(
+        ['High', 'Medium', 'Low'] as const,
+        rng.nextInt(3),
+      ),
       annualRunCost: 50_000 + rng.nextInt(500_000),
       vendorName: 'Synthetic',
     };
@@ -265,7 +321,10 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
       processOwner: 'Synthetic',
       triggeringEvent: 'Synthetic trigger',
       expectedOutcome: 'Synthetic outcome',
-      frequency: pick(['Ad-hoc', 'Daily', 'Weekly', 'Monthly'] as const, rng.nextInt(4)),
+      frequency: pick(
+        ['Ad-hoc', 'Daily', 'Weekly', 'Monthly'] as const,
+        rng.nextInt(4),
+      ),
       criticality: pick(['High', 'Medium', 'Low'] as const, rng.nextInt(3)),
       regulatoryRelevant: rng.nextFloat() < 0.2,
       complianceNotes: 'Synthetic',
@@ -365,7 +424,10 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
 
   // INTEGRATES_WITH: Application -> Application
   // 1) Deep chain
-  const chainDepth = Math.min(appIds.length - 1, Math.max(0, Math.trunc(opts.appChainDepth)));
+  const chainDepth = Math.min(
+    appIds.length - 1,
+    Math.max(0, Math.trunc(opts.appChainDepth)),
+  );
   for (let i = 0; i < chainDepth; i += 1) {
     const from = appIds[i];
     const to = appIds[i + 1];
@@ -407,7 +469,12 @@ export const generateSyntheticDataset = (overrides?: Partial<GeneratorOptions>):
     }
   }
 
-  const elements = programmeIds.length + capabilityIds.length + processIds.length + appIds.length + techIds.length;
+  const elements =
+    programmeIds.length +
+    capabilityIds.length +
+    processIds.length +
+    appIds.length +
+    techIds.length;
   const relationships = relRepo.getAllRelationships().length;
 
   return {

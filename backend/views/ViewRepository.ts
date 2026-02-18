@@ -1,17 +1,23 @@
-import type { ViewDefinition, ViewScopeType, ViewType } from './ViewDefinition';
 import { getRelationshipEndpointRule } from '../relationships/RelationshipSemantics';
+import type { ViewDefinition, ViewScopeType, ViewType } from './ViewDefinition';
 
 export type ViewRepositoryCreateSuccess = { ok: true; view: ViewDefinition };
 export type ViewRepositoryCreateFailure = { ok: false; error: string };
-export type ViewRepositoryCreateResult = ViewRepositoryCreateSuccess | ViewRepositoryCreateFailure;
+export type ViewRepositoryCreateResult =
+  | ViewRepositoryCreateSuccess
+  | ViewRepositoryCreateFailure;
 
 export type ViewRepositoryDeleteSuccess = { ok: true; deleted: ViewDefinition };
 export type ViewRepositoryDeleteFailure = { ok: false; error: string };
-export type ViewRepositoryDeleteResult = ViewRepositoryDeleteSuccess | ViewRepositoryDeleteFailure;
+export type ViewRepositoryDeleteResult =
+  | ViewRepositoryDeleteSuccess
+  | ViewRepositoryDeleteFailure;
 
 export type ViewRepositoryUpdateSuccess = { ok: true; view: ViewDefinition };
 export type ViewRepositoryUpdateFailure = { ok: false; error: string };
-export type ViewRepositoryUpdateResult = ViewRepositoryUpdateSuccess | ViewRepositoryUpdateFailure;
+export type ViewRepositoryUpdateResult =
+  | ViewRepositoryUpdateSuccess
+  | ViewRepositoryUpdateFailure;
 
 const VIEW_TYPES: readonly ViewType[] = [
   'ApplicationDependency',
@@ -22,7 +28,8 @@ const VIEW_TYPES: readonly ViewType[] = [
 ] as const;
 
 const isValidViewType = (value: unknown): value is ViewType =>
-  typeof value === 'string' && (VIEW_TYPES as readonly string[]).includes(value);
+  typeof value === 'string' &&
+  (VIEW_TYPES as readonly string[]).includes(value);
 
 const VIEW_SCOPE_TYPES: readonly ViewScopeType[] = [
   'ENTIRE_REPOSITORY',
@@ -45,11 +52,15 @@ const normalizeList = (values: readonly string[]) =>
 const normalizeScopeType = (value: unknown): ViewScopeType => {
   if (typeof value !== 'string') return 'ENTIRE_REPOSITORY';
   const upper = value.trim().toUpperCase();
-  if ((VIEW_SCOPE_TYPES as readonly string[]).includes(upper)) return upper as ViewScopeType;
+  if ((VIEW_SCOPE_TYPES as readonly string[]).includes(upper))
+    return upper as ViewScopeType;
   return 'ENTIRE_REPOSITORY';
 };
 
-const hasAny = (set: ReadonlySet<string>, candidates: readonly string[]): boolean => {
+const hasAny = (
+  set: ReadonlySet<string>,
+  candidates: readonly string[],
+): boolean => {
   for (const c of candidates) if (set.has(c)) return true;
   return false;
 };
@@ -75,7 +86,7 @@ const hasEmbeddedPayload = (view: unknown): string | null => {
   if (!view || typeof view !== 'object') return null;
   const obj = view as Record<string, unknown>;
   for (const key of FORBIDDEN_EMBEDDED_KEYS) {
-    if (Object.prototype.hasOwnProperty.call(obj, key) && obj[key] != null) {
+    if (Object.hasOwn(obj, key) && obj[key] != null) {
       return key;
     }
   }
@@ -128,7 +139,8 @@ export class ViewRepository {
 
   constructor(projectId: string) {
     this.projectId = (projectId ?? '').trim();
-    if (!this.projectId) throw new Error('ViewRepository requires a projectId.');
+    if (!this.projectId)
+      throw new Error('ViewRepository requires a projectId.');
   }
 
   createView(view: ViewDefinition): ViewRepositoryCreateResult {
@@ -141,37 +153,57 @@ export class ViewRepository {
     }
 
     const id = (view.id ?? '').trim();
-    if (!id) return { ok: false, error: 'Rejected createView: id is required.' };
+    if (!id)
+      return { ok: false, error: 'Rejected createView: id is required.' };
 
     if (this.byId.has(id)) {
       return { ok: false, error: `Rejected createView: duplicate id "${id}".` };
     }
 
     const name = (view.name ?? '').trim();
-    if (!name) return { ok: false, error: 'Rejected createView: name is required.' };
+    if (!name)
+      return { ok: false, error: 'Rejected createView: name is required.' };
 
     const normalizedName = normalizeName(name);
     if (this.idByNormalizedName.has(normalizedName)) {
-      return { ok: false, error: `Rejected createView: duplicate view name "${name}" for project.` };
+      return {
+        ok: false,
+        error: `Rejected createView: duplicate view name "${name}" for project.`,
+      };
     }
 
     if (!isValidViewType(view.viewType)) {
-      return { ok: false, error: `Rejected createView: invalid viewType "${String(view.viewType)}".` };
+      return {
+        ok: false,
+        error: `Rejected createView: invalid viewType "${String(view.viewType)}".`,
+      };
     }
 
     const normalizedElementTypes = normalizeList(view.allowedElementTypes);
-    const normalizedRelationshipTypes = normalizeList(view.allowedRelationshipTypes);
+    const normalizedRelationshipTypes = normalizeList(
+      view.allowedRelationshipTypes,
+    );
     const normalizedScopeType = normalizeScopeType(view.scopeType);
     const normalizedScopeIds =
       normalizedScopeType === 'ENTIRE_REPOSITORY'
         ? []
-        : normalizeList(Array.isArray(view.scopeIds) ? (view.scopeIds as readonly string[]) : []);
+        : normalizeList(
+            Array.isArray(view.scopeIds)
+              ? (view.scopeIds as readonly string[])
+              : [],
+          );
 
     if (normalizedElementTypes.length === 0) {
-      return { ok: false, error: 'Rejected createView: allowedElementTypes must be non-empty.' };
+      return {
+        ok: false,
+        error: 'Rejected createView: allowedElementTypes must be non-empty.',
+      };
     }
 
-    if (normalizedScopeType !== 'ENTIRE_REPOSITORY' && normalizedScopeIds.length === 0) {
+    if (
+      normalizedScopeType !== 'ENTIRE_REPOSITORY' &&
+      normalizedScopeIds.length === 0
+    ) {
       return {
         ok: false,
         error: `Rejected createView: scopeIds must be provided for scopeType "${normalizedScopeType}".`,
@@ -212,7 +244,10 @@ export class ViewRepository {
         };
       }
 
-      if (!hasAny(elementTypeSet, endpoints.from) || !hasAny(elementTypeSet, endpoints.to)) {
+      if (
+        !hasAny(elementTypeSet, endpoints.from) ||
+        !hasAny(elementTypeSet, endpoints.to)
+      ) {
         return {
           ok: false,
           error: `Rejected createView: relationshipType "${relationshipType}" requires endpoint types (${endpoints.from.join(
@@ -240,10 +275,15 @@ export class ViewRepository {
 
   deleteViewById(id: string): ViewRepositoryDeleteResult {
     const key = (id ?? '').trim();
-    if (!key) return { ok: false, error: 'Rejected deleteViewById: id is required.' };
+    if (!key)
+      return { ok: false, error: 'Rejected deleteViewById: id is required.' };
 
     const existing = this.byId.get(key);
-    if (!existing) return { ok: false, error: `Rejected deleteViewById: no such view "${key}".` };
+    if (!existing)
+      return {
+        ok: false,
+        error: `Rejected deleteViewById: no such view "${key}".`,
+      };
 
     this.byId.delete(key);
     this.idByNormalizedName.delete(normalizeName(existing.name));
@@ -261,18 +301,34 @@ export class ViewRepository {
     const rootElementId = (args.rootElementId ?? '').trim();
     const rootElementType = (args.rootElementType ?? '').trim();
 
-    if (!viewId) return { ok: false, error: 'Rejected updateViewRoot: viewId is required.' };
-    if (!rootElementId) return { ok: false, error: 'Rejected updateViewRoot: rootElementId is required.' };
-    if (!rootElementType) return { ok: false, error: 'Rejected updateViewRoot: rootElementType is required.' };
+    if (!viewId)
+      return {
+        ok: false,
+        error: 'Rejected updateViewRoot: viewId is required.',
+      };
+    if (!rootElementId)
+      return {
+        ok: false,
+        error: 'Rejected updateViewRoot: rootElementId is required.',
+      };
+    if (!rootElementType)
+      return {
+        ok: false,
+        error: 'Rejected updateViewRoot: rootElementType is required.',
+      };
 
     const existing = this.byId.get(viewId);
-    if (!existing) return { ok: false, error: `Rejected updateViewRoot: no such view "${viewId}".` };
+    if (!existing)
+      return {
+        ok: false,
+        error: `Rejected updateViewRoot: no such view "${viewId}".`,
+      };
 
     const allowedTypes = new Set(existing.allowedElementTypes ?? []);
     if (!allowedTypes.has(rootElementType)) {
       return {
         ok: false,
-        error: `Rejected updateViewRoot: type "${rootElementType}" is not allowed for view "${existing.name}".` ,
+        error: `Rejected updateViewRoot: type "${rootElementType}" is not allowed for view "${existing.name}".`,
       };
     }
 
@@ -298,13 +354,20 @@ export class ViewRepository {
     for (const v of this.byId.values()) {
       if (v.viewType === viewType) results.push(v);
     }
-    results.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    results.sort(
+      (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+    );
     return results;
   }
 
   listAllViews(): ViewDefinition[] {
     const results = Array.from(this.byId.values());
-    results.sort((a, b) => a.viewType.localeCompare(b.viewType) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    results.sort(
+      (a, b) =>
+        a.viewType.localeCompare(b.viewType) ||
+        a.name.localeCompare(b.name) ||
+        a.id.localeCompare(b.id),
+    );
     return results;
   }
 }

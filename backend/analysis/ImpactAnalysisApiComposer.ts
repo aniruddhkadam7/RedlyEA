@@ -1,17 +1,17 @@
-import type { ImpactAnalysisRequest } from './ImpactAnalysisRequest';
-import type { ImpactSummary } from './ImpactSummary';
-import type { ImpactRankedElement } from './ImpactRanking';
-import type { ImpactPath } from './ImpactPath';
-import type { ImpactAnalysisAuditRecord } from './ImpactAudit';
-
-import { impactAnalysisEngine } from './ImpactAnalysisEngine';
-import type { ImpactQuerySafeguards } from './ImpactAnalysisEngine';
-import { impactSeverityScorer } from './ImpactSeverityScorer';
-import { impactRanking } from './ImpactRanking';
-import { impactAuditTrail } from './ImpactAuditTrail';
 import { DomainError } from '../reliability/DomainError';
+import type { ImpactQuerySafeguards } from './ImpactAnalysisEngine';
+import { impactAnalysisEngine } from './ImpactAnalysisEngine';
+import type { ImpactAnalysisRequest } from './ImpactAnalysisRequest';
+import type { ImpactAnalysisAuditRecord } from './ImpactAudit';
+import { impactAuditTrail } from './ImpactAuditTrail';
+import type { ImpactPath } from './ImpactPath';
+import type { ImpactRankedElement } from './ImpactRanking';
+import { impactRanking } from './ImpactRanking';
+import { impactSeverityScorer } from './ImpactSeverityScorer';
+import type { ImpactSummary } from './ImpactSummary';
 
-const asTrimmedString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const asTrimmedString = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
 export type ComposeImpactAnalysisResponseOptions = {
   includePaths: boolean;
@@ -82,7 +82,10 @@ export const composeImpactAnalysisResponse = async (
   const breakdown = { ...severityBreakdown };
   for (const s of scores) breakdown[s.severityLabel] += 1;
 
-  const maxDependencyDepthObserved = evidence.reduce((max, e) => Math.max(max, e.maxDepthObserved), 0);
+  const maxDependencyDepthObserved = evidence.reduce(
+    (max, e) => Math.max(max, e.maxDepthObserved),
+    0,
+  );
 
   const summary: ImpactSummary = {
     rootElementId: request.rootElementId,
@@ -120,6 +123,8 @@ export const composeImpactAnalysisResponse = async (
     analysisStats: analysis.stats,
     impactSummary: summary,
     rankedImpacts,
-    ...(includePaths ? { impactPaths: (analysis.paths ?? []) as readonly ImpactPath[] } : {}),
+    ...(includePaths
+      ? { impactPaths: (analysis.paths ?? []) as readonly ImpactPath[] }
+      : {}),
   };
 };

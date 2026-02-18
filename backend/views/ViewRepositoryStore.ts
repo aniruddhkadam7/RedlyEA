@@ -1,7 +1,7 @@
 import { projectStore } from '../project/ProjectStore';
 import type { Project } from '../project/project';
-import { ViewRepository } from './ViewRepository';
 import type { ViewDefinition } from './ViewDefinition';
+import { ViewRepository } from './ViewRepository';
 
 let viewRepository: ViewRepository | null = null;
 let viewsRevision = 0;
@@ -96,7 +96,12 @@ export function deleteView(viewId: string) {
   return result;
 }
 
-export function updateViewRoot(args: { viewId: string; rootElementId: string; rootElementType: string; lastModifiedAt?: string }) {
+export function updateViewRoot(args: {
+  viewId: string;
+  rootElementId: string;
+  rootElementType: string;
+  lastModifiedAt?: string;
+}) {
   const result = getViewRepository().updateViewRoot(args);
   if (result.ok) notifyViewsChanged();
   return result;

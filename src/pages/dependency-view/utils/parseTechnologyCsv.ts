@@ -14,11 +14,14 @@ export type TechnologyCsvParseFailure = {
   errors: string[];
 };
 
-export type TechnologyCsvParseResult = TechnologyCsvParseSuccess | TechnologyCsvParseFailure;
+export type TechnologyCsvParseResult =
+  | TechnologyCsvParseSuccess
+  | TechnologyCsvParseFailure;
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 // Minimal CSV parser that supports:
 // - commas
@@ -90,12 +93,15 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
 
-export function parseAndValidateTechnologyCsv(csvText: string): TechnologyCsvParseResult {
+export function parseAndValidateTechnologyCsv(
+  csvText: string,
+): TechnologyCsvParseResult {
   const errors: string[] = [];
 
   const rows = parseCsv(csvText);
@@ -111,7 +117,10 @@ export function parseAndValidateTechnologyCsv(csvText: string): TechnologyCsvPar
 
   const missing = requiredColumns.filter((col) => !indexByColumn.has(col));
   if (missing.length > 0) {
-    return { ok: false, errors: [`Missing required column(s): ${missing.join(', ')}.`] };
+    return {
+      ok: false,
+      errors: [`Missing required column(s): ${missing.join(', ')}.`],
+    };
   }
 
   const technologies: TechnologyCsvRow[] = [];
@@ -123,14 +132,15 @@ export function parseAndValidateTechnologyCsv(csvText: string): TechnologyCsvPar
 
     const displayRow = r + 1;
 
-    const rawId = (row[indexByColumn.get('id')!] ?? '').trim();
-    const rawName = (row[indexByColumn.get('name')!] ?? '').trim();
+    const rawId = (row[indexByColumn.get('id') ?? 0] ?? '').trim();
+    const rawName = (row[indexByColumn.get('name') ?? 0] ?? '').trim();
 
     if (!rawId) errors.push(`Row ${displayRow}: id is required.`);
     if (!rawName) errors.push(`Row ${displayRow}: name is required.`);
 
     if (rawId) {
-      if (seenIds.has(rawId)) errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
+      if (seenIds.has(rawId))
+        errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
       else seenIds.add(rawId);
     }
 
@@ -151,7 +161,8 @@ export function parseAndValidateTechnologyCsv(csvText: string): TechnologyCsvPar
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (technologies.length === 0) return { ok: false, errors: ['No technology rows found.'] };
+  if (technologies.length === 0)
+    return { ok: false, errors: ['No technology rows found.'] };
 
   return { ok: true, technologies };
 }

@@ -221,7 +221,7 @@ export const EXPLORER_KEYS = {
 // ---------------------------------------------------------------------------
 
 /** Semantic layer mapping from EaLayer to explorer categories. */
-const LAYER_TO_COMPONENT_CATEGORY: Record<EaLayer, string> = {
+const _LAYER_TO_COMPONENT_CATEGORY: Record<EaLayer, string> = {
   Business: 'business',
   Application: 'applications',
   Technology: 'technology',

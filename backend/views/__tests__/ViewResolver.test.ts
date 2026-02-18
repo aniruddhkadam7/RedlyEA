@@ -1,5 +1,5 @@
 describe('ViewResolver', () => {
-	test('test harness loads', () => {
-		expect(true).toBe(true);
-	});
+  test('test harness loads', () => {
+    expect(true).toBe(true);
+  });
 });

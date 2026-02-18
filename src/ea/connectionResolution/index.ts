@@ -6,43 +6,44 @@
  * connection path automatically.
  */
 
+export type { ConnectionEditorProps } from './ConnectionEditor';
+export { ConnectionEditor } from './ConnectionEditor';
 // ─── Core Engine ─────────────────────────────────────────────────────
 export {
-  resolveConnection,
-  resolveConnectionsForSource,
   findDirectRelationships,
   findIndirectPaths,
+  resolveConnection,
+  resolveConnectionsForSource,
 } from './connectionResolutionEngine';
-
+// ─── Visual Feedback ─────────────────────────────────────────────────
+export {
+  CONNECTION_FEEDBACK_CLASSES,
+  CONNECTION_FEEDBACK_COLORS,
+  clearConnectionFeedbackClasses,
+  getConnectionFeedback,
+  getConnectionFeedbackStyles,
+} from './connectionVisualFeedback';
+export type {
+  ConnectionPaletteSelection,
+  InlineConnectionPaletteProps,
+} from './InlineConnectionPalette';
+// ─── React Components ───────────────────────────────────────────────
+export { InlineConnectionPalette } from './InlineConnectionPalette';
 // ─── Types ───────────────────────────────────────────────────────────
 export type {
-  DirectRelationship,
-  IndirectHop,
-  IndirectPath,
+  ConnectionEditAction,
+  ConnectionFeedbackKind,
   ConnectionResolution,
   ConnectionResolutionKind,
   ConnectionVisualFeedback,
-  ConnectionFeedbackKind,
   CreatedConnection,
-  ConnectionEditAction,
+  DirectRelationship,
+  IndirectHop,
+  IndirectPath,
 } from './types';
-
-// ─── Visual Feedback ─────────────────────────────────────────────────
-export {
-  getConnectionFeedback,
-  getConnectionFeedbackStyles,
-  clearConnectionFeedbackClasses,
-  CONNECTION_FEEDBACK_CLASSES,
-  CONNECTION_FEEDBACK_COLORS,
-} from './connectionVisualFeedback';
-
-// ─── React Components ───────────────────────────────────────────────
-export { InlineConnectionPalette } from './InlineConnectionPalette';
-export type { ConnectionPaletteSelection, InlineConnectionPaletteProps } from './InlineConnectionPalette';
-
-export { ConnectionEditor } from './ConnectionEditor';
-export type { ConnectionEditorProps } from './ConnectionEditor';
-
+export type {
+  ConnectionResolutionState,
+  UseConnectionResolutionOptions,
+} from './useConnectionResolution';
 // ─── React Hook ──────────────────────────────────────────────────────
 export { useConnectionResolution } from './useConnectionResolution';
-export type { UseConnectionResolutionOptions, ConnectionResolutionState } from './useConnectionResolution';

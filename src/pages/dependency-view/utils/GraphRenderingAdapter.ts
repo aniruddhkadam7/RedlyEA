@@ -2,7 +2,10 @@ import type { ElementDefinition, LayoutOptions } from 'cytoscape';
 
 import type { BaseArchitectureElement } from '../../../../backend/repository/BaseArchitectureElement';
 import type { BaseArchitectureRelationship } from '../../../../backend/repository/BaseArchitectureRelationship';
-import type { Orientation, LayoutType } from '../../../../backend/views/ViewDefinition';
+import type {
+  LayoutType,
+  Orientation,
+} from '../../../../backend/views/ViewDefinition';
 import { getLifecycleStateFromAttributes } from '../../../repository/lifecycleCoveragePolicy';
 
 export type CytoscapeGraph = {
@@ -19,7 +22,9 @@ export type GraphRenderingAdapterInput = {
 
 const normalizeId = (value: string) => (value ?? '').trim();
 
-const layoutNameFor = (layoutType: LayoutType): 'grid' | 'cose' | 'breadthfirst' => {
+const layoutNameFor = (
+  layoutType: LayoutType,
+): 'grid' | 'cose' | 'breadthfirst' => {
   switch (layoutType) {
     case 'Grid':
       return 'grid';
@@ -35,7 +40,9 @@ const layoutNameFor = (layoutType: LayoutType): 'grid' | 'cose' | 'breadthfirst'
   }
 };
 
-const breadthfirstDirectionFor = (orientation: Orientation): 'rightward' | 'downward' => {
+const breadthfirstDirectionFor = (
+  orientation: Orientation,
+): 'rightward' | 'downward' => {
   return orientation === 'LeftToRight' ? 'rightward' : 'downward';
 };
 
@@ -74,7 +81,10 @@ export class GraphRenderingAdapter {
     const orderedNodeIds = [...(input.elements ?? [])]
       .map((e) => normalizeId(e.id))
       .sort((a, b) => a.localeCompare(b));
-    const seededPositions = deterministicPositions(orderedNodeIds, input.orientation);
+    const seededPositions = deterministicPositions(
+      orderedNodeIds,
+      input.orientation,
+    );
 
     const nodeIds = new Set<string>();
     const nodes: ElementDefinition[] = [...(input.elements ?? [])]
@@ -83,7 +93,9 @@ export class GraphRenderingAdapter {
       .map((e) => {
         const id = normalizeId(e.id);
         nodeIds.add(id);
-        const lifecycleState = getLifecycleStateFromAttributes((e as any)?.attributes);
+        const lifecycleState = getLifecycleStateFromAttributes(
+          (e as any)?.attributes,
+        );
         return {
           data: {
             id,
@@ -115,7 +127,9 @@ export class GraphRenderingAdapter {
     const normalizedEdges = edges.filter((e) => {
       const source = (e.data as any)?.source as string | undefined;
       const target = (e.data as any)?.target as string | undefined;
-      return Boolean(source && target && nodeIds.has(source) && nodeIds.has(target));
+      return Boolean(
+        source && target && nodeIds.has(source) && nodeIds.has(target),
+      );
     });
 
     const layout: LayoutOptions =
@@ -136,10 +150,10 @@ export class GraphRenderingAdapter {
               // Determinism: do not randomize initial positions.
               randomize: false,
             }
-        : {
-            name: layoutName,
-            avoidOverlap: true,
-          };
+          : {
+              name: layoutName,
+              avoidOverlap: true,
+            };
 
     return {
       elements: [...nodes, ...normalizedEdges],

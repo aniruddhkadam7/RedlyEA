@@ -1,6 +1,6 @@
-import React from 'react';
-import { Alert, Button, Card, Input, Space, Typography, theme } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Input, Space, Typography, theme } from 'antd';
+import React from 'react';
 
 type AgentMessage = {
   id: string;
@@ -48,7 +48,14 @@ const ArchitectureAgentPanel: React.FC = () => {
   }, [draft]);
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+      }}
+    >
       <div style={{ padding: 10 }}>
         <Alert
           type="info"
@@ -58,7 +65,14 @@ const ArchitectureAgentPanel: React.FC = () => {
         />
       </div>
 
-      <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto', padding: '0 10px 10px' }}>
+      <div
+        style={{
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflow: 'auto',
+          padding: '0 10px 10px',
+        }}
+      >
         <Space direction="vertical" size={10} style={{ width: '100%' }}>
           {messages.map((m) => (
             <Card
@@ -67,11 +81,14 @@ const ArchitectureAgentPanel: React.FC = () => {
               styles={{ body: { padding: 10 } }}
               style={{
                 width: '100%',
-                borderColor: m.role === 'user' ? token.colorPrimaryBorder : undefined,
+                borderColor:
+                  m.role === 'user' ? token.colorPrimaryBorder : undefined,
               }}
             >
               <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                <Space
+                  style={{ justifyContent: 'space-between', width: '100%' }}
+                >
                   <Typography.Text strong>
                     {m.role === 'user' ? 'You' : 'Architecture Agent'}
                   </Typography.Text>
@@ -79,7 +96,9 @@ const ArchitectureAgentPanel: React.FC = () => {
                     {new Date(m.createdAt).toLocaleTimeString()}
                   </Typography.Text>
                 </Space>
-                <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                <Typography.Paragraph
+                  style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}
+                >
                   {m.content}
                 </Typography.Paragraph>
               </Space>
@@ -113,7 +132,12 @@ const ArchitectureAgentPanel: React.FC = () => {
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               Ctrl+Enter to send
             </Typography.Text>
-            <Button type="primary" icon={<SendOutlined />} onClick={send} disabled={!draft.trim()}>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={send}
+              disabled={!draft.trim()}
+            >
               Send
             </Button>
           </Space>

@@ -63,13 +63,20 @@ function ensureInitialized(): void {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) entries = parsed.slice(-MAX_ENTRIES);
     }
-  } catch { /* corrupted storage — start fresh */ }
+  } catch {
+    /* corrupted storage — start fresh */
+  }
 }
 
 function persist(): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-MAX_ENTRIES)));
-  } catch { /* quota exceeded — tolerate */ }
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(entries.slice(-MAX_ENTRIES)),
+    );
+  } catch {
+    /* quota exceeded — tolerate */
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +88,12 @@ let idCounter = Date.now();
 /**
  * Record an audit entry. Automatically generates id + timestamp if omitted.
  */
-export function writeAuditEntry(entry: Omit<AuditEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: string }): AuditEntry {
+export function writeAuditEntry(
+  entry: Omit<AuditEntry, 'id' | 'timestamp'> & {
+    id?: string;
+    timestamp?: string;
+  },
+): AuditEntry {
   ensureInitialized();
   const full: AuditEntry = {
     id: entry.id ?? `audit-${++idCounter}`,
@@ -135,10 +147,13 @@ export function queryAuditLog(filter?: {
 }): AuditEntry[] {
   ensureInitialized();
   let result = entries;
-  if (filter?.objectId) result = result.filter(e => e.objectId === filter.objectId);
-  if (filter?.actionType) result = result.filter(e => e.actionType === filter.actionType);
-  if (filter?.userId) result = result.filter(e => e.userId === filter.userId);
-  if (filter?.since) result = result.filter(e => e.timestamp >= filter.since!);
+  if (filter?.objectId)
+    result = result.filter((e) => e.objectId === filter.objectId);
+  if (filter?.actionType)
+    result = result.filter((e) => e.actionType === filter.actionType);
+  if (filter?.userId) result = result.filter((e) => e.userId === filter.userId);
+  if (filter?.since)
+    result = result.filter((e) => e.timestamp >= filter.since!);
   const limit = filter?.limit ?? 100;
   return result.slice(-limit).reverse();
 }
@@ -146,7 +161,10 @@ export function queryAuditLog(filter?: {
 /**
  * Get audit trail for a specific object.
  */
-export function getObjectAuditTrail(objectId: string, limit = 50): AuditEntry[] {
+export function getObjectAuditTrail(
+  objectId: string,
+  limit = 50,
+): AuditEntry[] {
   return queryAuditLog({ objectId, limit });
 }
 
@@ -155,5 +173,7 @@ export function getObjectAuditTrail(objectId: string, limit = 50): AuditEntry[] 
  */
 export function clearAuditLog(): void {
   entries = [];
-  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }

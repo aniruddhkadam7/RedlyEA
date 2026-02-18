@@ -48,18 +48,22 @@ import {
 } from "@/repository/repositoryPackageAdapter";
 import { readRepositorySnapshot } from "@/repository/repositorySnapshotStore";
 import {
+  buildRedlyFile,
+  parseRedlyFile,
+  type RedlyExportSource,
+} from "@/services/persistence";
+import {
   listBaselines,
   replaceBaselines,
 } from "../../../backend/baselines/BaselineStore";
 import { buildRepositoryPackageBytes } from "../../../backend/services/repository/exportService";
 import { parseRepositoryPackageBytes } from "../../../backend/services/repository/importService";
-import {
-  buildRedlyFile,
-  parseRedlyFile,
-  type RedlyExportSource,
-} from "@/services/persistence";
 
-import styles from "./style.module.less";
+let styles: Record<string, string> = {};
+try {
+  // @ts-ignore
+  styles = require("./style.module.less");
+} catch {}
 
 const downloadTextFile = (fileName: string, text: string, mime: string) => {
   const blob = new Blob([text], { type: mime });
@@ -74,7 +78,9 @@ const downloadTextFile = (fileName: string, text: string, mime: string) => {
 };
 
 const downloadBytesFile = (fileName: string, bytes: Uint8Array) => {
-  const blob = new Blob([bytes], { type: "application/zip" });
+  const buffer = new ArrayBuffer(bytes.length);
+  new Uint8Array(buffer).set(bytes);
+  const blob = new Blob([buffer], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -438,7 +444,7 @@ const IdeMenuBar: React.FC = () => {
       organizationName: org,
       industry: newRepoDraft.industry.trim() || undefined,
       architectureScope: newRepoDraft.architectureScope,
-      referenceFramework: newRepoDraft.referenceFramework,
+      referenceFramework: newRepoDraft.referenceFramework as any as "Custom",
       frameworkConfig:
         newRepoDraft.referenceFramework === "Custom"
           ? newRepoDraft.frameworkConfig
@@ -964,7 +970,11 @@ const IdeMenuBar: React.FC = () => {
         : Array.isArray(parsed.data.workspace?.baselines)
           ? parsed.data.workspace.baselines
           : [];
-      replaceBaselines(baselines);
+      replaceBaselines(
+        (baselines as any[]).map((b) => ({
+          ...b,
+        })) as any[],
+      );
 
       clearAnalysisResults();
       dispatchIdeCommand({ type: "workspace.resetTabs" });
@@ -1551,7 +1561,7 @@ const IdeMenuBar: React.FC = () => {
         })),
         viewLayouts: mergedLayouts,
         designWorkspaces,
-        baselines: listBaselines(),
+        baselines: listBaselines() as any[],
         importHistory: snapshot?.importHistory ?? [],
         versionHistory: snapshot?.versionHistory ?? [],
         schemaVersion: "1",
@@ -1645,7 +1655,11 @@ const IdeMenuBar: React.FC = () => {
       for (const v of existingViews) {
         ViewLayoutStore.remove(v.id);
       }
-      ViewStore.replaceAll(pkg.diagrams);
+      ViewStore.replaceAll(
+        (pkg.diagrams as any[]).map((d) => ({
+          ...d,
+        })) as any[],
+      );
 
       // Restore layouts
       for (const diagram of pkg.diagrams) {
@@ -1672,7 +1686,11 @@ const IdeMenuBar: React.FC = () => {
       const baselines = Array.isArray(pkg.repository.baselines)
         ? pkg.repository.baselines
         : [];
-      replaceBaselines(baselines);
+      replaceBaselines(
+        (baselines as any[]).map((b) => ({
+          ...b,
+        })) as any[],
+      );
 
       // Clear analysis — it will be recomputed
       clearAnalysisResults();
@@ -2548,13 +2566,13 @@ const IdeMenuBar: React.FC = () => {
     }
 
     // Show checking message
-    const hide = message.loading("Checking for updates...", 0);
+    const hideId = message.loading("Checking for updates...", 0);
 
     try {
-      const result = await window.eaDesktop.updater.check();
-      hide();
+      const result = await window.eaDesktop?.updater?.check();
+      if (typeof hideId === "string") message.destroy(hideId);
 
-      if (!result.ok) {
+      if (!result?.ok) {
         // Graceful message for dev mode or when updater isn't available
         Modal.info({
           title: "Updates",
@@ -2590,10 +2608,11 @@ const IdeMenuBar: React.FC = () => {
           okText: "Download",
           cancelText: "Later",
           onOk: async () => {
-            const hideDownload = message.loading("Downloading update...", 0);
+            const hideDownloadId = message.loading("Downloading update...", 0);
             try {
-              const dlResult = await window.eaDesktop.updater.download();
-              hideDownload();
+              const dlResult = await window.eaDesktop?.updater?.download();
+              if (typeof hideDownloadId === "string")
+                message.destroy(hideDownloadId);
               if (dlResult.ok) {
                 Modal.confirm({
                   title: "Update Ready",
@@ -2614,7 +2633,8 @@ const IdeMenuBar: React.FC = () => {
                 });
               }
             } catch (dlErr) {
-              hideDownload();
+              if (typeof hideDownloadId === "string")
+                message.destroy(hideDownloadId);
               Modal.error({
                 title: "Download Failed",
                 content:
@@ -2632,7 +2652,8 @@ const IdeMenuBar: React.FC = () => {
         });
       }
     } catch (err) {
-      hide();
+      if (typeof hideId === "string") message.destroy(hideId);
+      else message.destroy();
       Modal.error({
         title: "Update Check Failed",
         content:

@@ -1,9 +1,9 @@
+import type { AdrRepository } from '../adr/AdrRepository';
+import type { GraphAbstractionLayer } from '../graph/GraphAbstractionLayer';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
 import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-import type { AdrRepository } from '../adr/AdrRepository';
 import type { ViewRepository } from '../views/ViewRepository';
 import { viewResolver } from '../views/ViewResolver';
-import type { GraphAbstractionLayer } from '../graph/GraphAbstractionLayer';
 
 export type TraceabilityNodeKind = 'Element' | 'ADR' | 'View' | 'Unknown';
 
@@ -36,16 +36,21 @@ export type TraceabilityResult = {
   warnings: readonly string[];
 };
 
-const normalizeId = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 const uniqSorted = (values: readonly string[]) =>
   Array.from(
-    new Set((values ?? []).map((v) => normalizeId(v)).filter((v) => v.length > 0)),
+    new Set(
+      (values ?? []).map((v) => normalizeId(v)).filter((v) => v.length > 0),
+    ),
   ).sort(compareStrings);
 
-const sortRelationshipsDeterministically = (rels: BaseArchitectureRelationship[]) =>
+const sortRelationshipsDeterministically = (
+  rels: BaseArchitectureRelationship[],
+) =>
   rels.sort(
     (a, b) =>
       (a.relationshipType ?? '').localeCompare(b.relationshipType ?? '') ||
@@ -54,14 +59,25 @@ const sortRelationshipsDeterministically = (rels: BaseArchitectureRelationship[]
       (a.id ?? '').localeCompare(b.id ?? ''),
   );
 
-const buildElementNode = async (graph: GraphAbstractionLayer, elementId: string): Promise<TraceabilityNode> => {
+const buildElementNode = async (
+  graph: GraphAbstractionLayer,
+  elementId: string,
+): Promise<TraceabilityNode> => {
   const id = normalizeId(elementId);
   const e = id ? await graph.getNode(id) : null;
-  if (!e) return { kind: 'Unknown', id, elementType: 'Unknown', name: undefined };
-  return { kind: 'Element', id: e.id, elementType: e.elementType, name: (e as BaseArchitectureElement).name };
+  if (!e)
+    return { kind: 'Unknown', id, elementType: 'Unknown', name: undefined };
+  return {
+    kind: 'Element',
+    id: e.id,
+    elementType: e.elementType,
+    name: (e as BaseArchitectureElement).name,
+  };
 };
 
-const buildRelationshipEdge = (rel: BaseArchitectureRelationship): TraceabilityEdge => ({
+const buildRelationshipEdge = (
+  rel: BaseArchitectureRelationship,
+): TraceabilityEdge => ({
   id: rel.id,
   relationshipType: rel.relationshipType,
   fromId: rel.sourceElementId,
@@ -70,7 +86,11 @@ const buildRelationshipEdge = (rel: BaseArchitectureRelationship): TraceabilityE
   rationale: rel.rationale,
 });
 
-const buildPseudoEdge = (relationshipType: string, fromId: string, toId: string): TraceabilityEdge => ({
+const buildPseudoEdge = (
+  relationshipType: string,
+  fromId: string,
+  toId: string,
+): TraceabilityEdge => ({
   id: `pseudo:${relationshipType}:${normalizeId(fromId)}->${normalizeId(toId)}`,
   relationshipType,
   fromId: normalizeId(fromId),
@@ -98,20 +118,32 @@ export class TraceabilityMatrix {
   }
 
   /** Capability → BusinessProcess → Application → Technology */
-  async traceCapabilityToApplicationToTechnology(capabilityId: string): Promise<TraceabilityResult> {
+  async traceCapabilityToApplicationToTechnology(
+    capabilityId: string,
+  ): Promise<TraceabilityResult> {
     const capId = normalizeId(capabilityId);
     const warnings: string[] = [];
     if (!capId) {
-      return { subject: { kind: 'Capability', id: '' }, involvedElementIds: [], paths: [], warnings: ['capabilityId is required.'] };
+      return {
+        subject: { kind: 'Capability', id: '' },
+        involvedElementIds: [],
+        paths: [],
+        warnings: ['capabilityId is required.'],
+      };
     }
 
     const cap = await this.graph.getNode(capId);
     if (!cap) warnings.push(`Unknown Capability id: "${capId}".`);
-    else if (cap.elementType !== 'Capability') warnings.push(`Element "${capId}" is not a Capability (got "${cap.elementType}").`);
+    else if (cap.elementType !== 'Capability')
+      warnings.push(
+        `Element "${capId}" is not a Capability (got "${cap.elementType}").`,
+      );
 
     const capOutgoing = await this.graph.getOutgoingEdges(capId);
     const realizedBy = sortRelationshipsDeterministically(
-      capOutgoing.filter((r) => (r.relationshipType ?? '').trim() === 'REALIZED_BY'),
+      capOutgoing.filter(
+        (r) => (r.relationshipType ?? '').trim() === 'REALIZED_BY',
+      ),
     );
 
     const paths: TraceabilityPath[] = [];
@@ -120,7 +152,9 @@ export class TraceabilityMatrix {
     involved.add(capId);
 
     if (realizedBy.length === 0)
-      warnings.push(`No REALIZED_BY relationships found for Capability "${capId}".`);
+      warnings.push(
+        `No REALIZED_BY relationships found for Capability "${capId}".`,
+      );
 
     for (const capToProc of realizedBy) {
       const processId = normalizeId(capToProc.targetElementId);
@@ -129,7 +163,9 @@ export class TraceabilityMatrix {
 
       const procOutgoing = await this.graph.getOutgoingEdges(processId);
       const realizes = sortRelationshipsDeterministically(
-        procOutgoing.filter((r) => (r.relationshipType ?? '').trim() === 'SERVED_BY'),
+        procOutgoing.filter(
+          (r) => (r.relationshipType ?? '').trim() === 'SERVED_BY',
+        ),
       );
 
       if (realizes.length === 0) {
@@ -138,7 +174,10 @@ export class TraceabilityMatrix {
         if (!pathKeySet.has(key)) {
           pathKeySet.add(key);
           paths.push({
-            nodes: [await buildElementNode(this.graph, capId), await buildElementNode(this.graph, processId)],
+            nodes: [
+              await buildElementNode(this.graph, capId),
+              await buildElementNode(this.graph, processId),
+            ],
             edges: [buildRelationshipEdge(capToProc)],
           });
         }
@@ -152,7 +191,9 @@ export class TraceabilityMatrix {
 
         const appOutgoing = await this.graph.getOutgoingEdges(applicationId);
         const hostedOn = sortRelationshipsDeterministically(
-          appOutgoing.filter((r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON'),
+          appOutgoing.filter(
+            (r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON',
+          ),
         );
 
         if (hostedOn.length === 0) {
@@ -165,7 +206,10 @@ export class TraceabilityMatrix {
                 await buildElementNode(this.graph, processId),
                 await buildElementNode(this.graph, applicationId),
               ],
-              edges: [buildRelationshipEdge(capToProc), buildRelationshipEdge(procToApp)],
+              edges: [
+                buildRelationshipEdge(capToProc),
+                buildRelationshipEdge(procToApp),
+              ],
             });
           }
           continue;
@@ -187,7 +231,11 @@ export class TraceabilityMatrix {
               await buildElementNode(this.graph, applicationId),
               await buildElementNode(this.graph, technologyId),
             ],
-            edges: [buildRelationshipEdge(capToProc), buildRelationshipEdge(procToApp), buildRelationshipEdge(appToTech)],
+            edges: [
+              buildRelationshipEdge(capToProc),
+              buildRelationshipEdge(procToApp),
+              buildRelationshipEdge(appToTech),
+            ],
           });
         }
       }
@@ -213,12 +261,20 @@ export class TraceabilityMatrix {
     const progId = normalizeId(programmeId);
     const warnings: string[] = [];
     if (!progId) {
-      return { subject: { kind: 'Programme', id: '' }, involvedElementIds: [], paths: [], warnings: ['programmeId is required.'] };
+      return {
+        subject: { kind: 'Programme', id: '' },
+        involvedElementIds: [],
+        paths: [],
+        warnings: ['programmeId is required.'],
+      };
     }
 
     const programme = await this.graph.getNode(progId);
     if (!programme) warnings.push(`Unknown Programme id: "${progId}".`);
-    else if (programme.elementType !== 'Programme') warnings.push(`Element "${progId}" is not a Programme (got "${programme.elementType}").`);
+    else if (programme.elementType !== 'Programme')
+      warnings.push(
+        `Element "${progId}" is not a Programme (got "${programme.elementType}").`,
+      );
 
     const outgoing = await this.graph.getOutgoingEdges(progId);
     const impacts = sortRelationshipsDeterministically(
@@ -231,7 +287,10 @@ export class TraceabilityMatrix {
     const paths: TraceabilityPath[] = [];
     const keySet = new Set<string>();
 
-    if (impacts.length === 0) warnings.push(`No IMPACTS relationships found for Programme "${progId}".`);
+    if (impacts.length === 0)
+      warnings.push(
+        `No IMPACTS relationships found for Programme "${progId}".`,
+      );
 
     for (const impactRel of impacts) {
       const targetId = normalizeId(impactRel.targetElementId);
@@ -244,30 +303,46 @@ export class TraceabilityMatrix {
         if (!keySet.has(key)) {
           keySet.add(key);
           paths.push({
-            nodes: [await buildElementNode(this.graph, progId), await buildElementNode(this.graph, targetId)],
+            nodes: [
+              await buildElementNode(this.graph, progId),
+              await buildElementNode(this.graph, targetId),
+            ],
             edges: [buildRelationshipEdge(impactRel)],
           });
         }
       }
 
       const target = await this.graph.getNode(targetId);
-      const targetType = (target?.elementType ?? impactRel.targetElementType ?? '').trim();
+      const targetType = (
+        target?.elementType ??
+        impactRel.targetElementType ??
+        ''
+      ).trim();
 
       // Deterministic expansion rules:
       // - If target is a Capability: expand to Capability→Process→Application→Technology.
       // - If target is an Application: expand to Application→Technology.
       // - If target is a Technology: no expansion.
       if (targetType === 'Capability') {
-        const capTrace = await this.traceCapabilityToApplicationToTechnology(targetId);
+        const capTrace =
+          await this.traceCapabilityToApplicationToTechnology(targetId);
         for (const capPath of capTrace.paths) {
           // capPath already begins at the Capability; prefix Programme + IMPACTS edge.
           const capFirst = capPath.nodes[0];
           if (!capFirst || normalizeId(capFirst.id) !== targetId) continue;
 
-          const expandedNodes: TraceabilityNode[] = [await buildElementNode(this.graph, progId), ...capPath.nodes];
-          const expandedEdges: TraceabilityEdge[] = [buildRelationshipEdge(impactRel), ...capPath.edges];
+          const expandedNodes: TraceabilityNode[] = [
+            await buildElementNode(this.graph, progId),
+            ...capPath.nodes,
+          ];
+          const expandedEdges: TraceabilityEdge[] = [
+            buildRelationshipEdge(impactRel),
+            ...capPath.edges,
+          ];
 
-          for (const n of capPath.nodes) if (n.kind === 'Element' || n.kind === 'Unknown') involved.add(n.id);
+          for (const n of capPath.nodes)
+            if (n.kind === 'Element' || n.kind === 'Unknown')
+              involved.add(n.id);
 
           const key = `expanded|${expandedNodes.map((n) => n.id).join('>')}|${expandedEdges.map((e) => e.id).join('>')}`;
           if (keySet.has(key)) continue;
@@ -277,7 +352,9 @@ export class TraceabilityMatrix {
       } else if (targetType === 'Application') {
         const appOutgoing = await this.graph.getOutgoingEdges(targetId);
         const hostedOn = sortRelationshipsDeterministically(
-          appOutgoing.filter((r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON'),
+          appOutgoing.filter(
+            (r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON',
+          ),
         );
 
         for (const appToTech of hostedOn) {
@@ -290,7 +367,10 @@ export class TraceabilityMatrix {
             await buildElementNode(this.graph, targetId),
             await buildElementNode(this.graph, techId),
           ];
-          const expandedEdges = [buildRelationshipEdge(impactRel), buildRelationshipEdge(appToTech)];
+          const expandedEdges = [
+            buildRelationshipEdge(impactRel),
+            buildRelationshipEdge(appToTech),
+          ];
           const key = `expanded|${expandedNodes.map((n) => n.id).join('>')}|${expandedEdges.map((e) => e.id).join('>')}`;
           if (keySet.has(key)) continue;
           keySet.add(key);
@@ -318,7 +398,12 @@ export class TraceabilityMatrix {
     const id = normalizeId(adrId);
     const warnings: string[] = [];
     if (!id) {
-      return { subject: { kind: 'ADR', id: '' }, involvedElementIds: [], paths: [], warnings: ['adrId is required.'] };
+      return {
+        subject: { kind: 'ADR', id: '' },
+        involvedElementIds: [],
+        paths: [],
+        warnings: ['adrId is required.'],
+      };
     }
 
     const adr = this.adrs.getById(id);
@@ -331,7 +416,11 @@ export class TraceabilityMatrix {
       };
     }
 
-    const adrNode: TraceabilityNode = { kind: 'ADR', id: adr.adrId, name: adr.title };
+    const adrNode: TraceabilityNode = {
+      kind: 'ADR',
+      id: adr.adrId,
+      name: adr.title,
+    };
 
     const paths: TraceabilityPath[] = [];
     const involved = new Set<string>();
@@ -343,7 +432,11 @@ export class TraceabilityMatrix {
     for (const elementId of relatedElements) {
       involved.add(elementId);
 
-      const edge = buildPseudoEdge('ADR_RELATES_TO_ELEMENT', adr.adrId, elementId);
+      const edge = buildPseudoEdge(
+        'ADR_RELATES_TO_ELEMENT',
+        adr.adrId,
+        elementId,
+      );
       const key = `adr-element|${edge.id}`;
       if (!keySet.has(key)) {
         keySet.add(key);
@@ -357,11 +450,14 @@ export class TraceabilityMatrix {
       const element = await this.graph.getNode(elementId);
       const elementType = (element?.elementType ?? '').trim();
       if (elementType === 'Capability') {
-        const capTrace = await this.traceCapabilityToApplicationToTechnology(elementId);
+        const capTrace =
+          await this.traceCapabilityToApplicationToTechnology(elementId);
         for (const capPath of capTrace.paths) {
           const expandedNodes: TraceabilityNode[] = [adrNode, ...capPath.nodes];
           const expandedEdges: TraceabilityEdge[] = [edge, ...capPath.edges];
-          for (const n of capPath.nodes) if (n.kind === 'Element' || n.kind === 'Unknown') involved.add(n.id);
+          for (const n of capPath.nodes)
+            if (n.kind === 'Element' || n.kind === 'Unknown')
+              involved.add(n.id);
 
           const k = `expanded|${expandedNodes.map((n) => n.id).join('>')}|${expandedEdges.map((e) => e.id).join('>')}`;
           if (keySet.has(k)) continue;
@@ -371,14 +467,20 @@ export class TraceabilityMatrix {
       } else if (elementType === 'Application') {
         const appOutgoing = await this.graph.getOutgoingEdges(elementId);
         const hostedOn = sortRelationshipsDeterministically(
-          appOutgoing.filter((r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON'),
+          appOutgoing.filter(
+            (r) => (r.relationshipType ?? '').trim() === 'DEPLOYED_ON',
+          ),
         );
         for (const appToTech of hostedOn) {
           const techId = normalizeId(appToTech.targetElementId);
           if (!techId) continue;
           involved.add(techId);
 
-          const expandedNodes = [adrNode, await buildElementNode(this.graph, elementId), await buildElementNode(this.graph, techId)];
+          const expandedNodes = [
+            adrNode,
+            await buildElementNode(this.graph, elementId),
+            await buildElementNode(this.graph, techId),
+          ];
           const expandedEdges = [edge, buildRelationshipEdge(appToTech)];
           const k = `expanded|${expandedNodes.map((n) => n.id).join('>')}|${expandedEdges.map((e) => e.id).join('>')}`;
           if (keySet.has(k)) continue;
@@ -402,13 +504,24 @@ export class TraceabilityMatrix {
         const key = `adr-view-missing|${edge.id}`;
         if (!keySet.has(key)) {
           keySet.add(key);
-          paths.push({ nodes: [adrNode, { kind: 'View', id: viewId }], edges: [edge] });
+          paths.push({
+            nodes: [adrNode, { kind: 'View', id: viewId }],
+            edges: [edge],
+          });
         }
         continue;
       }
 
-      const viewNode: TraceabilityNode = { kind: 'View', id: view.id, name: view.name };
-      const viewEdge = buildPseudoEdge('ADR_RELATES_TO_VIEW', adr.adrId, view.id);
+      const viewNode: TraceabilityNode = {
+        kind: 'View',
+        id: view.id,
+        name: view.name,
+      };
+      const viewEdge = buildPseudoEdge(
+        'ADR_RELATES_TO_VIEW',
+        adr.adrId,
+        view.id,
+      );
 
       {
         const key = `adr-view|${viewEdge.id}`;
@@ -428,7 +541,10 @@ export class TraceabilityMatrix {
         const key = `view-element|${edge.id}`;
         if (keySet.has(key)) continue;
         keySet.add(key);
-        paths.push({ nodes: [adrNode, viewNode, await buildElementNode(this.graph, elId)], edges: [viewEdge, edge] });
+        paths.push({
+          nodes: [adrNode, viewNode, await buildElementNode(this.graph, elId)],
+          edges: [viewEdge, edge],
+        });
       }
     }
 

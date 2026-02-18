@@ -20,14 +20,8 @@ type DataNode = AntDataNode & {
 
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
-import type {
-  ObjectType,
-  RelationshipType,
-} from '@/pages/dependency-view/utils/eaMetaModel';
-import {
-  OBJECT_TYPE_DEFINITIONS,
-  RELATIONSHIP_TYPE_DEFINITIONS,
-} from '@/pages/dependency-view/utils/eaMetaModel';
+import type { ObjectType } from '@/pages/dependency-view/utils/eaMetaModel';
+import { OBJECT_TYPE_DEFINITIONS } from '@/pages/dependency-view/utils/eaMetaModel';
 import { isObjectTypeEnabledForFramework } from '@/repository/customFrameworkConfig';
 import { isObjectTypeAllowedForReferenceFramework } from '@/repository/referenceFrameworkPolicy';
 import type { EaRepositoryMetadata } from '@/repository/repositoryMetadata';
@@ -413,13 +407,9 @@ function collectionNode(
   };
 }
 
-const normalizeAllowedChildren = (
-  types: readonly ObjectType[],
-): ObjectType[] =>
+const normalizeAllowedChildren = (types: readonly ObjectType[]): ObjectType[] =>
   Array.from(
-    new Set(
-      types.filter((type) => Boolean(OBJECT_TYPE_DEFINITIONS[type])),
-    ),
+    new Set(types.filter((type) => Boolean(OBJECT_TYPE_DEFINITIONS[type]))),
   );
 
 const typedContainerData = (

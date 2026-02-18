@@ -1,6 +1,13 @@
-export type ImpactAnalysisDirection = 'Downstream' | 'Upstream' | 'Bidirectional';
+export type ImpactAnalysisDirection =
+  | 'Downstream'
+  | 'Upstream'
+  | 'Bidirectional';
 
-export type ImpactAnalysisIntent = 'Change' | 'Risk' | 'Failure' | 'Decommission';
+export type ImpactAnalysisIntent =
+  | 'Change'
+  | 'Risk'
+  | 'Failure'
+  | 'Decommission';
 
 /**
  * Explicit, auditable request to perform an impact analysis.

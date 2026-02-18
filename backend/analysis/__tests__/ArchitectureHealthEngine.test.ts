@@ -1,11 +1,10 @@
-import { ArchitectureHealthEngine } from '../ArchitectureHealthEngine';
-import { createArchitectureRepository } from '../../repository/ArchitectureRepository';
-import { createRelationshipRepository } from '../../repository/RelationshipRepository';
-
 import type { Application } from '../../repository/Application';
-import type { Technology } from '../../repository/Technology';
+import { createArchitectureRepository } from '../../repository/ArchitectureRepository';
 import type { BaseArchitectureRelationship } from '../../repository/BaseArchitectureRelationship';
+import { createRelationshipRepository } from '../../repository/RelationshipRepository';
+import type { Technology } from '../../repository/Technology';
 import type { ValidationFinding } from '../../validation/ValidationFinding';
+import { ArchitectureHealthEngine } from '../ArchitectureHealthEngine';
 
 const baseElementFields = () => {
   const now = new Date('2026-01-11T00:00:00.000Z').toISOString();
@@ -29,7 +28,10 @@ const baseElementFields = () => {
   };
 };
 
-const makeApplication = (id: string, overrides?: Partial<Application>): Application => {
+const makeApplication = (
+  id: string,
+  overrides?: Partial<Application>,
+): Application => {
   return {
     id,
     elementType: 'Application',
@@ -47,7 +49,10 @@ const makeApplication = (id: string, overrides?: Partial<Application>): Applicat
   };
 };
 
-const makeTechnology = (id: string, overrides?: Partial<Technology>): Technology => {
+const makeTechnology = (
+  id: string,
+  overrides?: Partial<Technology>,
+): Technology => {
   return {
     id,
     elementType: 'Technology',
@@ -64,7 +69,11 @@ const makeTechnology = (id: string, overrides?: Partial<Technology>): Technology
   };
 };
 
-const makeDeployedOn = (id: string, appId: string, techId: string): BaseArchitectureRelationship => {
+const makeDeployedOn = (
+  id: string,
+  appId: string,
+  techId: string,
+): BaseArchitectureRelationship => {
   const now = new Date('2026-01-11T00:00:00.000Z').toISOString();
   return {
     id,
@@ -140,13 +149,17 @@ describe('ArchitectureHealthEngine', () => {
   test('trend uses in-memory history only (no persistence)', () => {
     const repo = createArchitectureRepository();
     const app = makeApplication('app-1');
-    const tech = makeTechnology('tech-1', { supportEndDate: '2020-01-01T00:00:00.000Z' });
+    const tech = makeTechnology('tech-1', {
+      supportEndDate: '2020-01-01T00:00:00.000Z',
+    });
 
     expect(repo.addElement('applications', app).ok).toBe(true);
     expect(repo.addElement('technologies', tech).ok).toBe(true);
 
     const relRepo = createRelationshipRepository(repo);
-    expect(relRepo.addRelationship(makeDeployedOn('rel-1', 'app-1', 'tech-1')).ok).toBe(true);
+    expect(
+      relRepo.addRelationship(makeDeployedOn('rel-1', 'app-1', 'tech-1')).ok,
+    ).toBe(true);
 
     const engine = new ArchitectureHealthEngine();
 
@@ -180,8 +193,12 @@ describe('ArchitectureHealthEngine', () => {
       stableTrendDelta: 2,
     });
 
-    expect(second.previousOverallHealthScore).toBe(first.metrics.overallHealthScore);
-    expect(second.metrics.overallHealthScore).toBeLessThan(first.metrics.overallHealthScore);
+    expect(second.previousOverallHealthScore).toBe(
+      first.metrics.overallHealthScore,
+    );
+    expect(second.metrics.overallHealthScore).toBeLessThan(
+      first.metrics.overallHealthScore,
+    );
     expect(second.metrics.healthTrend).toBe('Degrading');
 
     // History stays in-memory on the engine instance

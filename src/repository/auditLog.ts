@@ -30,7 +30,9 @@ export const recordAuditEvent = (event: {
   try {
     const key = keyForRepo(repositoryName);
     const existingRaw = localStorage.getItem(key);
-    const items: AuditEvent[] = existingRaw ? (JSON.parse(existingRaw) as AuditEvent[]) : [];
+    const items: AuditEvent[] = existingRaw
+      ? (JSON.parse(existingRaw) as AuditEvent[])
+      : [];
     items.unshift(entry);
     if (items.length > AUDIT_LIMIT) items.length = AUDIT_LIMIT;
     localStorage.setItem(key, JSON.stringify(items));
@@ -39,7 +41,10 @@ export const recordAuditEvent = (event: {
   }
 };
 
-export const readAuditEventsForOwner = (repositoryName: string, requesterIsOwner: boolean): AuditEvent[] => {
+export const readAuditEventsForOwner = (
+  repositoryName: string,
+  requesterIsOwner: boolean,
+): AuditEvent[] => {
   if (!requesterIsOwner) return [];
   try {
     const raw = localStorage.getItem(keyForRepo(repositoryName));

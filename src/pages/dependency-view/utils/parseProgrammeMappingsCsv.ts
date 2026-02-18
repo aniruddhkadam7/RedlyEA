@@ -1,4 +1,8 @@
-import { isValidObjectType, type ObjectType, type RelationshipType } from './eaMetaModel';
+import {
+  isValidObjectType,
+  type ObjectType,
+  type RelationshipType,
+} from './eaMetaModel';
 
 export type ProgrammeMappingsCsvRow = {
   programmeId: string;
@@ -24,7 +28,8 @@ export type ProgrammeMappingsCsvParseResult =
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 const parseCsv = (inputText: string): string[][] => {
   const text = stripBom(inputText);
@@ -92,12 +97,15 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
 
-export function parseAndValidateProgrammeMappingsCsv(csvText: string): ProgrammeMappingsCsvParseResult {
+export function parseAndValidateProgrammeMappingsCsv(
+  csvText: string,
+): ProgrammeMappingsCsvParseResult {
   const errors: string[] = [];
 
   const rows = parseCsv(csvText);
@@ -113,13 +121,19 @@ export function parseAndValidateProgrammeMappingsCsv(csvText: string): Programme
 
   const missing = requiredColumns.filter((col) => !indexByColumn.has(col));
   if (missing.length > 0) {
-    return { ok: false, errors: [`Missing required column(s): ${missing.join(', ')}.`] };
+    return {
+      ok: false,
+      errors: [`Missing required column(s): ${missing.join(', ')}.`],
+    };
   }
 
   const relationshipTypeIdx = indexByColumn.get('relationshiptype');
 
   const isAllowedMappedType = (t: ObjectType) =>
-    t === 'Application' || t === 'CapabilityCategory' || t === 'Capability' || t === 'SubCapability';
+    t === 'Application' ||
+    t === 'CapabilityCategory' ||
+    t === 'Capability' ||
+    t === 'SubCapability';
 
   const mappings: ProgrammeMappingsCsvRow[] = [];
 
@@ -129,20 +143,29 @@ export function parseAndValidateProgrammeMappingsCsv(csvText: string): Programme
 
     const displayRow = r + 1;
 
-    const rawProgrammeId = (row[indexByColumn.get('programmeid')!] ?? '').trim();
-    const rawMappedId = (row[indexByColumn.get('mappedid')!] ?? '').trim();
-    const rawMappedType = (row[indexByColumn.get('mappedtype')!] ?? '').trim();
+    const rawProgrammeId = (
+      row[indexByColumn.get('programmeid') ?? 0] ?? ''
+    ).trim();
+    const rawMappedId = (row[indexByColumn.get('mappedid') ?? 0] ?? '').trim();
+    const rawMappedType = (
+      row[indexByColumn.get('mappedtype') ?? 0] ?? ''
+    ).trim();
 
     const rawRelType =
-      relationshipTypeIdx === undefined ? '' : (row[relationshipTypeIdx] ?? '').trim().toUpperCase();
+      relationshipTypeIdx === undefined
+        ? ''
+        : (row[relationshipTypeIdx] ?? '').trim().toUpperCase();
 
-    if (!rawProgrammeId) errors.push(`Row ${displayRow}: programmeId is required.`);
+    if (!rawProgrammeId)
+      errors.push(`Row ${displayRow}: programmeId is required.`);
     if (!rawMappedId) errors.push(`Row ${displayRow}: mappedId is required.`);
 
     if (!rawMappedType) {
       errors.push(`Row ${displayRow}: mappedType is required.`);
     } else if (!isValidObjectType(rawMappedType)) {
-      errors.push(`Row ${displayRow}: mappedType is invalid (got "${rawMappedType}").`);
+      errors.push(
+        `Row ${displayRow}: mappedType is invalid (got "${rawMappedType}").`,
+      );
     } else if (!isAllowedMappedType(rawMappedType)) {
       errors.push(
         `Row ${displayRow}: mappedType must be CapabilityCategory | Capability | SubCapability | Application (got "${rawMappedType}").`,
@@ -159,7 +182,13 @@ export function parseAndValidateProgrammeMappingsCsv(csvText: string): Programme
 
     const attributes: Record<string, unknown> = {};
     for (const [col, idx] of indexByColumn) {
-      if (col === 'programmeid' || col === 'mappedid' || col === 'mappedtype' || col === 'relationshiptype') continue;
+      if (
+        col === 'programmeid' ||
+        col === 'mappedid' ||
+        col === 'mappedtype' ||
+        col === 'relationshiptype'
+      )
+        continue;
       const value = (row[idx] ?? '').trim();
       if (value !== '') attributes[col] = value;
     }
@@ -183,7 +212,8 @@ export function parseAndValidateProgrammeMappingsCsv(csvText: string): Programme
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (mappings.length === 0) return { ok: false, errors: ['No programme mapping rows found.'] };
+  if (mappings.length === 0)
+    return { ok: false, errors: ['No programme mapping rows found.'] };
 
   return { ok: true, mappings };
 }

@@ -18,7 +18,10 @@ export type CapabilityToProcessRelationship = BaseArchitectureRelationship & {
 };
 
 export type CapabilityToProcessConstraintValidationSuccess = { ok: true };
-export type CapabilityToProcessConstraintValidationFailure = { ok: false; errors: string[] };
+export type CapabilityToProcessConstraintValidationFailure = {
+  ok: false;
+  errors: string[];
+};
 export type CapabilityToProcessConstraintValidationResult =
   | CapabilityToProcessConstraintValidationSuccess
   | CapabilityToProcessConstraintValidationFailure;
@@ -39,12 +42,16 @@ export function validateCapabilityToProcessConstraints(
     const capabilityId = (rel.sourceElementId ?? '').trim();
 
     if (!capabilityId) {
-      errors.push(`CapabilityToProcessRelationship: sourceElementId is required.`);
+      errors.push(
+        `CapabilityToProcessRelationship: sourceElementId is required.`,
+      );
       continue;
     }
 
     if (!processId) {
-      errors.push(`CapabilityToProcessRelationship: targetElementId is required.`);
+      errors.push(
+        `CapabilityToProcessRelationship: targetElementId is required.`,
+      );
       continue;
     }
 

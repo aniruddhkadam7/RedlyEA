@@ -13,11 +13,11 @@ import {
   dispatchImpactAnalysisSection,
   type ImpactAnalysisSectionKey,
 } from '@/analysis/impactAnalysisMode';
+import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import { useIdeShell } from './index';
 import NavigationSidebar, {
   type NavigationSidebarGroup,
 } from './NavigationSidebar';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
 
 const MENU_TO_SECTION: Record<string, ImpactAnalysisSectionKey> = {
   'analysis:overview': 'overview',
@@ -56,7 +56,9 @@ const ANALYSIS_ITEMS: Array<{
 const AnalysisTree: React.FC = () => {
   const { openWorkspaceTab } = useIdeShell();
   const { setSelection } = useIdeSelection();
-  const [selectedKey, setSelectedKey] = React.useState<string>(`analysis:${DEFAULT_IMPACT_ANALYSIS_SECTION}`);
+  const [selectedKey, setSelectedKey] = React.useState<string>(
+    `analysis:${DEFAULT_IMPACT_ANALYSIS_SECTION}`,
+  );
 
   const groups: NavigationSidebarGroup[] = React.useMemo(
     () => [
@@ -97,9 +99,7 @@ const AnalysisTree: React.FC = () => {
     [openWorkspaceTab, selectedKey, setSelection],
   );
 
-  return (
-    <NavigationSidebar ariaLabel="Analysis navigation" groups={groups} />
-  );
+  return <NavigationSidebar ariaLabel="Analysis navigation" groups={groups} />;
 };
 
 export default AnalysisTree;

@@ -633,7 +633,12 @@ const tryDeserializeRepository = (
       studioState,
       updatedAt,
     };
-    return { ok: true, repo: imported.repo, metadata: metaRes.metadata, snapshot };
+    return {
+      ok: true,
+      repo: imported.repo,
+      metadata: metaRes.metadata,
+      snapshot,
+    };
   } catch (e: any) {
     return {
       ok: false,

@@ -1,10 +1,9 @@
 import React from 'react';
-
+import { getAnalysisResult } from '@/analysis/analysisResultsStore';
 import type { CopilotInputContext } from '@/copilot/contracts';
+import { trackCopilotEvent } from '@/copilot/telemetry';
 import { useEaProject } from '@/ea/EaProjectContext';
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { trackCopilotEvent } from '@/copilot/telemetry';
-import { getAnalysisResult } from '@/analysis/analysisResultsStore';
 
 export type CopilotContextSnapshot = CopilotInputContext;
 
@@ -16,7 +15,9 @@ export type CopilotContextValue = {
   captureSnapshot: () => CopilotContextSnapshot;
 };
 
-const CopilotContext = React.createContext<CopilotContextValue | undefined>(undefined);
+const CopilotContext = React.createContext<CopilotContextValue | undefined>(
+  undefined,
+);
 
 const buildSnapshot = (args: {
   project: { id: string; name: string; description?: string } | null;
@@ -26,18 +27,23 @@ const buildSnapshot = (args: {
   const capturedAt = new Date().toISOString();
 
   const activeViewId =
-    args.activeDocument.kind === 'workspace' && args.activeDocument.key.startsWith('view:')
+    args.activeDocument.kind === 'workspace' &&
+    args.activeDocument.key.startsWith('view:')
       ? args.activeDocument.key.slice('view:'.length)
       : args.selection.kind === 'view'
         ? args.selection.keys?.[0]
         : null;
 
   const analysisKind =
-    args.activeDocument.kind === 'workspace' && args.activeDocument.key.startsWith('analysis:')
+    args.activeDocument.kind === 'workspace' &&
+    args.activeDocument.key.startsWith('analysis:')
       ? args.activeDocument.key.slice('analysis:'.length)
-      : args.activeDocument.kind === 'workspace' && args.activeDocument.key.startsWith('analysisResult:')
-        ? getAnalysisResult(args.activeDocument.key.slice('analysisResult:'.length))?.kind
-      : undefined;
+      : args.activeDocument.kind === 'workspace' &&
+          args.activeDocument.key.startsWith('analysisResult:')
+        ? getAnalysisResult(
+            args.activeDocument.key.slice('analysisResult:'.length),
+          )?.kind
+        : undefined;
 
   return {
     capturedAt,
@@ -61,7 +67,9 @@ const buildSnapshot = (args: {
   };
 };
 
-export const CopilotContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CopilotContextProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const { project } = useEaProject();
   const { selection } = useIdeSelection();
 
@@ -96,9 +104,16 @@ export const CopilotContextProvider: React.FC<{ children: React.ReactNode }> = (
     }
 
     return next;
-  }, [projectSnapshot, selection.kind, selection.keys, selection.activeDocument]);
+  }, [
+    projectSnapshot,
+    selection.kind,
+    selection.keys,
+    selection.activeDocument,
+  ]);
 
-  const [snapshot, setSnapshot] = React.useState<CopilotContextSnapshot>(() => captureSnapshot());
+  const [snapshot, setSnapshot] = React.useState<CopilotContextSnapshot>(() =>
+    captureSnapshot(),
+  );
 
   React.useEffect(() => {
     // Snapshot updates are explicit and replace the entire context.
@@ -111,11 +126,16 @@ export const CopilotContextProvider: React.FC<{ children: React.ReactNode }> = (
     [snapshot, captureSnapshot],
   );
 
-  return <CopilotContext.Provider value={value}>{children}</CopilotContext.Provider>;
+  return (
+    <CopilotContext.Provider value={value}>{children}</CopilotContext.Provider>
+  );
 };
 
 export function useCopilotContext(): CopilotContextValue {
   const ctx = React.useContext(CopilotContext);
-  if (!ctx) throw new Error('useCopilotContext must be used within CopilotContextProvider');
+  if (!ctx)
+    throw new Error(
+      'useCopilotContext must be used within CopilotContextProvider',
+    );
   return ctx;
 }

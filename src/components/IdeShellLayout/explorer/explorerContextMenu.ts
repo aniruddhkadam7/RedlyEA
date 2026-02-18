@@ -233,7 +233,9 @@ function resolveAllowedTypesFromNodeData(
   if (!nodeData) return undefined;
 
   const allowedChildren = Array.isArray(nodeData.allowedChildren)
-    ? nodeData.allowedChildren.filter((value): value is string => typeof value === 'string')
+    ? nodeData.allowedChildren.filter(
+        (value): value is string => typeof value === 'string',
+      )
     : [];
 
   const fallbackType = typeof nodeData.type === 'string' ? [nodeData.type] : [];

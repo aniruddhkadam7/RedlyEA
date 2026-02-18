@@ -1,21 +1,30 @@
 import { Card, Checkbox, Divider, Space, Typography } from 'antd';
 import React from 'react';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
-import { OBJECT_TYPE_DEFINITIONS, type ObjectType } from '@/pages/dependency-view/utils/eaMetaModel';
-import { getCustomMetaModelConfig } from '@/repository/customFrameworkConfig';
 import { message } from '@/ea/eaConsole';
+import {
+  OBJECT_TYPE_DEFINITIONS,
+  type ObjectType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
+import { getCustomMetaModelConfig } from '@/repository/customFrameworkConfig';
 
-const isSoftDeleted = (attributes: Record<string, unknown> | null | undefined) => Boolean((attributes as any)?._deleted === true);
+const isSoftDeleted = (
+  attributes: Record<string, unknown> | null | undefined,
+) => Boolean((attributes as any)?._deleted === true);
 
 const CustomMetaModelEditor: React.FC = () => {
-  const { eaRepository, metadata, updateRepositoryMetadata } = useEaRepository();
+  const { eaRepository, metadata, updateRepositoryMetadata } =
+    useEaRepository();
 
   const customConfig = React.useMemo(
     () => getCustomMetaModelConfig(metadata?.frameworkConfig ?? undefined),
     [metadata?.frameworkConfig],
   );
 
-  const enabledSet = React.useMemo(() => new Set<ObjectType>(customConfig.enabledObjectTypes), [customConfig.enabledObjectTypes]);
+  const enabledSet = React.useMemo(
+    () => new Set<ObjectType>(customConfig.enabledObjectTypes),
+    [customConfig.enabledObjectTypes],
+  );
 
   const allTypes = React.useMemo(() => {
     const types = Object.keys(OBJECT_TYPE_DEFINITIONS) as ObjectType[];
@@ -26,7 +35,9 @@ const CustomMetaModelEditor: React.FC = () => {
   const updateEnabled = React.useCallback(
     (nextEnabled: ObjectType[]) => {
       if (!metadata) return;
-      const sorted = [...new Set(nextEnabled)].sort((a, b) => a.localeCompare(b));
+      const sorted = [...new Set(nextEnabled)].sort((a, b) =>
+        a.localeCompare(b),
+      );
 
       // If disabling types, enforce: live objects must remain within enabled set.
       if (eaRepository) {
@@ -34,7 +45,9 @@ const CustomMetaModelEditor: React.FC = () => {
         for (const obj of eaRepository.objects.values()) {
           if (isSoftDeleted(obj.attributes)) continue;
           if (!blocked.has(obj.type)) {
-            message.warning(`Cannot disable type "${obj.type}" while live objects exist.`);
+            message.warning(
+              `Cannot disable type "${obj.type}" while live objects exist.`,
+            );
             return;
           }
         }
@@ -62,7 +75,10 @@ const CustomMetaModelEditor: React.FC = () => {
   if (!metadata || metadata.referenceFramework !== 'Custom') {
     return (
       <Card size="small">
-        <Typography.Text type="secondary">Custom meta-model editor is only available for Custom Reference Framework.</Typography.Text>
+        <Typography.Text type="secondary">
+          Custom meta-model editor is only available for Custom Reference
+          Framework.
+        </Typography.Text>
       </Card>
     );
   }
@@ -73,7 +89,8 @@ const CustomMetaModelEditor: React.FC = () => {
         Custom Meta-model Editor
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-        Blank canvas by design. Enable at least one element type to unlock modeling.
+        Blank canvas by design. Enable at least one element type to unlock
+        modeling.
       </Typography.Paragraph>
 
       <Card size="small">
@@ -84,7 +101,13 @@ const CustomMetaModelEditor: React.FC = () => {
             value={[...enabledSet]}
             onChange={(checked) => updateEnabled(checked as ObjectType[])}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 8,
+              }}
+            >
               {allTypes.map((t) => (
                 <Checkbox key={t} value={t}>
                   {t}

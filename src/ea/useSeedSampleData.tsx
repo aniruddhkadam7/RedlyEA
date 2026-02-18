@@ -1,12 +1,19 @@
-import React from 'react';
 import { Alert, List, Modal, Space, Typography } from 'antd';
-import { message } from '@/ea/eaConsole';
-
+import React from 'react';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
+import { message } from '@/ea/eaConsole';
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { applySeedPlan, buildSeedPlan, isRepositoryEffectivelyEmpty, type SeedPlan } from './seedSampleData';
+import {
+  applySeedPlan,
+  buildSeedPlan,
+  isRepositoryEffectivelyEmpty,
+  type SeedPlan,
+} from './seedSampleData';
 
-const SeedPreview: React.FC<{ plan: SeedPlan; showNonEmptyWarning: boolean }> = ({ plan, showNonEmptyWarning }) => {
+const SeedPreview: React.FC<{
+  plan: SeedPlan;
+  showNonEmptyWarning: boolean;
+}> = ({ plan, showNonEmptyWarning }) => {
   const elementItems = Object.entries(plan.summary.elementsByType);
   const relationshipItems = Object.entries(plan.summary.relationshipsByType);
 
@@ -93,7 +100,7 @@ const SeedPreview: React.FC<{ plan: SeedPlan; showNonEmptyWarning: boolean }> = 
           description={
             <div>
               {plan.warnings.map((w, idx) => (
-                <div key={idx}>{w}</div>
+                <div key={`warning-${idx}-${w}`}>{w}</div>
               ))}
             </div>
           }
@@ -101,7 +108,8 @@ const SeedPreview: React.FC<{ plan: SeedPlan; showNonEmptyWarning: boolean }> = 
       ) : null}
 
       <Typography.Text type="secondary">
-        All seeded objects and relationships are flagged with isSampleData = true.
+        All seeded objects and relationships are flagged with isSampleData =
+        true.
       </Typography.Text>
     </Space>
   );
@@ -111,7 +119,10 @@ export const useSeedSampleData = () => {
   const { eaRepository, metadata, trySetEaRepository } = useEaRepository();
   const { setSelection } = useIdeSelection();
 
-  const isRepoEmpty = React.useMemo(() => isRepositoryEffectivelyEmpty(eaRepository), [eaRepository]);
+  const isRepoEmpty = React.useMemo(
+    () => isRepositoryEffectivelyEmpty(eaRepository),
+    [eaRepository],
+  );
   const hasRepository = Boolean(eaRepository && metadata);
 
   const openSeedSampleDataModal = React.useCallback(() => {
@@ -127,7 +138,8 @@ export const useSeedSampleData = () => {
     if (plan.summary.totalObjects === 0) {
       Modal.info({
         title: 'Seeding not available',
-        content: 'No seed data can be created for this scope or meta-model configuration.',
+        content:
+          'No seed data can be created for this scope or meta-model configuration.',
       });
       return;
     }
@@ -137,7 +149,12 @@ export const useSeedSampleData = () => {
       okText: 'Seed sample data',
       cancelText: 'Cancel',
       width: 720,
-      content: <SeedPreview plan={plan} showNonEmptyWarning={!isRepositoryEffectivelyEmpty(eaRepository)} />,
+      content: (
+        <SeedPreview
+          plan={plan}
+          showNonEmptyWarning={!isRepositoryEffectivelyEmpty(eaRepository)}
+        />
+      ),
       onOk: () => {
         const applied = applySeedPlan(eaRepository, plan);
         if (!applied.ok) {

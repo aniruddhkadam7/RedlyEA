@@ -1,9 +1,8 @@
-import type { ArchitectureScope } from '@/repository/repositoryMetadata';
 import {
-  OBJECT_TYPE_DEFINITIONS,
-  type ObjectType,
   isValidObjectType,
+  type ObjectType,
 } from '@/pages/dependency-view/utils/eaMetaModel';
+import type { ArchitectureScope } from '@/repository/repositoryMetadata';
 
 export type WritableLayer = 'Business' | 'Application' | 'Technology';
 

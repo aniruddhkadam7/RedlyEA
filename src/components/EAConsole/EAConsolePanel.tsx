@@ -1,15 +1,31 @@
-import React from 'react';
 import { Button, Select } from 'antd';
-import { eaConsole, type EAConsoleDomain, type EAConsoleLevel, type EAConsoleMessage } from '@/ea/eaConsole';
+import React from 'react';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
+import {
+  type EAConsoleDomain,
+  type EAConsoleLevel,
+  type EAConsoleMessage,
+  eaConsole,
+} from '@/ea/eaConsole';
 import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import styles from './style.module.less';
 
 const LEVELS: EAConsoleLevel[] = ['info', 'success', 'warning', 'error'];
-const DOMAINS: EAConsoleDomain[] = ['canvas', 'relationship', 'validation', 'repository', 'governance', 'system'];
+const DOMAINS: EAConsoleDomain[] = [
+  'canvas',
+  'relationship',
+  'validation',
+  'repository',
+  'governance',
+  'system',
+];
 
 const useConsoleMessages = () => {
-  return React.useSyncExternalStore(eaConsole.subscribe, eaConsole.getSnapshot, eaConsole.getSnapshot);
+  return React.useSyncExternalStore(
+    eaConsole.subscribe,
+    eaConsole.getSnapshot,
+    eaConsole.getSnapshot,
+  );
 };
 
 const formatTimestamp = (ts: number) => {
@@ -20,7 +36,10 @@ const formatTimestamp = (ts: number) => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
-const resolveElementType = (repo: ReturnType<typeof useEaRepository>['eaRepository'], elementId?: string) => {
+const resolveElementType = (
+  repo: ReturnType<typeof useEaRepository>['eaRepository'],
+  elementId?: string,
+) => {
   if (!repo || !elementId) return null;
   return repo.objects.get(elementId)?.type ?? null;
 };
@@ -28,7 +47,8 @@ const resolveElementType = (repo: ReturnType<typeof useEaRepository>['eaReposito
 const buildContextSummary = (msg: EAConsoleMessage) => {
   const parts: string[] = [];
   if (msg.context?.elementId) parts.push(`Element: ${msg.context.elementId}`);
-  if (msg.context?.relationshipType) parts.push(`Relationship: ${msg.context.relationshipType}`);
+  if (msg.context?.relationshipType)
+    parts.push(`Relationship: ${msg.context.relationshipType}`);
   if (msg.context?.viewId) parts.push(`View: ${msg.context.viewId}`);
   return parts.join(' • ');
 };
@@ -40,8 +60,12 @@ const EAConsolePanel: React.FC = () => {
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const autoScrollRef = React.useRef(true);
 
-  const [levelFilter, setLevelFilter] = React.useState<EAConsoleLevel | 'all'>('all');
-  const [domainFilter, setDomainFilter] = React.useState<EAConsoleDomain | 'all'>('all');
+  const [levelFilter, setLevelFilter] = React.useState<EAConsoleLevel | 'all'>(
+    'all',
+  );
+  const [domainFilter, setDomainFilter] = React.useState<
+    EAConsoleDomain | 'all'
+  >('all');
 
   const filtered = React.useMemo(() => {
     return messages.filter((msg) => {
@@ -63,8 +87,14 @@ const EAConsolePanel: React.FC = () => {
     autoScrollRef.current = distance < 12;
   }, []);
 
-  const levelOptions = [{ value: 'all', label: 'All levels' }, ...LEVELS.map((level) => ({ value: level, label: level }))];
-  const domainOptions = [{ value: 'all', label: 'All domains' }, ...DOMAINS.map((domain) => ({ value: domain, label: domain }))];
+  const levelOptions = [
+    { value: 'all', label: 'All levels' },
+    ...LEVELS.map((level) => ({ value: level, label: level })),
+  ];
+  const domainOptions = [
+    { value: 'all', label: 'All domains' },
+    ...DOMAINS.map((domain) => ({ value: domain, label: domain })),
+  ];
 
   const handleEntryClick = (msg: EAConsoleMessage) => {
     if (!msg.context?.elementId) return;
@@ -95,7 +125,9 @@ const EAConsolePanel: React.FC = () => {
             className={styles.filterSelect}
             size="small"
             value={domainFilter}
-            onChange={(next) => setDomainFilter(next as EAConsoleDomain | 'all')}
+            onChange={(next) =>
+              setDomainFilter(next as EAConsoleDomain | 'all')
+            }
             options={domainOptions}
           />
         </div>
@@ -123,13 +155,17 @@ const EAConsolePanel: React.FC = () => {
               }}
             >
               <div className={styles.rowMeta}>
-                <span className={styles.timestamp}>{formatTimestamp(msg.timestamp)}</span>
+                <span className={styles.timestamp}>
+                  {formatTimestamp(msg.timestamp)}
+                </span>
                 <span className={styles.domain}>{msg.domain}</span>
                 <span className={styles.level}>{msg.level}</span>
               </div>
               <div className={styles.rowMessage}>{msg.message}</div>
               {msg.context ? (
-                <div className={styles.rowContext}>{buildContextSummary(msg)}</div>
+                <div className={styles.rowContext}>
+                  {buildContextSummary(msg)}
+                </div>
               ) : null}
             </div>
           ))

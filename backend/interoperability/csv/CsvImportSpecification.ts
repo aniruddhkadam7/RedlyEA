@@ -117,24 +117,49 @@ export type CsvRowError = {
 };
 
 // Shared enums from internal domain (redeclared as string unions for spec purposes).
-const ARCHITECTURE_LAYER = ['Business', 'Application', 'Technology', 'Implementation & Migration', 'Governance'] as const;
-const LIFECYCLE_STATUS = ['Planned', 'Active', 'Deprecated', 'Retired'] as const;
+const ARCHITECTURE_LAYER = [
+  'Business',
+  'Application',
+  'Technology',
+  'Implementation & Migration',
+  'Governance',
+] as const;
+const LIFECYCLE_STATUS = [
+  'Planned',
+  'Active',
+  'Deprecated',
+  'Retired',
+] as const;
 const APPROVAL_STATUS = ['Draft', 'Approved', 'Rejected'] as const;
 
 const APPLICATION_TYPE = ['COTS', 'Custom', 'SaaS', 'Legacy'] as const;
-const BUSINESS_CRITICALITY = ['Mission-Critical', 'High', 'Medium', 'Low'] as const;
+const BUSINESS_CRITICALITY = [
+  'Mission-Critical',
+  'High',
+  'Medium',
+  'Low',
+] as const;
 const DEPLOYMENT_MODEL = ['On-Prem', 'Cloud', 'Hybrid'] as const;
 const RISK_LEVEL = ['High', 'Medium', 'Low'] as const;
 
 const TECHNOLOGY_TYPE = ['Infrastructure', 'Platform', 'Service'] as const;
-const TECHNOLOGY_CATEGORY = ['Compute', 'Storage', 'Network', 'Middleware'] as const;
+const TECHNOLOGY_CATEGORY = [
+  'Compute',
+  'Storage',
+  'Network',
+  'Middleware',
+] as const;
 
 const CAPABILITY_LEVEL = ['L1', 'L2', 'L3'] as const;
 const STRATEGIC_IMPORTANCE = ['High', 'Medium', 'Low'] as const;
 const PROCESS_FREQUENCY = ['Ad-hoc', 'Daily', 'Weekly', 'Monthly'] as const;
 const PROCESS_CRITICALITY = ['High', 'Medium', 'Low'] as const;
 
-const PROGRAMME_TYPE = ['Transformation', 'Compliance', 'Modernization'] as const;
+const PROGRAMME_TYPE = [
+  'Transformation',
+  'Compliance',
+  'Modernization',
+] as const;
 const FUNDING_STATUS = ['Approved', 'Proposed', 'Rejected'] as const;
 
 // Relationship enums (BaseArchitectureRelationship + specialized fields)
@@ -176,32 +201,117 @@ const EXPECTED_CHANGE_MAGNITUDE = ['High', 'Medium', 'Low'] as const;
 const BASE_ELEMENT_COLUMNS: readonly CsvFieldSpec[] = [
   { name: 'id', type: 'uuid', requiredHeader: true, requiredCell: true },
   { name: 'name', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'description', type: 'string', requiredHeader: true, requiredCell: true },
+  {
+    name: 'description',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 
-  { name: 'elementType', type: 'enum', requiredHeader: true, requiredCell: true },
-  { name: 'layer', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: ARCHITECTURE_LAYER },
+  {
+    name: 'elementType',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'layer',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: ARCHITECTURE_LAYER,
+  },
 
-  { name: 'lifecycleStatus', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: LIFECYCLE_STATUS },
-  { name: 'lifecycleStartDate', type: 'iso8601', requiredHeader: true, requiredCell: true },
+  {
+    name: 'lifecycleStatus',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: LIFECYCLE_STATUS,
+  },
+  {
+    name: 'lifecycleStartDate',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
   { name: 'lifecycleEndDate', type: 'optional-iso8601', requiredHeader: false },
 
-  { name: 'ownerRole', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'ownerName', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'owningUnit', type: 'string', requiredHeader: true, requiredCell: true },
+  {
+    name: 'ownerRole',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'ownerName',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'owningUnit',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 
-  { name: 'approvalStatus', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: APPROVAL_STATUS },
-  { name: 'lastReviewedAt', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'reviewCycleMonths', type: 'number', requiredHeader: true, requiredCell: true },
+  {
+    name: 'approvalStatus',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: APPROVAL_STATUS,
+  },
+  {
+    name: 'lastReviewedAt',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'reviewCycleMonths',
+    type: 'number',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 
-  { name: 'createdAt', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'createdBy', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'lastModifiedAt', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'lastModifiedBy', type: 'string', requiredHeader: true, requiredCell: true },
+  {
+    name: 'createdAt',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'createdBy',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'lastModifiedAt',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'lastModifiedBy',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 ];
 
-const makeSchema = (entity: CsvImportSourceEntity, columns: readonly CsvFieldSpec[]): CsvSchemaSpec => {
-  const requiredHeaders = columns.filter((c) => c.requiredHeader).map((c) => c.name);
-  const optionalHeaders = columns.filter((c) => !c.requiredHeader).map((c) => c.name);
+const makeSchema = (
+  entity: CsvImportSourceEntity,
+  columns: readonly CsvFieldSpec[],
+): CsvSchemaSpec => {
+  const requiredHeaders = columns
+    .filter((c) => c.requiredHeader)
+    .map((c) => c.name);
+  const optionalHeaders = columns
+    .filter((c) => !c.requiredHeader)
+    .map((c) => c.name);
 
   return {
     specVersion: 'csv-import/1',
@@ -226,28 +336,60 @@ const makeSchema = (entity: CsvImportSourceEntity, columns: readonly CsvFieldSpe
  * Strictness:
  * - `elementType` MUST be "Capability" for every row.
  */
-export const CAPABILITIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Capabilities', [
-  ...BASE_ELEMENT_COLUMNS.map((c) =>
-    c.name === 'elementType' ? { ...c, enumValues: ['Capability'], type: 'enum' as const } : c,
-  ),
+export const CAPABILITIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema(
+  'Capabilities',
+  [
+    ...BASE_ELEMENT_COLUMNS.map((c) =>
+      c.name === 'elementType'
+        ? { ...c, enumValues: ['Capability'], type: 'enum' as const }
+        : c,
+    ),
 
-  { name: 'capabilityLevel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: CAPABILITY_LEVEL },
-  { name: 'parentCapabilityId', type: 'nullable-uuid', requiredHeader: true },
-  { name: 'businessOutcome', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'valueStream', type: 'optional-string', requiredHeader: false },
+    {
+      name: 'capabilityLevel',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: CAPABILITY_LEVEL,
+    },
+    { name: 'parentCapabilityId', type: 'nullable-uuid', requiredHeader: true },
+    {
+      name: 'businessOutcome',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    { name: 'valueStream', type: 'optional-string', requiredHeader: false },
 
-  { name: 'inScope', type: 'boolean', requiredHeader: true, requiredCell: true },
-  { name: 'impactedByChange', type: 'boolean', requiredHeader: true, requiredCell: true },
+    {
+      name: 'inScope',
+      type: 'boolean',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'impactedByChange',
+      type: 'boolean',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  {
-    name: 'strategicImportance',
-    type: 'enum',
-    requiredHeader: true,
-    requiredCell: true,
-    enumValues: STRATEGIC_IMPORTANCE,
-  },
-  { name: 'maturityLevel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: ['1', '2', '3', '4', '5'] },
-]);
+    {
+      name: 'strategicImportance',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: STRATEGIC_IMPORTANCE,
+    },
+    {
+      name: 'maturityLevel',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: ['1', '2', '3', '4', '5'],
+    },
+  ],
+);
 
 /**
  * BusinessProcesses CSV schema.
@@ -255,23 +397,70 @@ export const CAPABILITIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Capabilities',
  * Strictness:
  * - `elementType` MUST be "BusinessProcess" for every row.
  */
-export const BUSINESS_PROCESSES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('BusinessProcesses', [
-  ...BASE_ELEMENT_COLUMNS.map((c) =>
-    c.name === 'elementType' ? { ...c, enumValues: ['BusinessProcess'], type: 'enum' as const } : c,
-  ),
+export const BUSINESS_PROCESSES_CSV_SCHEMA: CsvSchemaSpec = makeSchema(
+  'BusinessProcesses',
+  [
+    ...BASE_ELEMENT_COLUMNS.map((c) =>
+      c.name === 'elementType'
+        ? { ...c, enumValues: ['BusinessProcess'], type: 'enum' as const }
+        : c,
+    ),
 
-  { name: 'processOwner', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'triggeringEvent', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'expectedOutcome', type: 'string', requiredHeader: true, requiredCell: true },
+    {
+      name: 'processOwner',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'triggeringEvent',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'expectedOutcome',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  { name: 'frequency', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: PROCESS_FREQUENCY },
-  { name: 'criticality', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: PROCESS_CRITICALITY },
+    {
+      name: 'frequency',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: PROCESS_FREQUENCY,
+    },
+    {
+      name: 'criticality',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: PROCESS_CRITICALITY,
+    },
 
-  { name: 'regulatoryRelevant', type: 'boolean', requiredHeader: true, requiredCell: true },
-  { name: 'complianceNotes', type: 'string', requiredHeader: true, requiredCell: true },
+    {
+      name: 'regulatoryRelevant',
+      type: 'boolean',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'complianceNotes',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  { name: 'parentCapabilityId', type: 'uuid', requiredHeader: true, requiredCell: true },
-]);
+    {
+      name: 'parentCapabilityId',
+      type: 'uuid',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+  ],
+);
 
 /**
  * Applications CSV schema.
@@ -279,30 +468,79 @@ export const BUSINESS_PROCESSES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Business
  * Strictness:
  * - `elementType` MUST be "Application" for every row.
  */
-export const APPLICATIONS_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Applications', [
-  ...BASE_ELEMENT_COLUMNS.map((c) =>
-    c.name === 'elementType' ? { ...c, enumValues: ['Application'], type: 'enum' as const } : c,
-  ),
+export const APPLICATIONS_CSV_SCHEMA: CsvSchemaSpec = makeSchema(
+  'Applications',
+  [
+    ...BASE_ELEMENT_COLUMNS.map((c) =>
+      c.name === 'elementType'
+        ? { ...c, enumValues: ['Application'], type: 'enum' as const }
+        : c,
+    ),
 
-  { name: 'applicationCode', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'applicationType', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: APPLICATION_TYPE },
+    {
+      name: 'applicationCode',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'applicationType',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: APPLICATION_TYPE,
+    },
 
-  {
-    name: 'businessCriticality',
-    type: 'enum',
-    requiredHeader: true,
-    requiredCell: true,
-    enumValues: BUSINESS_CRITICALITY,
-  },
-  { name: 'availabilityTarget', type: 'number', requiredHeader: true, requiredCell: true },
-  { name: 'deploymentModel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: DEPLOYMENT_MODEL },
+    {
+      name: 'businessCriticality',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: BUSINESS_CRITICALITY,
+    },
+    {
+      name: 'availabilityTarget',
+      type: 'number',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'deploymentModel',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: DEPLOYMENT_MODEL,
+    },
 
-  { name: 'vendorLockInRisk', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RISK_LEVEL },
-  { name: 'technicalDebtLevel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RISK_LEVEL },
+    {
+      name: 'vendorLockInRisk',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RISK_LEVEL,
+    },
+    {
+      name: 'technicalDebtLevel',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RISK_LEVEL,
+    },
 
-  { name: 'annualRunCost', type: 'number', requiredHeader: true, requiredCell: true },
-  { name: 'vendorName', type: 'string', requiredHeader: true, requiredCell: true },
-]);
+    {
+      name: 'annualRunCost',
+      type: 'number',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'vendorName',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+  ],
+);
 
 /**
  * Technologies CSV schema.
@@ -310,27 +548,64 @@ export const APPLICATIONS_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Applications',
  * Strictness:
  * - `elementType` MUST be "Technology" for every row.
  */
-export const TECHNOLOGIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Technologies', [
-  ...BASE_ELEMENT_COLUMNS.map((c) =>
-    c.name === 'elementType' ? { ...c, enumValues: ['Technology'], type: 'enum' as const } : c,
-  ),
+export const TECHNOLOGIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema(
+  'Technologies',
+  [
+    ...BASE_ELEMENT_COLUMNS.map((c) =>
+      c.name === 'elementType'
+        ? { ...c, enumValues: ['Technology'], type: 'enum' as const }
+        : c,
+    ),
 
-  { name: 'technologyType', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: TECHNOLOGY_TYPE },
-  {
-    name: 'technologyCategory',
-    type: 'enum',
-    requiredHeader: true,
-    requiredCell: true,
-    enumValues: TECHNOLOGY_CATEGORY,
-  },
+    {
+      name: 'technologyType',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: TECHNOLOGY_TYPE,
+    },
+    {
+      name: 'technologyCategory',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: TECHNOLOGY_CATEGORY,
+    },
 
-  { name: 'vendor', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'version', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'supportEndDate', type: 'iso8601', requiredHeader: true, requiredCell: true },
+    {
+      name: 'vendor',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'version',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'supportEndDate',
+      type: 'iso8601',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  { name: 'obsolescenceRisk', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RISK_LEVEL },
-  { name: 'standardApproved', type: 'boolean', requiredHeader: true, requiredCell: true },
-]);
+    {
+      name: 'obsolescenceRisk',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RISK_LEVEL,
+    },
+    {
+      name: 'standardApproved',
+      type: 'boolean',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+  ],
+);
 
 /**
  * Programmes CSV schema.
@@ -340,20 +615,65 @@ export const TECHNOLOGIES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Technologies',
  */
 export const PROGRAMMES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Programmes', [
   ...BASE_ELEMENT_COLUMNS.map((c) =>
-    c.name === 'elementType' ? { ...c, enumValues: ['Programme'], type: 'enum' as const } : c,
+    c.name === 'elementType'
+      ? { ...c, enumValues: ['Programme'], type: 'enum' as const }
+      : c,
   ),
 
-  { name: 'programmeType', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: PROGRAMME_TYPE },
-  { name: 'strategicObjective', type: 'string', requiredHeader: true, requiredCell: true },
+  {
+    name: 'programmeType',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: PROGRAMME_TYPE,
+  },
+  {
+    name: 'strategicObjective',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 
-  { name: 'startDate', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'endDate', type: 'iso8601', requiredHeader: true, requiredCell: true },
+  {
+    name: 'startDate',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'endDate',
+    type: 'iso8601',
+    requiredHeader: true,
+    requiredCell: true,
+  },
 
-  { name: 'budgetEstimate', type: 'number', requiredHeader: true, requiredCell: true },
-  { name: 'fundingStatus', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: FUNDING_STATUS },
+  {
+    name: 'budgetEstimate',
+    type: 'number',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'fundingStatus',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: FUNDING_STATUS,
+  },
 
-  { name: 'expectedBusinessImpact', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'riskLevel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RISK_LEVEL },
+  {
+    name: 'expectedBusinessImpact',
+    type: 'string',
+    requiredHeader: true,
+    requiredCell: true,
+  },
+  {
+    name: 'riskLevel',
+    type: 'enum',
+    requiredHeader: true,
+    requiredCell: true,
+    enumValues: RISK_LEVEL,
+  },
 ]);
 
 /**
@@ -368,46 +688,169 @@ export const PROGRAMMES_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Programmes', [
  * - `relationshipType` MUST be one of the supported internal types.
  * - No inference (no implicit reverse edges, no endpoint guessing).
  */
-export const RELATIONSHIPS_CSV_SCHEMA: CsvSchemaSpec = makeSchema('Relationships', [
-  { name: 'id', type: 'uuid', requiredHeader: true, requiredCell: true },
-  { name: 'relationshipType', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RELATIONSHIP_TYPE },
+export const RELATIONSHIPS_CSV_SCHEMA: CsvSchemaSpec = makeSchema(
+  'Relationships',
+  [
+    { name: 'id', type: 'uuid', requiredHeader: true, requiredCell: true },
+    {
+      name: 'relationshipType',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RELATIONSHIP_TYPE,
+    },
 
-  { name: 'sourceElementId', type: 'uuid', requiredHeader: true, requiredCell: true },
-  { name: 'sourceElementType', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'targetElementId', type: 'uuid', requiredHeader: true, requiredCell: true },
-  { name: 'targetElementType', type: 'string', requiredHeader: true, requiredCell: true },
+    {
+      name: 'sourceElementId',
+      type: 'uuid',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'sourceElementType',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'targetElementId',
+      type: 'uuid',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'targetElementType',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  { name: 'direction', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RELATIONSHIP_DIRECTION },
+    {
+      name: 'direction',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RELATIONSHIP_DIRECTION,
+    },
 
-  { name: 'status', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: RELATIONSHIP_STATUS },
-  { name: 'effectiveFrom', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'effectiveTo', type: 'optional-iso8601', requiredHeader: false },
+    {
+      name: 'status',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: RELATIONSHIP_STATUS,
+    },
+    {
+      name: 'effectiveFrom',
+      type: 'iso8601',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    { name: 'effectiveTo', type: 'optional-iso8601', requiredHeader: false },
 
-  { name: 'rationale', type: 'string', requiredHeader: true, requiredCell: true },
-  { name: 'confidenceLevel', type: 'enum', requiredHeader: true, requiredCell: true, enumValues: CONFIDENCE_LEVEL },
-  { name: 'lastReviewedAt', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'reviewedBy', type: 'string', requiredHeader: true, requiredCell: true },
+    {
+      name: 'rationale',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'confidenceLevel',
+      type: 'enum',
+      requiredHeader: true,
+      requiredCell: true,
+      enumValues: CONFIDENCE_LEVEL,
+    },
+    {
+      name: 'lastReviewedAt',
+      type: 'iso8601',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'reviewedBy',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  { name: 'createdAt', type: 'iso8601', requiredHeader: true, requiredCell: true },
-  { name: 'createdBy', type: 'string', requiredHeader: true, requiredCell: true },
+    {
+      name: 'createdAt',
+      type: 'iso8601',
+      requiredHeader: true,
+      requiredCell: true,
+    },
+    {
+      name: 'createdBy',
+      type: 'string',
+      requiredHeader: true,
+      requiredCell: true,
+    },
 
-  // Relationship-type specific columns (header required for deterministic schema)
-  { name: 'dependencyType', type: 'enum', requiredHeader: true, enumValues: DEPENDENCY_TYPE },
-  { name: 'dependencyStrength', type: 'enum', requiredHeader: true, enumValues: DEPENDENCY_STRENGTH },
-  { name: 'runtimeCritical', type: 'boolean', requiredHeader: true },
+    // Relationship-type specific columns (header required for deterministic schema)
+    {
+      name: 'dependencyType',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: DEPENDENCY_TYPE,
+    },
+    {
+      name: 'dependencyStrength',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: DEPENDENCY_STRENGTH,
+    },
+    { name: 'runtimeCritical', type: 'boolean', requiredHeader: true },
 
-  { name: 'hostingRole', type: 'enum', requiredHeader: true, enumValues: HOSTING_ROLE },
-  { name: 'environment', type: 'enum', requiredHeader: true, enumValues: HOSTING_ENVIRONMENT },
-  { name: 'resilienceLevel', type: 'enum', requiredHeader: true, enumValues: RESILIENCE_LEVEL },
+    {
+      name: 'hostingRole',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: HOSTING_ROLE,
+    },
+    {
+      name: 'environment',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: HOSTING_ENVIRONMENT,
+    },
+    {
+      name: 'resilienceLevel',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: RESILIENCE_LEVEL,
+    },
 
-  { name: 'automationLevel', type: 'enum', requiredHeader: true, enumValues: AUTOMATION_LEVEL },
-  { name: 'automationCoveragePercent', type: 'optional-number', requiredHeader: false },
+    {
+      name: 'automationLevel',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: AUTOMATION_LEVEL,
+    },
+    {
+      name: 'automationCoveragePercent',
+      type: 'optional-number',
+      requiredHeader: false,
+    },
 
-  { name: 'impactType', type: 'enum', requiredHeader: true, enumValues: IMPACT_TYPE },
-  { name: 'expectedChangeMagnitude', type: 'enum', requiredHeader: true, enumValues: EXPECTED_CHANGE_MAGNITUDE },
-]);
+    {
+      name: 'impactType',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: IMPACT_TYPE,
+    },
+    {
+      name: 'expectedChangeMagnitude',
+      type: 'enum',
+      requiredHeader: true,
+      enumValues: EXPECTED_CHANGE_MAGNITUDE,
+    },
+  ],
+);
 
-export const CSV_IMPORT_SPECS: Readonly<Record<CsvImportSourceEntity, CsvSchemaSpec>> = {
+export const CSV_IMPORT_SPECS: Readonly<
+  Record<CsvImportSourceEntity, CsvSchemaSpec>
+> = {
   Capabilities: CAPABILITIES_CSV_SCHEMA,
   BusinessProcesses: BUSINESS_PROCESSES_CSV_SCHEMA,
   Applications: APPLICATIONS_CSV_SCHEMA,

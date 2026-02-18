@@ -4,6 +4,7 @@
 };
 
 type RequestConfig = Record<string, any>;
+
 import { message, notification } from '@/ea/eaConsole';
 
 // 错误处理方案： 错误类型

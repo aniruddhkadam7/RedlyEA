@@ -1,9 +1,13 @@
-import { createView, getViewRepository } from '../../backend/views/ViewRepositoryStore';
 import type { ViewDefinition } from '../../backend/views/ViewDefinition';
+import {
+  createView,
+  getViewRepository,
+} from '../../backend/views/ViewRepositoryStore';
 
 const makeId = (): string => {
   try {
-    if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
+    if (typeof globalThis.crypto?.randomUUID === 'function')
+      return globalThis.crypto.randomUUID();
   } catch {
     // ignore
   }
@@ -16,7 +20,9 @@ const upsertByName = (name: string, viewFactory: () => ViewDefinition) => {
   const repo = getViewRepository();
   const existing = repo
     .listAllViews()
-    .find((v) => (v.name ?? '').trim().toLowerCase() === name.trim().toLowerCase());
+    .find(
+      (v) => (v.name ?? '').trim().toLowerCase() === name.trim().toLowerCase(),
+    );
   if (existing) return;
 
   const view = viewFactory();
@@ -39,7 +45,8 @@ export function seedDefaultViewsForProgrammeScope(): void {
   upsertByName('Programme Impact View', () => ({
     id: makeId(),
     name: 'Programme Impact View',
-    description: 'Programme-to-impacted capability/application traceability view (transformation-centric).',
+    description:
+      'Programme-to-impacted capability/application traceability view (transformation-centric).',
     viewType: 'ImpactView',
     architectureLayer: 'CrossLayer',
     allowedElementTypes: ['Programme', 'Project', 'Capability', 'Application'],

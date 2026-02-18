@@ -1,11 +1,11 @@
-import React from 'react';
 import { Alert, Spin, Typography } from 'antd';
-import DependencyAnalysisWorkspaceTab from './DependencyAnalysisWorkspaceTab';
-import CoverageAnalysisWorkspaceTab from './CoverageAnalysisWorkspaceTab';
-import RoadmapWorkspaceTab from './RoadmapWorkspaceTab';
+import React from 'react';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
 import { isGapAnalysisAllowedForLifecycleCoverage } from '@/repository/lifecycleCoveragePolicy';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import CoverageAnalysisWorkspaceTab from './CoverageAnalysisWorkspaceTab';
+import DependencyAnalysisWorkspaceTab from './DependencyAnalysisWorkspaceTab';
+import RoadmapWorkspaceTab from './RoadmapWorkspaceTab';
 
 const LazyImpactAnalysisTab = React.lazy(() => import('./ImpactAnalysisTab'));
 
@@ -24,7 +24,23 @@ const AnalysisTab: React.FC<{ kind: AnalysisKind }> = ({ kind }) => {
   if (kind === 'impact') {
     return (
       <ErrorBoundary>
-        <React.Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}><Spin size="large" /><Typography.Text type="secondary" style={{ marginTop: 8 }}>Loading Impact Analysis…</Typography.Text></div>}>
+        <React.Suspense
+          fallback={
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 300,
+              }}
+            >
+              <Spin size="large" />
+              <Typography.Text type="secondary" style={{ marginTop: 8 }}>
+                Loading Impact Analysis…
+              </Typography.Text>
+            </div>
+          }
+        >
           <LazyImpactAnalysisTab />
         </React.Suspense>
       </ErrorBoundary>
@@ -36,7 +52,9 @@ const AnalysisTab: React.FC<{ kind: AnalysisKind }> = ({ kind }) => {
   }
 
   if (kind === 'gap') {
-    if (!isGapAnalysisAllowedForLifecycleCoverage(metadata?.lifecycleCoverage)) {
+    if (
+      !isGapAnalysisAllowedForLifecycleCoverage(metadata?.lifecycleCoverage)
+    ) {
       return (
         <div style={{ padding: 12 }}>
           <Typography.Title level={5} style={{ marginTop: 0 }}>
@@ -64,7 +82,8 @@ const AnalysisTab: React.FC<{ kind: AnalysisKind }> = ({ kind }) => {
         {TITLE_BY_KIND[kind]}
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-        Placeholder analysis view. Analysis tabs should operate on repository data only and open results in read-only tabs.
+        Placeholder analysis view. Analysis tabs should operate on repository
+        data only and open results in read-only tabs.
       </Typography.Paragraph>
     </div>
   );

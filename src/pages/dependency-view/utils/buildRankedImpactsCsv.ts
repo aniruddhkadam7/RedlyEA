@@ -1,13 +1,20 @@
 import type { RankedImpactItem } from '../components/ApplicationSidePanel';
 
 const csvEscape = (value: string) => {
-  if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
+  if (
+    value.includes('"') ||
+    value.includes(',') ||
+    value.includes('\n') ||
+    value.includes('\r')
+  ) {
     return `"${value.replaceAll('"', '""')}"`;
   }
   return value;
 };
 
-export function buildRankedImpactsCsv(rankedImpacts: ReadonlyArray<RankedImpactItem>): string {
+export function buildRankedImpactsCsv(
+  rankedImpacts: ReadonlyArray<RankedImpactItem>,
+): string {
   const headers = ['rank', 'applicationName', 'severityLabel', 'severityScore'];
 
   const lines: string[] = [headers.join(',')];

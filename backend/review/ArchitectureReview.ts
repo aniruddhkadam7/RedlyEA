@@ -1,4 +1,7 @@
-export type ArchitectureReviewState = 'Not Reviewed' | 'Reviewed' | 'Review Findings Accepted';
+export type ArchitectureReviewState =
+  | 'Not Reviewed'
+  | 'Reviewed'
+  | 'Review Findings Accepted';
 
 export type ReviewSubjectKind = 'View' | 'ImpactAnalysis';
 

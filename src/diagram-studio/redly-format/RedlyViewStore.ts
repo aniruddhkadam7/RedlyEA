@@ -43,7 +43,7 @@ const readFromSnapshot = (viewId: string): RedlyFile | null => {
   const redlyFiles = (snapshot?.studioState as any)?.redlyFiles as
     | Record<string, RedlyFile>
     | undefined;
-  if (redlyFiles && redlyFiles[viewId]) {
+  if (redlyFiles?.[viewId]) {
     const file = redlyFiles[viewId];
     memoryCache.set(viewId, file);
     return file;

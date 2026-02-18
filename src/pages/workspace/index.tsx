@@ -1,22 +1,34 @@
+import {
+  Alert,
+  Button,
+  Card,
+  Empty,
+  Space,
+  Table,
+  Typography,
+  Upload,
+} from 'antd';
 import React from 'react';
 
-import { Card, Empty, Space, Typography, Button, Upload, Alert, Table } from 'antd';
-
 import { useEaProject } from '@/ea/EaProjectContext';
-import { addElement } from '../../../backend/repository/RepositoryStore';
-import { addRelationship } from '../../../backend/repository/RelationshipRepositoryStore';
-import { getRepository } from '../../../backend/repository/RepositoryStore';
-import type { Capability } from '../../../backend/repository/Capability';
+import { message } from '@/ea/eaConsole';
 import type { Application } from '../../../backend/repository/Application';
 import type { ApplicationDependencyRelationship } from '../../../backend/repository/ApplicationDependencyRelationship';
-import { message } from '@/ea/eaConsole';
+import type { Capability } from '../../../backend/repository/Capability';
+import { addRelationship } from '../../../backend/repository/RelationshipRepositoryStore';
+import {
+  addElement,
+  getRepository,
+} from '../../../backend/repository/RepositoryStore';
 
 const WorkspacePage: React.FC = () => {
   const { project } = useEaProject();
 
   const createId = React.useCallback(() => {
     try {
-      return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `seed-${Date.now()}-${Math.random()}`;
+      return globalThis.crypto?.randomUUID
+        ? globalThis.crypto.randomUUID()
+        : `seed-${Date.now()}-${Math.random()}`;
     } catch {
       return `seed-${Date.now()}-${Math.random()}`;
     }
@@ -26,14 +38,21 @@ const WorkspacePage: React.FC = () => {
 
   const seedSampleData = React.useCallback(() => {
     const repo = getRepository();
-    if (repo.getElementsByType('capabilities').length || repo.getElementsByType('applications').length) {
+    if (
+      repo.getElementsByType('capabilities').length ||
+      repo.getElementsByType('applications').length
+    ) {
       message.info('Repository already has data; skipping seed.');
       return;
     }
 
     const timestamp = nowIso();
 
-    const mkBase = (name: string, elementType: string, layer: 'Business' | 'Application') => ({
+    const mkBase = (
+      name: string,
+      elementType: string,
+      layer: 'Business' | 'Application',
+    ) => ({
       id: createId(),
       name,
       description: `${name} (sample data)`,
@@ -143,7 +162,9 @@ const WorkspacePage: React.FC = () => {
       return;
     }
 
-    message.success('Sample data seeded: capabilities, applications, and a dependency.');
+    message.success(
+      'Sample data seeded: capabilities, applications, and a dependency.',
+    );
   }, [createId, nowIso]);
 
   type ImportPreviewRow = {
@@ -170,7 +191,7 @@ const WorkspacePage: React.FC = () => {
     const headers = lines[0].split(',').map((h) => h.trim());
     const rows: ImportPreviewRow[] = [];
     for (let i = 1; i < lines.length; i += 1) {
-      const cells = lines[i]!.split(',');
+      const cells = lines[i]?.split(',');
       const record: Record<string, string> = {};
       headers.forEach((h, idx) => {
         record[h.toLowerCase()] = (cells[idx] ?? '').trim();
@@ -180,7 +201,8 @@ const WorkspacePage: React.FC = () => {
       const name = record.name || '';
       const description = record.description || '';
       const capabilityLevel = record.capabilitylevel || record.level || '';
-      const parentCapabilityId = record.parentcapabilityid || record.parent || '';
+      const parentCapabilityId =
+        record.parentcapabilityid || record.parent || '';
       const applicationCode = record.applicationcode || record.code || '';
 
       let error: string | undefined;
@@ -209,11 +231,14 @@ const WorkspacePage: React.FC = () => {
     setPreviewRows(rows);
   }, []);
 
-  const handleUpload = React.useCallback(async (file: File) => {
-    const text = await file.text();
-    parseCsv(text);
-    return false; // prevent actual upload
-  }, [parseCsv]);
+  const handleUpload = React.useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      parseCsv(text);
+      return false; // prevent actual upload
+    },
+    [parseCsv],
+  );
 
   const importRows = React.useCallback(() => {
     if (!previewRows.length) return;
@@ -256,7 +281,8 @@ const WorkspacePage: React.FC = () => {
           maturityLevel: 2,
         };
         const res = addElement('capabilities', cap);
-        if (!res.ok) failures.push(`Row ${row.key}: ${res.error ?? 'insert failed'}`);
+        if (!res.ok)
+          failures.push(`Row ${row.key}: ${res.error ?? 'insert failed'}`);
         else successes.push(`Capability ${cap.name}`);
         return;
       }
@@ -291,7 +317,8 @@ const WorkspacePage: React.FC = () => {
           vendorName: 'Unknown',
         };
         const res = addElement('applications', app);
-        if (!res.ok) failures.push(`Row ${row.key}: ${res.error ?? 'insert failed'}`);
+        if (!res.ok)
+          failures.push(`Row ${row.key}: ${res.error ?? 'insert failed'}`);
         else successes.push(`Application ${app.name}`);
         return;
       }
@@ -301,20 +328,34 @@ const WorkspacePage: React.FC = () => {
       message.success(`Imported ${successes.length} rows.`);
     }
     if (failures.length) {
-      message.error(failures.slice(0, 5).join(' | ') + (failures.length > 5 ? ' …' : ''));
+      message.error(
+        failures.slice(0, 5).join(' | ') + (failures.length > 5 ? ' …' : ''),
+      );
     }
   }, [createId, nowIso, previewRows]);
 
-  const hasErrors = React.useMemo(() => previewRows.some((r) => r.error), [previewRows]);
+  const hasErrors = React.useMemo(
+    () => previewRows.some((r) => r.error),
+    [previewRows],
+  );
 
   const columns = [
     { title: 'Type', dataIndex: 'type', key: 'type' },
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Description', dataIndex: 'description', key: 'description' },
     { title: 'Level', dataIndex: 'capabilityLevel', key: 'capabilityLevel' },
-    { title: 'Parent Capability', dataIndex: 'parentCapabilityId', key: 'parentCapabilityId' },
+    {
+      title: 'Parent Capability',
+      dataIndex: 'parentCapabilityId',
+      key: 'parentCapabilityId',
+    },
     { title: 'App Code', dataIndex: 'applicationCode', key: 'applicationCode' },
-    { title: 'Error', dataIndex: 'error', key: 'error', render: (v: string) => v || '' },
+    {
+      title: 'Error',
+      dataIndex: 'error',
+      key: 'error',
+      render: (v: string) => v || '',
+    },
   ];
 
   return (
@@ -329,9 +370,13 @@ const WorkspacePage: React.FC = () => {
             <Space orientation="vertical" size={4}>
               <Typography.Text strong>{project.name}</Typography.Text>
               {project.description ? (
-                <Typography.Text type="secondary">{project.description}</Typography.Text>
+                <Typography.Text type="secondary">
+                  {project.description}
+                </Typography.Text>
               ) : (
-                <Typography.Text type="secondary">No description</Typography.Text>
+                <Typography.Text type="secondary">
+                  No description
+                </Typography.Text>
               )}
               <Typography.Text type="secondary">
                 Created: {new Date(project.createdAt).toLocaleString()}
@@ -347,7 +392,8 @@ const WorkspacePage: React.FC = () => {
                 <Space orientation="vertical" size={0}>
                   <Typography.Text strong>Repository is empty</Typography.Text>
                   <Typography.Text type="secondary">
-                    Add elements from the Catalogues panel, or seed a small sample dataset.
+                    Add elements from the Catalogues panel, or seed a small
+                    sample dataset.
                   </Typography.Text>
                 </Space>
               }
@@ -356,7 +402,9 @@ const WorkspacePage: React.FC = () => {
               <Button type="primary" onClick={seedSampleData}>
                 Seed sample data
               </Button>
-              <Typography.Text type="secondary">Adds demo capabilities, apps, and a dependency (optional).</Typography.Text>
+              <Typography.Text type="secondary">
+                Adds demo capabilities, apps, and a dependency (optional).
+              </Typography.Text>
             </Space>
           </Space>
         </Card>
@@ -364,17 +412,30 @@ const WorkspacePage: React.FC = () => {
         <Card title="Bulk import (CSV)">
           <Space orientation="vertical" size={12} style={{ width: '100%' }}>
             <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-              Import capabilities and applications from CSV (save Excel as CSV). Columns: type, name, description,
-              capabilityLevel, parentCapabilityId, applicationCode. Rows are validated against the metamodel; invalid rows are rejected and shown below.
+              Import capabilities and applications from CSV (save Excel as CSV).
+              Columns: type, name, description, capabilityLevel,
+              parentCapabilityId, applicationCode. Rows are validated against
+              the metamodel; invalid rows are rejected and shown below.
             </Typography.Paragraph>
-            <Upload.Dragger accept=".csv" multiple={false} beforeUpload={handleUpload} showUploadList={false}>
+            <Upload.Dragger
+              accept=".csv"
+              multiple={false}
+              beforeUpload={handleUpload}
+              showUploadList={false}
+            >
               <p className="ant-upload-drag-icon">📄</p>
-              <p className="ant-upload-text">Drag and drop or click to upload a CSV</p>
+              <p className="ant-upload-text">
+                Drag and drop or click to upload a CSV
+              </p>
             </Upload.Dragger>
             {previewRows.length > 0 && (
               <>
                 {hasErrors ? (
-                  <Alert type="error" message="Some rows are invalid. Fix errors before import." showIcon />
+                  <Alert
+                    type="error"
+                    message="Some rows are invalid. Fix errors before import."
+                    showIcon
+                  />
                 ) : (
                   <Alert type="info" message="Ready to import" showIcon />
                 )}
@@ -386,7 +447,11 @@ const WorkspacePage: React.FC = () => {
                   scroll={{ x: true }}
                 />
                 <Space>
-                  <Button type="primary" disabled={!previewRows.length || hasErrors} onClick={importRows}>
+                  <Button
+                    type="primary"
+                    disabled={!previewRows.length || hasErrors}
+                    onClick={importRows}
+                  >
                     Import rows
                   </Button>
                   <Button onClick={() => setPreviewRows([])}>Clear</Button>

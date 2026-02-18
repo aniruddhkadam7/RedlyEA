@@ -34,7 +34,6 @@ import cytoscape, { type Core } from 'cytoscape';
 import React from 'react';
 import {
   hasRoadmapDragPayload,
-  hasViewDragPayload,
   readViewIdFromDrop,
 } from '@/diagram-studio/drag-drop/DragDropConstants';
 import { useStudioDropHandler } from '@/diagram-studio/drag-drop/useStudioDropHandler';
@@ -42,7 +41,6 @@ import {
   type CanvasEdgeData,
   type CanvasNodeData,
   type CanvasState,
-  deserializeView,
   exportRedlyFile,
   importRedlyFile,
   RedlyViewStore,
@@ -427,7 +425,7 @@ const _DRAG_THROTTLE_MS = 50;
 const MAX_LAYOUT_HISTORY = 50;
 const REPO_SNAPSHOT_KEY = 'ea.repository.snapshot.v1';
 const DRAFT_EDGE_ID = '__draft_edge__';
-const ASSOCIATION_FALLBACK_RELATIONSHIP: RelationshipType = 'INTEGRATES_WITH';
+const _ASSOCIATION_FALLBACK_RELATIONSHIP: RelationshipType = 'INTEGRATES_WITH';
 const WORKSPACE_TAB_KEY = '__studio_workspace__';
 const createViewTabKey = (viewId: string) => `view:${viewId}:${generateUUID()}`;
 const createWorkingViewId = () => `working-view-${generateUUID()}`;
@@ -847,7 +845,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
   );
   const hasStagedChanges =
     stagedElements.length > 0 || stagedRelationships.length > 0;
-  const commitDisabled =
+  const _commitDisabled =
     !hasStagedChanges ||
     !hasModelingAccess ||
     commitContextLocked ||
@@ -10572,7 +10570,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
         // Build edges: ONLY relationships that exist in the repository AND
         // whose endpoints are both visible on this canvas
         const visibleNodeIds = new Set(nodes.map((n) => n.id));
-        const workspaceEdgeIdSet = new Set(
+        const _workspaceEdgeIdSet = new Set(
           workspaceLayoutEdges.map((e) => e.id),
         );
 
@@ -11110,14 +11108,14 @@ const StudioShell: React.FC<StudioShellProps> = ({
     [],
   );
 
-  const visibleDesignPrompts = React.useMemo(() => {
+  const _visibleDesignPrompts = React.useMemo(() => {
     if (studioModeLevel !== 'Design') return [] as typeof designModePrompts;
     return designModePrompts.filter(
       (prompt) => !ignoredDesignPrompts.includes(prompt.id),
     );
   }, [designModePrompts, ignoredDesignPrompts, studioModeLevel]);
 
-  const dismissDesignPrompt = React.useCallback((promptId: string) => {
+  const _dismissDesignPrompt = React.useCallback((promptId: string) => {
     setIgnoredDesignPrompts((prev) =>
       prev.includes(promptId) ? prev : [...prev, promptId],
     );
@@ -11250,7 +11248,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     [guidanceItems, ignoredGuidance],
   );
 
-  const guidanceGroups = React.useMemo(() => {
+  const _guidanceGroups = React.useMemo(() => {
     const grouped = new Map<
       string,
       {
@@ -11279,7 +11277,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     );
   }, [visibleGuidanceItems]);
 
-  const visibleGuidanceCount = React.useMemo(
+  const _visibleGuidanceCount = React.useMemo(
     () => visibleGuidanceItems.reduce((sum, item) => sum + item.count, 0),
     [visibleGuidanceItems],
   );
@@ -11707,7 +11705,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
     message.success('View duplicated.');
   }, [activeView, actor, ensureViewTab, viewEditLocked, viewReadOnly]);
 
-  const isTabDirty = React.useCallback(
+  const _isTabDirty = React.useCallback(
     (tab: StudioViewTab) => {
       const state = viewTabStateById[tab.key];
       if (!state) return false;
@@ -13595,7 +13593,9 @@ const StudioShell: React.FC<StudioShellProps> = ({
             }}
             onDrop={(e) => {
               e.preventDefault();
-              const droppedViewId = readViewIdFromDrop(e.nativeEvent.dataTransfer);
+              const droppedViewId = readViewIdFromDrop(
+                e.nativeEvent.dataTransfer,
+              );
               if (droppedViewId) {
                 e.stopPropagation();
                 if (viewReadOnly) return;
@@ -14276,252 +14276,220 @@ const StudioShell: React.FC<StudioShellProps> = ({
                           ) : null}
                         </Space>
                       </div>
-                    ) : (
-                      <>
-                        {selectedStagedElements.length > 1 ? (
-                          <div style={{ display: 'grid', gap: 8 }}>
+                    ) : selectedStagedElements.length > 1 ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Bulk edit (${selectedStagedElements.length} staged elements)`}
+                          description="Edit shared fields only. Changes apply to all selected staged elements."
+                        />
+                        <Form
+                          form={bulkEditForm}
+                          layout="vertical"
+                          onFinish={(values) => {
+                            const description = (
+                              values.description ?? ''
+                            ).trim();
+                            if (!description) {
+                              message.info('Enter a description to apply.');
+                              return;
+                            }
+                            const selectedSet = new Set(
+                              selectedStagedElements.map((el) => el.id),
+                            );
+                            setStagedElements((prev) =>
+                              prev.map((el) =>
+                                selectedSet.has(el.id)
+                                  ? { ...el, description }
+                                  : el,
+                              ),
+                            );
+                            message.success('Bulk description applied.');
+                          }}
+                        >
+                          <Form.Item
+                            label="Description (set for all)"
+                            name="description"
+                          >
+                            <Input.TextArea
+                              rows={3}
+                              placeholder="Enter shared description"
+                            />
+                          </Form.Item>
+                          <Button
+                            type="primary"
+                            onClick={() => bulkEditForm.submit()}
+                          >
+                            Apply to selected
+                          </Button>
+                        </Form>
+                      </div>
+                    ) : stagedSelectedElement ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Staged element • ${stagedSelectedElement.type}`}
+                          description="Edits apply to the workspace only."
+                        />
+                        {isHierarchicalView ? (
+                          <Button
+                            type="default"
+                            onClick={() =>
+                              selectedNodeId &&
+                              startChildCreation(selectedNodeId)
+                            }
+                            disabled={!canAddChild}
+                          >
+                            Add child
+                          </Button>
+                        ) : null}
+                        {stagedSelectedElementExistsInRepo ? (
+                          isMarkedForRemoval(
+                            stagedSelectedElement.attributes,
+                          ) ? (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="Marked for removal in Explorer"
+                              description="This element was marked for deletion from the repository in Explorer and will be removed on commit. Canvas actions cannot undo repository deletions."
+                            />
+                          ) : (
                             <Alert
                               type="info"
                               showIcon
-                              message={`Bulk edit (${selectedStagedElements.length} staged elements)`}
-                              description="Edit shared fields only. Changes apply to all selected staged elements."
+                              message="Explorer is the source of truth"
+                              description="Deleting from the canvas will ask whether to remove from view or delete from the repository."
                             />
-                            <Form
-                              form={bulkEditForm}
-                              layout="vertical"
-                              onFinish={(values) => {
-                                const description = (
-                                  values.description ?? ''
-                                ).trim();
-                                if (!description) {
-                                  message.info('Enter a description to apply.');
-                                  return;
-                                }
-                                const selectedSet = new Set(
-                                  selectedStagedElements.map((el) => el.id),
-                                );
-                                setStagedElements((prev) =>
-                                  prev.map((el) =>
-                                    selectedSet.has(el.id)
-                                      ? { ...el, description }
-                                      : el,
-                                  ),
-                                );
-                                message.success('Bulk description applied.');
-                              }}
-                            >
-                              <Form.Item
-                                label="Description (set for all)"
-                                name="description"
-                              >
-                                <Input.TextArea
-                                  rows={3}
-                                  placeholder="Enter shared description"
-                                />
-                              </Form.Item>
-                              <Button
-                                type="primary"
-                                onClick={() => bulkEditForm.submit()}
-                              >
-                                Apply to selected
-                              </Button>
-                            </Form>
-                          </div>
-                        ) : stagedSelectedElement ? (
-                          <div style={{ display: 'grid', gap: 8 }}>
-                            <Alert
-                              type="info"
-                              showIcon
-                              message={`Staged element • ${stagedSelectedElement.type}`}
-                              description="Edits apply to the workspace only."
-                            />
-                            {isHierarchicalView ? (
-                              <Button
-                                type="default"
-                                onClick={() =>
-                                  selectedNodeId &&
-                                  startChildCreation(selectedNodeId)
-                                }
-                                disabled={!canAddChild}
-                              >
-                                Add child
-                              </Button>
-                            ) : null}
-                            {stagedSelectedElementExistsInRepo ? (
-                              isMarkedForRemoval(
-                                stagedSelectedElement.attributes,
-                              ) ? (
-                                <Alert
-                                  type="warning"
-                                  showIcon
-                                  message="Marked for removal in Explorer"
-                                  description="This element was marked for deletion from the repository in Explorer and will be removed on commit. Canvas actions cannot undo repository deletions."
-                                />
-                              ) : (
-                                <Alert
-                                  type="info"
-                                  showIcon
-                                  message="Explorer is the source of truth"
-                                  description="Deleting from the canvas will ask whether to remove from view or delete from the repository."
-                                />
-                              )
-                            ) : null}
-                            <Button
-                              danger
-                              disabled={viewReadOnly}
-                              onClick={() => {
-                                promptRemoveOrDeleteElements([
-                                  stagedSelectedElement.id,
-                                ]);
-                              }}
-                            >
-                              Remove or delete
-                            </Button>
-                            {!isMarkedForRemoval(
-                              stagedSelectedElement.attributes,
-                            ) ? (
-                              <Form
-                                layout="vertical"
-                                initialValues={{
-                                  name: stagedSelectedElement.name,
-                                  description:
-                                    stagedSelectedElement.description,
-                                  ...(stagedSelectedElement.attributes ?? {}),
-                                }}
-                                onValuesChange={(changed) => {
-                                  setValidationGateOpen(true);
-                                  setStagedElements((prev) =>
-                                    prev.map((el) => {
-                                      if (el.id !== stagedSelectedElement.id)
-                                        return el;
-                                      const next = {
-                                        ...el,
-                                        name:
-                                          typeof changed.name === 'string'
-                                            ? changed.name
-                                            : el.name,
-                                        description:
-                                          typeof changed.description ===
-                                          'string'
-                                            ? changed.description
-                                            : el.description,
-                                        attributes: {
-                                          ...(el.attributes ?? {}),
-                                          ...changed,
-                                        },
-                                      };
-                                      return next;
-                                    }),
-                                  );
-
-                                  if (cyRef.current) {
-                                    const node = cyRef.current.getElementById(
-                                      stagedSelectedElement.id,
-                                    );
-                                    if (
-                                      node &&
-                                      !node.empty() &&
+                          )
+                        ) : null}
+                        <Button
+                          danger
+                          disabled={viewReadOnly}
+                          onClick={() => {
+                            promptRemoveOrDeleteElements([
+                              stagedSelectedElement.id,
+                            ]);
+                          }}
+                        >
+                          Remove or delete
+                        </Button>
+                        {!isMarkedForRemoval(
+                          stagedSelectedElement.attributes,
+                        ) ? (
+                          <Form
+                            layout="vertical"
+                            initialValues={{
+                              name: stagedSelectedElement.name,
+                              description: stagedSelectedElement.description,
+                              ...(stagedSelectedElement.attributes ?? {}),
+                            }}
+                            onValuesChange={(changed) => {
+                              setValidationGateOpen(true);
+                              setStagedElements((prev) =>
+                                prev.map((el) => {
+                                  if (el.id !== stagedSelectedElement.id)
+                                    return el;
+                                  const next = {
+                                    ...el,
+                                    name:
                                       typeof changed.name === 'string'
-                                    ) {
-                                      node.data('label', changed.name);
-                                    }
-                                  }
-                                }}
-                                validateTrigger={['onChange', 'onBlur']}
-                              >
-                                <Form.Item
-                                  label="Name"
-                                  name="name"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: 'Name is required',
+                                        ? changed.name
+                                        : el.name,
+                                    description:
+                                      typeof changed.description === 'string'
+                                        ? changed.description
+                                        : el.description,
+                                    attributes: {
+                                      ...(el.attributes ?? {}),
+                                      ...changed,
                                     },
-                                  ]}
-                                >
-                                  <Input autoFocus />
-                                </Form.Item>
-                                <Form.Item
-                                  label="Description"
-                                  name="description"
-                                >
-                                  <Input.TextArea rows={3} />
-                                </Form.Item>
-                                {requiredElementAttributes(
-                                  stagedSelectedElement.type,
-                                ).map((attr) => (
-                                  <Form.Item
-                                    key={attr}
-                                    label={attr}
-                                    name={attr}
-                                    rules={[
-                                      {
-                                        required: true,
-                                        message: `${attr} is required`,
-                                      },
-                                    ]}
-                                  >
-                                    <Input placeholder={`Enter ${attr}`} />
-                                  </Form.Item>
-                                ))}
-                              </Form>
-                            ) : null}
-                          </div>
-                        ) : stagedSelectedRelationship ? (
-                          <div style={{ display: 'grid', gap: 8 }}>
+                                  };
+                                  return next;
+                                }),
+                              );
+
+                              if (cyRef.current) {
+                                const node = cyRef.current.getElementById(
+                                  stagedSelectedElement.id,
+                                );
+                                if (
+                                  node &&
+                                  !node.empty() &&
+                                  typeof changed.name === 'string'
+                                ) {
+                                  node.data('label', changed.name);
+                                }
+                              }
+                            }}
+                            validateTrigger={['onChange', 'onBlur']}
+                          >
+                            <Form.Item
+                              label="Name"
+                              name="name"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: 'Name is required',
+                                },
+                              ]}
+                            >
+                              <Input autoFocus />
+                            </Form.Item>
+                            <Form.Item label="Description" name="description">
+                              <Input.TextArea rows={3} />
+                            </Form.Item>
+                            {requiredElementAttributes(
+                              stagedSelectedElement.type,
+                            ).map((attr) => (
+                              <Form.Item
+                                key={attr}
+                                label={attr}
+                                name={attr}
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: `${attr} is required`,
+                                  },
+                                ]}
+                              >
+                                <Input placeholder={`Enter ${attr}`} />
+                              </Form.Item>
+                            ))}
+                          </Form>
+                        ) : null}
+                      </div>
+                    ) : stagedSelectedRelationship ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Staged relationship • ${stagedSelectedRelationship.type.replace(/_/g, ' ')}`}
+                          description="Relationships are staged only."
+                        />
+                        {stagedSelectedRelationshipExistsInRepo ? (
+                          isMarkedForRemoval(
+                            stagedSelectedRelationship.attributes,
+                          ) ? (
                             <Alert
-                              type="info"
+                              type="warning"
                               showIcon
-                              message={`Staged relationship • ${stagedSelectedRelationship.type.replace(/_/g, ' ')}`}
-                              description="Relationships are staged only."
-                            />
-                            {stagedSelectedRelationshipExistsInRepo ? (
-                              isMarkedForRemoval(
-                                stagedSelectedRelationship.attributes,
-                              ) ? (
-                                <Alert
-                                  type="warning"
-                                  showIcon
-                                  message="Marked for removal"
-                                  description="This relationship will be removed from the repository on commit."
-                                  action={
-                                    <Button
-                                      size="small"
-                                      onClick={() => {
-                                        setStagedRelationships((prev) =>
-                                          prev.map((rel) =>
-                                            rel.id ===
-                                            stagedSelectedRelationship.id
-                                              ? {
-                                                  ...rel,
-                                                  status: 'STAGED',
-                                                  attributes: {
-                                                    ...(rel.attributes ?? {}),
-                                                    _deleted: false,
-                                                  },
-                                                }
-                                              : rel,
-                                          ),
-                                        );
-                                      }}
-                                    >
-                                      Undo removal
-                                    </Button>
-                                  }
-                                />
-                              ) : (
+                              message="Marked for removal"
+                              description="This relationship will be removed from the repository on commit."
+                              action={
                                 <Button
-                                  danger
+                                  size="small"
                                   onClick={() => {
                                     setStagedRelationships((prev) =>
                                       prev.map((rel) =>
                                         rel.id === stagedSelectedRelationship.id
                                           ? {
                                               ...rel,
-                                              status: 'DISCARDED',
+                                              status: 'STAGED',
                                               attributes: {
                                                 ...(rel.attributes ?? {}),
-                                                _deleted: true,
+                                                _deleted: false,
                                               },
                                             }
                                           : rel,
@@ -14529,181 +14497,201 @@ const StudioShell: React.FC<StudioShellProps> = ({
                                     );
                                   }}
                                 >
-                                  Mark for removal
+                                  Undo removal
                                 </Button>
-                              )
-                            ) : null}
+                              }
+                            />
+                          ) : (
                             <Button
                               danger
                               onClick={() => {
-                                Modal.confirm({
-                                  title: 'Delete staged relationship?',
-                                  content:
-                                    'This removes the relationship from the workspace only. Repository remains unchanged.',
-                                  okText: 'Delete',
-                                  okButtonProps: { danger: true },
-                                  cancelText: 'Cancel',
-                                  onOk: () =>
-                                    deleteStagedRelationship(
-                                      stagedSelectedRelationship.id,
-                                    ),
-                                });
+                                setStagedRelationships((prev) =>
+                                  prev.map((rel) =>
+                                    rel.id === stagedSelectedRelationship.id
+                                      ? {
+                                          ...rel,
+                                          status: 'DISCARDED',
+                                          attributes: {
+                                            ...(rel.attributes ?? {}),
+                                            _deleted: true,
+                                          },
+                                        }
+                                      : rel,
+                                  ),
+                                );
                               }}
                             >
-                              Delete staged relationship
+                              Mark for removal
                             </Button>
-                            <Descriptions size="small" column={1} bordered>
-                              <Descriptions.Item label="From">
-                                {resolveElementLabel(
-                                  stagedSelectedRelationship.fromId,
-                                )?.label ?? stagedSelectedRelationship.fromId}
-                              </Descriptions.Item>
-                              <Descriptions.Item label="To">
-                                {resolveElementLabel(
-                                  stagedSelectedRelationship.toId,
-                                )?.label ?? stagedSelectedRelationship.toId}
-                              </Descriptions.Item>
-                              <Descriptions.Item label="Status">
-                                {stagedSelectedRelationship.status}
-                              </Descriptions.Item>
-                            </Descriptions>
-                            {!isMarkedForRemoval(
-                              stagedSelectedRelationship.attributes,
-                            ) ? (
-                              (
+                          )
+                        ) : null}
+                        <Button
+                          danger
+                          onClick={() => {
+                            Modal.confirm({
+                              title: 'Delete staged relationship?',
+                              content:
+                                'This removes the relationship from the workspace only. Repository remains unchanged.',
+                              okText: 'Delete',
+                              okButtonProps: { danger: true },
+                              cancelText: 'Cancel',
+                              onOk: () =>
+                                deleteStagedRelationship(
+                                  stagedSelectedRelationship.id,
+                                ),
+                            });
+                          }}
+                        >
+                          Delete staged relationship
+                        </Button>
+                        <Descriptions size="small" column={1} bordered>
+                          <Descriptions.Item label="From">
+                            {resolveElementLabel(
+                              stagedSelectedRelationship.fromId,
+                            )?.label ?? stagedSelectedRelationship.fromId}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="To">
+                            {resolveElementLabel(
+                              stagedSelectedRelationship.toId,
+                            )?.label ?? stagedSelectedRelationship.toId}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Status">
+                            {stagedSelectedRelationship.status}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        {!isMarkedForRemoval(
+                          stagedSelectedRelationship.attributes,
+                        ) ? (
+                          (
+                            RELATIONSHIP_TYPE_DEFINITIONS[
+                              stagedSelectedRelationship.type
+                            ]?.attributes ?? []
+                          ).length > 0 ? (
+                            <Form
+                              form={relationshipAttributesForm}
+                              layout="vertical"
+                              onValuesChange={(changed) => {
+                                setValidationGateOpen(true);
+                                setStagedRelationships((prev) =>
+                                  prev.map((rel) => {
+                                    if (
+                                      rel.id !== stagedSelectedRelationship.id
+                                    )
+                                      return rel;
+                                    return {
+                                      ...rel,
+                                      attributes: {
+                                        ...(rel.attributes ?? {}),
+                                        ...changed,
+                                      },
+                                    };
+                                  }),
+                                );
+                              }}
+                              validateTrigger={['onChange', 'onBlur']}
+                            >
+                              {(
                                 RELATIONSHIP_TYPE_DEFINITIONS[
                                   stagedSelectedRelationship.type
                                 ]?.attributes ?? []
-                              ).length > 0 ? (
-                                <Form
-                                  form={relationshipAttributesForm}
-                                  layout="vertical"
-                                  onValuesChange={(changed) => {
-                                    setValidationGateOpen(true);
-                                    setStagedRelationships((prev) =>
-                                      prev.map((rel) => {
-                                        if (
-                                          rel.id !==
-                                          stagedSelectedRelationship.id
-                                        )
-                                          return rel;
-                                        return {
-                                          ...rel,
-                                          attributes: {
-                                            ...(rel.attributes ?? {}),
-                                            ...changed,
-                                          },
-                                        };
-                                      }),
-                                    );
-                                  }}
-                                  validateTrigger={['onChange', 'onBlur']}
+                              ).map((attr) => (
+                                <Form.Item
+                                  key={attr}
+                                  label={attr}
+                                  name={attr}
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: `${attr} is required`,
+                                    },
+                                  ]}
                                 >
-                                  {(
-                                    RELATIONSHIP_TYPE_DEFINITIONS[
-                                      stagedSelectedRelationship.type
-                                    ]?.attributes ?? []
-                                  ).map((attr) => (
-                                    <Form.Item
-                                      key={attr}
-                                      label={attr}
-                                      name={attr}
-                                      rules={[
-                                        {
-                                          required: true,
-                                          message: `${attr} is required`,
-                                        },
-                                      ]}
-                                    >
-                                      <Input placeholder={`Enter ${attr}`} />
-                                    </Form.Item>
-                                  ))}
-                                </Form>
-                              ) : (
-                                <Typography.Text type="secondary">
-                                  No mandatory relationship attributes.
-                                </Typography.Text>
-                              )
-                            ) : null}
-                          </div>
-                        ) : selectedExistingElement ? (
-                          <div style={{ display: 'grid', gap: 8 }}>
-                            <Alert
-                              type="info"
-                              showIcon
-                              message={`Existing element • ${selectedExistingElement.type}`}
-                              description="Stage this element to edit within the workspace. Repository stays unchanged."
-                            />
-                            {isHierarchicalView ? (
-                              <Button
-                                type="default"
-                                onClick={() =>
-                                  selectedExistingElement?.id &&
-                                  startChildCreation(selectedExistingElement.id)
-                                }
-                                disabled={!canAddChild}
-                              >
-                                Add child
-                              </Button>
-                            ) : null}
-                            <Descriptions size="small" column={1} bordered>
-                              <Descriptions.Item label="Name">
-                                {((selectedExistingElement.attributes as any)
-                                  ?.name as string) ||
-                                  selectedExistingElement.id}
-                              </Descriptions.Item>
-                              <Descriptions.Item label="ID">
-                                {selectedExistingElement.id}
-                              </Descriptions.Item>
-                            </Descriptions>
-                            <Button
-                              type="primary"
-                              onClick={() =>
-                                stageExistingElement(
-                                  selectedExistingElement.id,
-                                  undefined,
-                                  'canvas',
-                                )
-                              }
-                            >
-                              Stage for editing
-                            </Button>
-                          </div>
-                        ) : selectedExistingRelationship ? (
-                          <div style={{ display: 'grid', gap: 8 }}>
-                            <Alert
-                              type="info"
-                              showIcon
-                              message={`Existing relationship • ${selectedExistingRelationship.type.replace(/_/g, ' ')}`}
-                              description="Stage this relationship to edit within the workspace. Repository stays unchanged."
-                            />
-                            <Descriptions size="small" column={1} bordered>
-                              <Descriptions.Item label="From">
-                                {resolveElementLabel(
-                                  selectedExistingRelationship.fromId,
-                                )?.label ?? selectedExistingRelationship.fromId}
-                              </Descriptions.Item>
-                              <Descriptions.Item label="To">
-                                {resolveElementLabel(
-                                  selectedExistingRelationship.toId,
-                                )?.label ?? selectedExistingRelationship.toId}
-                              </Descriptions.Item>
-                            </Descriptions>
-                            <Button
-                              type="primary"
-                              onClick={() =>
-                                stageExistingRelationship(
-                                  selectedExistingRelationship.id,
-                                )
-                              }
-                            >
-                              Stage for editing
-                            </Button>
-                          </div>
-                        ) : (
-                          propertiesPanel
-                        )}
-                      </>
+                                  <Input placeholder={`Enter ${attr}`} />
+                                </Form.Item>
+                              ))}
+                            </Form>
+                          ) : (
+                            <Typography.Text type="secondary">
+                              No mandatory relationship attributes.
+                            </Typography.Text>
+                          )
+                        ) : null}
+                      </div>
+                    ) : selectedExistingElement ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Existing element • ${selectedExistingElement.type}`}
+                          description="Stage this element to edit within the workspace. Repository stays unchanged."
+                        />
+                        {isHierarchicalView ? (
+                          <Button
+                            type="default"
+                            onClick={() =>
+                              selectedExistingElement?.id &&
+                              startChildCreation(selectedExistingElement.id)
+                            }
+                            disabled={!canAddChild}
+                          >
+                            Add child
+                          </Button>
+                        ) : null}
+                        <Descriptions size="small" column={1} bordered>
+                          <Descriptions.Item label="Name">
+                            {((selectedExistingElement.attributes as any)
+                              ?.name as string) || selectedExistingElement.id}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="ID">
+                            {selectedExistingElement.id}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        <Button
+                          type="primary"
+                          onClick={() =>
+                            stageExistingElement(
+                              selectedExistingElement.id,
+                              undefined,
+                              'canvas',
+                            )
+                          }
+                        >
+                          Stage for editing
+                        </Button>
+                      </div>
+                    ) : selectedExistingRelationship ? (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Existing relationship • ${selectedExistingRelationship.type.replace(/_/g, ' ')}`}
+                          description="Stage this relationship to edit within the workspace. Repository stays unchanged."
+                        />
+                        <Descriptions size="small" column={1} bordered>
+                          <Descriptions.Item label="From">
+                            {resolveElementLabel(
+                              selectedExistingRelationship.fromId,
+                            )?.label ?? selectedExistingRelationship.fromId}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="To">
+                            {resolveElementLabel(
+                              selectedExistingRelationship.toId,
+                            )?.label ?? selectedExistingRelationship.toId}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        <Button
+                          type="primary"
+                          onClick={() =>
+                            stageExistingRelationship(
+                              selectedExistingRelationship.id,
+                            )
+                          }
+                        >
+                          Stage for editing
+                        </Button>
+                      </div>
+                    ) : (
+                      propertiesPanel
                     )}
                   </>
                 ) : null}

@@ -54,11 +54,12 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
     const rect = el.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP;
     const spaceAbove = rect.top - MENU_GAP;
-    const direction = spaceBelow >= Math.min(MENU_MAX_HEIGHT, options.length * 32 + 8)
-      ? 'down'
-      : spaceAbove > spaceBelow
-        ? 'up'
-        : 'down';
+    const direction =
+      spaceBelow >= Math.min(MENU_MAX_HEIGHT, options.length * 32 + 8)
+        ? 'down'
+        : spaceAbove > spaceBelow
+          ? 'up'
+          : 'down';
 
     return {
       left: rect.left,
@@ -101,7 +102,8 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
   /* scroll focused item into view */
   React.useEffect(() => {
     if (!open || focusIdx < 0 || !menuRef.current) return;
-    const items = menuRef.current.querySelectorAll<HTMLElement>('[data-dd-option]');
+    const items =
+      menuRef.current.querySelectorAll<HTMLElement>('[data-dd-option]');
     items[focusIdx]?.scrollIntoView({ block: 'nearest' });
   }, [focusIdx, open]);
 
@@ -174,7 +176,9 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
             ref={menuRef}
             className={`${styles.ddMenu} ${menuPos.direction === 'up' ? styles.ddMenuUp : ''}`}
             role="listbox"
-            aria-activedescendant={focusIdx >= 0 ? `${id ?? 'dd'}-opt-${focusIdx}` : undefined}
+            aria-activedescendant={
+              focusIdx >= 0 ? `${id ?? 'dd'}-opt-${focusIdx}` : undefined
+            }
             style={{
               position: 'fixed',
               left: menuPos.left,
@@ -184,6 +188,7 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
                 ? { top: menuPos.top }
                 : { bottom: window.innerHeight - menuPos.top }),
             }}
+            tabIndex="0"
           >
             {options.map((opt, i) => {
               const isSelected = opt.value === value;
@@ -204,8 +209,21 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
                 >
                   {opt.label}
                   {isSelected && (
-                    <svg className={styles.ddCheck} width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
-                      <path d="M1 5.5L4.5 9L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg
+                      className={styles.ddCheck}
+                      width="12"
+                      height="10"
+                      viewBox="0 0 12 10"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M1 5.5L4.5 9L11 1"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </div>
@@ -233,7 +251,11 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
         disabled={disabled}
         tabIndex={disabled ? -1 : 0}
       >
-        <span className={selectedOption ? styles.ddTriggerText : styles.ddTriggerPlaceholder}>
+        <span
+          className={
+            selectedOption ? styles.ddTriggerText : styles.ddTriggerPlaceholder
+          }
+        >
           {selectedOption?.label ?? placeholder}
         </span>
         <svg
@@ -244,7 +266,13 @@ const DarkDropdown: React.FC<DarkDropdownProps> = ({
           fill="none"
           aria-hidden="true"
         >
-          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M1 1L5 5L9 1"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
       {menu}

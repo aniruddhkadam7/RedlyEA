@@ -32,7 +32,12 @@ export type DependencyGraphSnapshot = {
 export type DependencyTier = 'Low' | 'Medium' | 'High';
 export type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';
 export type CascadeRiskLevel = 'Low' | 'Medium' | 'High';
-export type WarningKey = 'circular' | 'centralization' | 'deep' | 'isolated' | 'hub';
+export type WarningKey =
+  | 'circular'
+  | 'centralization'
+  | 'deep'
+  | 'isolated'
+  | 'hub';
 
 export type DashboardSystemMetrics = ImpactSystemMetrics & {
   rank: number;
@@ -43,12 +48,26 @@ export type DashboardSystemMetrics = ImpactSystemMetrics & {
 };
 
 export type DashboardMetrics = {
-  dependencyTierDistribution: Array<{ tier: DependencyTier; count: number; percentage: number }>;
+  dependencyTierDistribution: Array<{
+    tier: DependencyTier;
+    count: number;
+    percentage: number;
+  }>;
   depthDistribution: Array<{ depth: number; count: number }>;
   top10ImpactfulSystems: DashboardSystemMetrics[];
   riskSystems: DashboardSystemMetrics[];
-  blastRadiusDistribution: Array<{ severity: RiskLevel; count: number; percentage: number }>;
-  warningPanel: Array<{ key: WarningKey; label: string; count: number; severity: 'success' | 'processing' | 'warning' | 'error'; systemIds: string[] }>;
+  blastRadiusDistribution: Array<{
+    severity: RiskLevel;
+    count: number;
+    percentage: number;
+  }>;
+  warningPanel: Array<{
+    key: WarningKey;
+    label: string;
+    count: number;
+    severity: 'success' | 'processing' | 'warning' | 'error';
+    systemIds: string[];
+  }>;
   stabilityScore: number;
   concentrationRiskPercent: number;
   concentrationIndex: number;
@@ -67,7 +86,11 @@ export type ImpactAnalysisSnapshot = {
   topFragileSystems: ImpactSystemMetrics[];
   orphanSystems: ImpactSystemMetrics[];
   highCentralitySystems: ImpactSystemMetrics[];
-  metadataGaps: Array<{ systemId: string; systemName: string; missingFields: string[] }>;
+  metadataGaps: Array<{
+    systemId: string;
+    systemName: string;
+    missingFields: string[];
+  }>;
   graph: DependencyGraphSnapshot;
   cycleNodeCount: number;
   isolatedNodeCount: number;
@@ -89,7 +112,8 @@ const MAX_CACHE_ENTRIES = 8;
 
 const cache = new Map<string, ImpactAnalysisSnapshot>();
 
-const normalize = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const normalize = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
 const fnv1aHash = (input: string): string => {
   let hash = 0x811c9dc5;
@@ -125,7 +149,9 @@ const computeReach = (
   adjacency: Map<string, string[]>,
 ): { visited: Set<string>; maxDepth: number } => {
   const visited = new Set<string>([rootId]);
-  const queue: Array<{ id: string; depth: number }> = [{ id: rootId, depth: 0 }];
+  const queue: Array<{ id: string; depth: number }> = [
+    { id: rootId, depth: 0 },
+  ];
   let maxDepth = 0;
 
   while (queue.length > 0) {
@@ -145,9 +171,15 @@ const computeReach = (
   return { visited, maxDepth };
 };
 
-const toAdjacency = (graph: DependencyGraphSnapshot) => ({ outgoing: graph.outgoing, incoming: graph.incoming });
+const toAdjacency = (graph: DependencyGraphSnapshot) => ({
+  outgoing: graph.outgoing,
+  incoming: graph.incoming,
+});
 
-const detectCycleNodeCount = (adjacency: Map<string, string[]>, nodeIds: string[]): number => {
+const detectCycleNodeCount = (
+  adjacency: Map<string, string[]>,
+  nodeIds: string[],
+): number => {
   const state = new Map<string, 0 | 1 | 2>();
   const cycleNodes = new Set<string>();
 
@@ -183,7 +215,9 @@ const detectCycleNodeCount = (adjacency: Map<string, string[]>, nodeIds: string[
   return cycleNodes.size;
 };
 
-export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnalysisSnapshot => {
+export const getImpactAnalysisSnapshot = (
+  repository: EaRepository,
+): ImpactAnalysisSnapshot => {
   const fingerprint = buildRepositoryFingerprint(repository);
   const cached = cache.get(fingerprint);
   if (cached) return cached;
@@ -192,7 +226,10 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
     .filter((obj) => (obj.attributes as any)?._deleted !== true)
     .map((obj) => ({
       id: obj.id,
-      name: typeof obj.attributes.name === 'string' && obj.attributes.name.trim() ? String(obj.attributes.name) : obj.id,
+      name:
+        typeof obj.attributes.name === 'string' && obj.attributes.name.trim()
+          ? String(obj.attributes.name)
+          : obj.id,
       type: obj.type,
       attributes: obj.attributes,
     }));
@@ -210,10 +247,10 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
     if (!nodeIdSet.has(fromId) || !nodeIdSet.has(toId)) continue;
 
     if (!outgoing.has(fromId)) outgoing.set(fromId, []);
-    outgoing.get(fromId)!.push(toId);
+    outgoing.get(fromId)?.push(toId);
 
     if (!incoming.has(toId)) incoming.set(toId, []);
-    incoming.get(toId)!.push(fromId);
+    incoming.get(toId)?.push(fromId);
 
     edges.push({
       id: relationship.id ?? `${relationship.type}:${fromId}->${toId}`,
@@ -240,54 +277,106 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
       dependencyDepth: reach.maxDepth,
       downstreamReach,
       impactScore,
-      redundancyStatus: inboundDependencies <= 1 || outboundDependencies <= 1 ? 'Single Path' : 'Redundant',
+      redundancyStatus:
+        inboundDependencies <= 1 || outboundDependencies <= 1
+          ? 'Single Path'
+          : 'Redundant',
     };
   });
 
   const byImpact = [...systems].sort((a, b) => {
     if (b.impactScore !== a.impactScore) return b.impactScore - a.impactScore;
-    if (b.dependencyDepth !== a.dependencyDepth) return b.dependencyDepth - a.dependencyDepth;
+    if (b.dependencyDepth !== a.dependencyDepth)
+      return b.dependencyDepth - a.dependencyDepth;
     return a.systemName.localeCompare(b.systemName);
   });
 
   const byFragility = [...systems].sort((a, b) => {
-    const fragA = a.impactScore + (a.redundancyStatus === 'Single Path' ? 2 : 0);
-    const fragB = b.impactScore + (b.redundancyStatus === 'Single Path' ? 2 : 0);
+    const fragA =
+      a.impactScore + (a.redundancyStatus === 'Single Path' ? 2 : 0);
+    const fragB =
+      b.impactScore + (b.redundancyStatus === 'Single Path' ? 2 : 0);
     if (fragB !== fragA) return fragB - fragA;
-    if (b.inboundDependencies !== a.inboundDependencies) return b.inboundDependencies - a.inboundDependencies;
+    if (b.inboundDependencies !== a.inboundDependencies)
+      return b.inboundDependencies - a.inboundDependencies;
     return a.systemName.localeCompare(b.systemName);
   });
 
-  const longestDependencyChain = systems.reduce((max, item) => Math.max(max, item.dependencyDepth), 0);
+  const longestDependencyChain = systems.reduce(
+    (max, item) => Math.max(max, item.dependencyDepth),
+    0,
+  );
   const averageDependencyDepth =
-    systems.length > 0 ? Number((systems.reduce((sum, item) => sum + item.dependencyDepth, 0) / systems.length).toFixed(2)) : 0;
+    systems.length > 0
+      ? Number(
+          (
+            systems.reduce((sum, item) => sum + item.dependencyDepth, 0) /
+            systems.length
+          ).toFixed(2),
+        )
+      : 0;
   const architectureImpactScore =
-    systems.length > 0 ? Number((systems.reduce((sum, item) => sum + item.impactScore, 0) / systems.length).toFixed(2)) : 0;
+    systems.length > 0
+      ? Number(
+          (
+            systems.reduce((sum, item) => sum + item.impactScore, 0) /
+            systems.length
+          ).toFixed(2),
+        )
+      : 0;
 
-  const orphanSystems = systems.filter((item) => item.inboundDependencies === 0 && item.outboundDependencies === 0);
+  const orphanSystems = systems.filter(
+    (item) => item.inboundDependencies === 0 && item.outboundDependencies === 0,
+  );
   const highCentralitySystems = [...systems]
-    .sort((a, b) => b.inboundDependencies + b.outboundDependencies - (a.inboundDependencies + a.outboundDependencies))
+    .sort(
+      (a, b) =>
+        b.inboundDependencies +
+        b.outboundDependencies -
+        (a.inboundDependencies + a.outboundDependencies),
+    )
     .slice(0, 10);
 
   const metadataGaps = nodes
     .map((node) => {
       const missingFields: string[] = [];
-      if (!(typeof node.attributes?.name === 'string' && node.attributes.name.trim())) missingFields.push('name');
-      if (!(typeof node.attributes?.description === 'string' && node.attributes.description.trim()))
+      if (
+        !(
+          typeof node.attributes?.name === 'string' &&
+          node.attributes.name.trim()
+        )
+      )
+        missingFields.push('name');
+      if (
+        !(
+          typeof node.attributes?.description === 'string' &&
+          node.attributes.description.trim()
+        )
+      )
         missingFields.push('description');
-      if (!(typeof node.attributes?.ownerName === 'string' && node.attributes.ownerName.trim()))
+      if (
+        !(
+          typeof node.attributes?.ownerName === 'string' &&
+          node.attributes.ownerName.trim()
+        )
+      )
         missingFields.push('ownerName');
       return { systemId: node.id, systemName: node.name, missingFields };
     })
     .filter((gap) => gap.missingFields.length > 0);
 
   const singlePointsOfFailure = systems.filter(
-    (item) => item.downstreamReach > 0 && item.redundancyStatus === 'Single Path',
+    (item) =>
+      item.downstreamReach > 0 && item.redundancyStatus === 'Single Path',
   ).length;
 
   const graph: DependencyGraphSnapshot = {
     fingerprint,
-    nodes: nodes.map((node) => ({ id: node.id, name: node.name, type: node.type })),
+    nodes: nodes.map((node) => ({
+      id: node.id,
+      name: node.name,
+      type: node.type,
+    })),
     edges,
     outgoing,
     incoming,
@@ -301,16 +390,26 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
   };
 
   const classifyRisk = (s: ImpactSystemMetrics): RiskLevel => {
-    const fragScore = s.impactScore + (s.redundancyStatus === 'Single Path' ? 3 : 0);
+    const fragScore =
+      s.impactScore + (s.redundancyStatus === 'Single Path' ? 3 : 0);
     if (fragScore >= 12) return 'Critical';
     if (fragScore >= 7) return 'High';
     if (fragScore >= 3) return 'Medium';
     return 'Low';
   };
 
-  const tierCounts: Record<DependencyTier, number> = { Low: 0, Medium: 0, High: 0 };
+  const tierCounts: Record<DependencyTier, number> = {
+    Low: 0,
+    Medium: 0,
+    High: 0,
+  };
   const depthBuckets = new Map<number, number>();
-  const riskBuckets: Record<RiskLevel, number> = { Low: 0, Medium: 0, High: 0, Critical: 0 };
+  const riskBuckets: Record<RiskLevel, number> = {
+    Low: 0,
+    Medium: 0,
+    High: 0,
+    Critical: 0,
+  };
   const total = systems.length || 1;
 
   const maxDegree = systems.reduce(
@@ -320,9 +419,19 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
   const denominator = Math.max(1, total - 1);
 
   const systemsWithDashboard = systems.map((s) => {
-    const reachPercent = total > 0 ? Number(((s.downstreamReach / total) * 100).toFixed(1)) : 0;
-    const centralizationPercent = Number((((s.inboundDependencies + s.outboundDependencies) / maxDegree) * 100).toFixed(1));
-    const densityRatio = Number(((s.inboundDependencies + s.outboundDependencies) / denominator).toFixed(3));
+    const reachPercent =
+      total > 0 ? Number(((s.downstreamReach / total) * 100).toFixed(1)) : 0;
+    const centralizationPercent = Number(
+      (
+        ((s.inboundDependencies + s.outboundDependencies) / maxDegree) *
+        100
+      ).toFixed(1),
+    );
+    const densityRatio = Number(
+      ((s.inboundDependencies + s.outboundDependencies) / denominator).toFixed(
+        3,
+      ),
+    );
     const riskLevel = classifyRisk(s);
     riskBuckets[riskLevel] += 1;
     return {
@@ -337,16 +446,18 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
 
   for (const s of systems) {
     tierCounts[classifyTier(s.dependencyDepth)] += 1;
-    depthBuckets.set(s.dependencyDepth, (depthBuckets.get(s.dependencyDepth) ?? 0) + 1);
+    depthBuckets.set(
+      s.dependencyDepth,
+      (depthBuckets.get(s.dependencyDepth) ?? 0) + 1,
+    );
   }
 
-  const dependencyTierDistribution: DashboardMetrics['dependencyTierDistribution'] = (
-    ['Low', 'Medium', 'High'] as DependencyTier[]
-  ).map((tier) => ({
-    tier,
-    count: tierCounts[tier],
-    percentage: Number(((tierCounts[tier] / total) * 100).toFixed(1)),
-  }));
+  const dependencyTierDistribution: DashboardMetrics['dependencyTierDistribution'] =
+    (['Low', 'Medium', 'High'] as DependencyTier[]).map((tier) => ({
+      tier,
+      count: tierCounts[tier],
+      percentage: Number(((tierCounts[tier] / total) * 100).toFixed(1)),
+    }));
 
   const maxDepthVal = longestDependencyChain;
   const depthDistribution: DashboardMetrics['depthDistribution'] = [];
@@ -354,14 +465,18 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
     depthDistribution.push({ depth: d, count: depthBuckets.get(d) ?? 0 });
   }
 
-  const top10ImpactfulSystems = byImpact
-    .slice(0, 10)
-    .map((s, i) => ({ ...systemsWithDashboard.find((item) => item.systemId === s.systemId)!, rank: i + 1 }));
+  const top10ImpactfulSystems = byImpact.slice(0, 10).map((s, i) => ({
+    ...systemsWithDashboard.find((item) => item.systemId === s.systemId)!,
+    rank: i + 1,
+  }));
 
   const riskSystems = byFragility
     .filter((s) => s.impactScore > 0 || s.redundancyStatus === 'Single Path')
     .slice(0, 20)
-    .map((s, i) => ({ ...systemsWithDashboard.find((item) => item.systemId === s.systemId)!, rank: i + 1 }));
+    .map((s, i) => ({
+      ...systemsWithDashboard.find((item) => item.systemId === s.systemId)!,
+      rank: i + 1,
+    }));
 
   const blastRadiusDistribution: DashboardMetrics['blastRadiusDistribution'] = (
     ['Low', 'Medium', 'High', 'Critical'] as RiskLevel[]
@@ -381,17 +496,36 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
       `${highImpactCount} system${highImpactCount > 1 ? 's' : ''} affect${highImpactCount === 1 ? 's' : ''} more than 40% of the architecture.`,
     );
   if (longestDependencyChain > 0)
-    insights.push(`Longest dependency chain is ${longestDependencyChain} level${longestDependencyChain > 1 ? 's' : ''} deep.`);
+    insights.push(
+      `Longest dependency chain is ${longestDependencyChain} level${longestDependencyChain > 1 ? 's' : ''} deep.`,
+    );
   const noRedundancy = systems.filter(
     (s) => s.redundancyStatus === 'Single Path' && s.downstreamReach > 0,
   ).length;
   if (noRedundancy > 0)
-    insights.push(`${noRedundancy} system${noRedundancy > 1 ? 's have' : ' has'} no redundancy (single dependency path).`);
-  if (orphanSystems.length > 0) insights.push(`${orphanSystems.length} isolated system${orphanSystems.length > 1 ? 's are' : ' is'} disconnected from the dependency graph.`);
-  const cycleCount = detectCycleNodeCount(outgoing, nodes.map((node) => node.id));
-  if (cycleCount > 0) insights.push(`${cycleCount} system${cycleCount > 1 ? 's are' : ' is'} involved in circular dependencies.`);
-  if (metadataGaps.length > 0) insights.push(`${metadataGaps.length} system${metadataGaps.length > 1 ? 's are' : ' is'} missing key metadata (name, description, or owner).`);
-  if (insights.length === 0) insights.push('Architecture appears healthy with no critical dependency issues detected.');
+    insights.push(
+      `${noRedundancy} system${noRedundancy > 1 ? 's have' : ' has'} no redundancy (single dependency path).`,
+    );
+  if (orphanSystems.length > 0)
+    insights.push(
+      `${orphanSystems.length} isolated system${orphanSystems.length > 1 ? 's are' : ' is'} disconnected from the dependency graph.`,
+    );
+  const cycleCount = detectCycleNodeCount(
+    outgoing,
+    nodes.map((node) => node.id),
+  );
+  if (cycleCount > 0)
+    insights.push(
+      `${cycleCount} system${cycleCount > 1 ? 's are' : ' is'} involved in circular dependencies.`,
+    );
+  if (metadataGaps.length > 0)
+    insights.push(
+      `${metadataGaps.length} system${metadataGaps.length > 1 ? 's are' : ' is'} missing key metadata (name, description, or owner).`,
+    );
+  if (insights.length === 0)
+    insights.push(
+      'Architecture appears healthy with no critical dependency issues detected.',
+    );
 
   /* Health score: 100 = perfect, penalized by issues */
   const penalties =
@@ -404,7 +538,9 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
 
   const graphDensityRatio = Number((edges.length / total).toFixed(2));
   const concentrationRiskPercent = Number(
-    (((top10ImpactfulSystems[0]?.downstreamReach ?? 0) / total) * 100).toFixed(1),
+    (((top10ImpactfulSystems[0]?.downstreamReach ?? 0) / total) * 100).toFixed(
+      1,
+    ),
   );
 
   const concentrationIndex = Number(
@@ -420,10 +556,11 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
   const cascadeRiskIndex = Number(
     Math.min(
       100,
-      (longestDependencyChain * 8) +
-        (singlePointsOfFailure * 4) +
-        (cycleCount * 6) +
-        (systemsWithDashboard.filter((s) => s.riskLevel === 'Critical').length * 6),
+      longestDependencyChain * 8 +
+        singlePointsOfFailure * 4 +
+        cycleCount * 6 +
+        systemsWithDashboard.filter((s) => s.riskLevel === 'Critical').length *
+          6,
     ).toFixed(1),
   );
 
@@ -444,9 +581,13 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
     {
       key: 'centralization',
       label: 'Centralized',
-      count: systemsWithDashboard.filter((s) => s.centralizationPercent >= 70).length,
+      count: systemsWithDashboard.filter((s) => s.centralizationPercent >= 70)
+        .length,
       severity:
-        systemsWithDashboard.filter((s) => s.centralizationPercent >= 70).length > 0 ? 'warning' : 'success',
+        systemsWithDashboard.filter((s) => s.centralizationPercent >= 70)
+          .length > 0
+          ? 'warning'
+          : 'success',
       systemIds: systemsWithDashboard
         .filter((s) => s.centralizationPercent >= 70)
         .slice(0, 8)
@@ -456,7 +597,10 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
       key: 'deep',
       label: 'Deep Chains',
       count: systemsWithDashboard.filter((s) => s.dependencyDepth >= 4).length,
-      severity: systemsWithDashboard.filter((s) => s.dependencyDepth >= 4).length > 0 ? 'processing' : 'success',
+      severity:
+        systemsWithDashboard.filter((s) => s.dependencyDepth >= 4).length > 0
+          ? 'processing'
+          : 'success',
       systemIds: systemsWithDashboard
         .filter((s) => s.dependencyDepth >= 4)
         .slice(0, 8)
@@ -472,9 +616,15 @@ export const getImpactAnalysisSnapshot = (repository: EaRepository): ImpactAnaly
     {
       key: 'hub',
       label: 'Hub Overload',
-      count: systemsWithDashboard.filter((s) => s.inboundDependencies + s.outboundDependencies >= 8).length,
+      count: systemsWithDashboard.filter(
+        (s) => s.inboundDependencies + s.outboundDependencies >= 8,
+      ).length,
       severity:
-        systemsWithDashboard.filter((s) => s.inboundDependencies + s.outboundDependencies >= 8).length > 0 ? 'error' : 'success',
+        systemsWithDashboard.filter(
+          (s) => s.inboundDependencies + s.outboundDependencies >= 8,
+        ).length > 0
+          ? 'error'
+          : 'success',
       systemIds: systemsWithDashboard
         .filter((s) => s.inboundDependencies + s.outboundDependencies >= 8)
         .slice(0, 8)
@@ -546,15 +696,22 @@ export const simulateImpact = (
   if (mode === 'full') {
     const nodeIds = new Set<string>([...outgoing.keys(), ...incoming.keys()]);
     for (const nodeId of nodeIds) {
-      const merged = new Set<string>([...(outgoing.get(nodeId) ?? []), ...(incoming.get(nodeId) ?? [])]);
+      const merged = new Set<string>([
+        ...(outgoing.get(nodeId) ?? []),
+        ...(incoming.get(nodeId) ?? []),
+      ]);
       adjacency.set(nodeId, [...merged]);
     }
   }
 
   const reach = computeReach(rootId, adjacency);
   const affectedCount = Math.max(0, reach.visited.size - 1);
-  const ratio = snapshot.overview.totalSystems > 0 ? affectedCount / snapshot.overview.totalSystems : 0;
-  const severity: ImpactSimulationResult['severity'] = ratio >= 0.4 ? 'High' : ratio >= 0.15 ? 'Medium' : 'Low';
+  const ratio =
+    snapshot.overview.totalSystems > 0
+      ? affectedCount / snapshot.overview.totalSystems
+      : 0;
+  const severity: ImpactSimulationResult['severity'] =
+    ratio >= 0.4 ? 'High' : ratio >= 0.15 ? 'Medium' : 'Low';
 
   return {
     rootId,

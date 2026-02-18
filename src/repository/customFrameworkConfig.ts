@@ -1,4 +1,9 @@
-import { isValidObjectType, isValidRelationshipType, type ObjectType, type RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
+import {
+  isValidObjectType,
+  isValidRelationshipType,
+  type ObjectType,
+  type RelationshipType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 import type { FrameworkConfig, ReferenceFramework } from './repositoryMetadata';
 
 export type CustomMetaModelConfig = {
@@ -60,10 +65,16 @@ export const CUSTOM_CORE_EA_SEED: CustomMetaModelConfig = {
   ],
 };
 
-export const normalizeCustomMetaModelConfig = (value: unknown): CustomMetaModelConfig => {
+export const normalizeCustomMetaModelConfig = (
+  value: unknown,
+): CustomMetaModelConfig => {
   const v = value as any;
-  const raw = Array.isArray(v?.enabledObjectTypes) ? (v.enabledObjectTypes as unknown[]) : [];
-  const rawRelationships = Array.isArray(v?.enabledRelationshipTypes) ? (v.enabledRelationshipTypes as unknown[]) : [];
+  const raw = Array.isArray(v?.enabledObjectTypes)
+    ? (v.enabledObjectTypes as unknown[])
+    : [];
+  const rawRelationships = Array.isArray(v?.enabledRelationshipTypes)
+    ? (v.enabledRelationshipTypes as unknown[])
+    : [];
 
   const out: ObjectType[] = [];
   for (const t of raw) {
@@ -82,9 +93,12 @@ export const normalizeCustomMetaModelConfig = (value: unknown): CustomMetaModelC
   return { enabledObjectTypes: out, enabledRelationshipTypes: rels };
 };
 
-export const DEFAULT_CUSTOM_META_MODEL_CONFIG: CustomMetaModelConfig = normalizeCustomMetaModelConfig(CUSTOM_CORE_EA_SEED);
+export const DEFAULT_CUSTOM_META_MODEL_CONFIG: CustomMetaModelConfig =
+  normalizeCustomMetaModelConfig(CUSTOM_CORE_EA_SEED);
 
-export const getCustomMetaModelConfig = (frameworkConfig: FrameworkConfig | null | undefined): CustomMetaModelConfig => {
+export const getCustomMetaModelConfig = (
+  frameworkConfig: FrameworkConfig | null | undefined,
+): CustomMetaModelConfig => {
   if (!frameworkConfig?.custom) return DEFAULT_CUSTOM_META_MODEL_CONFIG;
   const raw = frameworkConfig.custom as any;
   const hasObjectTypes = Array.isArray(raw?.enabledObjectTypes);
@@ -100,7 +114,9 @@ export const isCustomFrameworkModelingEnabled = (
   frameworkConfig: FrameworkConfig | null | undefined,
 ): boolean => {
   if (referenceFramework !== 'Custom') return true;
-  return getCustomMetaModelConfig(frameworkConfig).enabledObjectTypes.length > 0;
+  return (
+    getCustomMetaModelConfig(frameworkConfig).enabledObjectTypes.length > 0
+  );
 };
 
 export const isObjectTypeEnabledForFramework = (

@@ -1,6 +1,14 @@
-import { readRepositorySnapshot, updateRepositorySnapshot } from '@/repository/repositorySnapshotStore';
+import {
+  readRepositorySnapshot,
+  updateRepositorySnapshot,
+} from '@/repository/repositorySnapshotStore';
 
-export type ViewNodePosition = { x: number; y: number; width?: number; height?: number };
+export type ViewNodePosition = {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+};
 export type ViewLayoutPositions = Record<string, ViewNodePosition>;
 
 const LEGACY_PREFIX = 'ea.view.layout.positions:';
@@ -8,12 +16,14 @@ const LEGACY_PREFIX = 'ea.view.layout.positions:';
 const legacyKeyForView = (viewId: string) => `${LEGACY_PREFIX}${viewId}`;
 
 const readLegacyLayout = (viewId: string): ViewLayoutPositions => {
-  if (!viewId || typeof window === 'undefined' || !window.localStorage) return {};
+  if (!viewId || typeof window === 'undefined' || !window.localStorage)
+    return {};
   try {
     const raw = window.localStorage.getItem(legacyKeyForView(viewId));
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') return parsed as ViewLayoutPositions;
+    if (parsed && typeof parsed === 'object')
+      return parsed as ViewLayoutPositions;
   } catch {
     // ignore
   }
@@ -33,15 +43,23 @@ const readLayoutFromSnapshot = (viewId: string): ViewLayoutPositions => {
   if (!viewId) return {};
   const snapshot = readRepositorySnapshot();
   const fromSnapshot = snapshot?.studioState?.viewLayouts?.[viewId];
-  if (fromSnapshot && typeof fromSnapshot === 'object') return fromSnapshot as ViewLayoutPositions;
+  if (fromSnapshot && typeof fromSnapshot === 'object')
+    return fromSnapshot as ViewLayoutPositions;
 
   const legacy = readLegacyLayout(viewId);
   if (Object.keys(legacy).length > 0 && snapshot) {
     updateRepositorySnapshot((current) => {
       if (!current) return current;
       const studioState = current.studioState ?? {};
-      const viewLayouts = { ...(studioState.viewLayouts ?? {}), [viewId]: legacy };
-      return { ...current, studioState: { ...studioState, viewLayouts }, updatedAt: new Date().toISOString() };
+      const viewLayouts = {
+        ...(studioState.viewLayouts ?? {}),
+        [viewId]: legacy,
+      };
+      return {
+        ...current,
+        studioState: { ...studioState, viewLayouts },
+        updatedAt: new Date().toISOString(),
+      };
     });
     removeLegacyLayout(viewId);
   }
@@ -49,13 +67,23 @@ const readLayoutFromSnapshot = (viewId: string): ViewLayoutPositions => {
   return legacy;
 };
 
-const writeLayoutToSnapshot = (viewId: string, layout: ViewLayoutPositions): void => {
+const writeLayoutToSnapshot = (
+  viewId: string,
+  layout: ViewLayoutPositions,
+): void => {
   if (!viewId) return;
   updateRepositorySnapshot((current) => {
     if (!current) return current;
     const studioState = current.studioState ?? {};
-    const viewLayouts = { ...(studioState.viewLayouts ?? {}), [viewId]: layout };
-    return { ...current, studioState: { ...studioState, viewLayouts }, updatedAt: new Date().toISOString() };
+    const viewLayouts = {
+      ...(studioState.viewLayouts ?? {}),
+      [viewId]: layout,
+    };
+    return {
+      ...current,
+      studioState: { ...studioState, viewLayouts },
+      updatedAt: new Date().toISOString(),
+    };
   });
 };
 
@@ -66,7 +94,11 @@ const removeLayoutFromSnapshot = (viewId: string): void => {
     const studioState = current.studioState ?? {};
     const viewLayouts = { ...(studioState.viewLayouts ?? {}) };
     delete viewLayouts[viewId];
-    return { ...current, studioState: { ...studioState, viewLayouts }, updatedAt: new Date().toISOString() };
+    return {
+      ...current,
+      studioState: { ...studioState, viewLayouts },
+      updatedAt: new Date().toISOString(),
+    };
   });
 };
 
@@ -86,14 +118,21 @@ export const ViewLayoutStore = {
   },
 
   /** Update a single element position within a view layout (merge). */
-  updatePosition(viewId: string, elementId: string, pos: ViewNodePosition): void {
+  updatePosition(
+    viewId: string,
+    elementId: string,
+    pos: ViewNodePosition,
+  ): void {
     if (!viewId || !elementId) return;
     const current = readLayoutFromSnapshot(viewId);
     writeLayoutToSnapshot(viewId, { ...current, [elementId]: pos });
   },
 
   /** Batch-update multiple element positions within a view layout (merge). */
-  updatePositions(viewId: string, positions: Record<string, ViewNodePosition>): void {
+  updatePositions(
+    viewId: string,
+    positions: Record<string, ViewNodePosition>,
+  ): void {
     if (!viewId) return;
     const current = readLayoutFromSnapshot(viewId);
     writeLayoutToSnapshot(viewId, { ...current, ...positions });
