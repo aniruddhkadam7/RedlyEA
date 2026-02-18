@@ -704,6 +704,31 @@ const ExplorerTree: React.FC = () => {
       const elementId = generateElementId(payload.type);
       const createdAt = new Date().toISOString();
       const next = eaRepository.clone();
+
+      // Auto-initialize: if no Enterprise root exists, create one first
+      if (initializationState.status !== 'initialized') {
+        const defaultLc = defaultLifecycleStateForFramework(
+          metadata?.referenceFramework,
+          metadata?.lifecycleCoverage,
+        );
+        const entName = metadata?.repositoryName || 'Enterprise';
+        const entId = generateElementId('Enterprise' as ObjectType);
+        next.addObject({
+          id: entId,
+          type: 'Enterprise' as ObjectType,
+          attributes: {
+            name: entName,
+            description: 'Auto-created Enterprise root',
+            elementType: 'Enterprise',
+            createdBy: actor,
+            createdAt,
+            lastModifiedAt: createdAt,
+            lastModifiedBy: actor,
+            lifecycleState: defaultLc,
+          },
+        });
+      }
+
       const attributes = {
         name: payload.name,
         description: payload.description,
@@ -762,7 +787,196 @@ const ExplorerTree: React.FC = () => {
       actor,
       eaRepository,
       guardAction,
+      initializationState.status,
+      metadata?.lifecycleCoverage,
+      metadata?.referenceFramework,
+      metadata?.repositoryName,
       openPropertiesPanel,
+      setSelectedElement,
+      setSelection,
+      trySetEaRepository,
+    ],
+  );
+
+  // =========================================================================
+  // QUICK CREATE from Explorer "+" buttons — creates real model objects
+  // and immediately opens the appropriate editor tab.
+  // =========================================================================
+  const quickCreateFromCategory = React.useCallback(
+    (nodeKey: string, quickCreate: Record<string, unknown>) => {
+      const action = quickCreate.action as string | undefined;
+
+      // --- Special categories: just select the folder node, don't open full page ---
+      if (action === 'open-catalog' || action === 'open-matrix' || action === 'open-roadmap-planner') {
+        // Expand the folder so the user can see its contents
+        setExpandedKeys((prev) => {
+          const keySet = new Set(prev);
+          keySet.add(nodeKey);
+          return Array.from(keySet);
+        });
+        setSelection({ kind: 'repository', keys: [nodeKey] });
+        return;
+      }
+
+      if (action === 'create-relationship') {
+        // Open the relationship creation modal with no pre-selected source
+        setRelationshipSource(null);
+        setRelationshipModalOpen(true);
+        message.info('Select source element for the new Relationship.');
+        return;
+      }
+
+      if (action === 'create-diagram') {
+        // Create a new diagram (ViewInstance) and open it in Studio
+        const now = new Date().toISOString();
+        const viewId = `view_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const newView: import('@/diagram-studio/viewpoints/ViewInstance').ViewInstance = {
+          id: viewId,
+          name: 'New Diagram',
+          description: '',
+          viewpointId: 'application-landscape',
+          scope: { kind: 'ManualSelection', elementIds: [] },
+          layoutMetadata: { layout: 'hierarchical' },
+          createdAt: now,
+          createdBy: actor,
+          status: 'SAVED',
+          visibleRelationshipIds: [],
+        };
+        ViewStore.save(newView);
+        auditObjectMutation({
+          userId: actor,
+          actionType: 'CREATE_VIEW',
+          objectId: viewId,
+          before: null,
+          after: { name: newView.name, viewpointId: newView.viewpointId },
+        });
+        emitExplorerEvent({
+          type: 'VIEW_UPDATED',
+          viewId,
+          timestamp: now,
+          actor,
+        });
+        try {
+          window.dispatchEvent(new Event('ea:viewsChanged'));
+        } catch {}
+        setRefreshToken((x) => x + 1);
+        setViewsRefreshToken((x) => x + 1);
+        message.success('New Diagram created.');
+        return;
+      }
+
+      // --- Element categories: create a real object with defaults ---
+      const defaultType = quickCreate.defaultType as ObjectType | undefined;
+      const category = (quickCreate.category as string) ?? 'Unknown';
+      if (!defaultType) {
+        message.warning(`No default element type for ${category}.`);
+        return;
+      }
+      if (!guardAction('createElement')) return;
+      if (!eaRepository) {
+        message.warning('No repository loaded.');
+        return;
+      }
+
+      const defaultLifecycle = defaultLifecycleStateForFramework(
+        metadata?.referenceFramework,
+        metadata?.lifecycleCoverage,
+      );
+      const defaultName = `New ${titleForObjectType(defaultType)}`;
+      const elementId = generateElementId(defaultType);
+      const createdAt = new Date().toISOString();
+      const next = eaRepository.clone();
+
+      // Auto-initialize: if no Enterprise root exists, create one first
+      if (initializationState.status !== 'initialized') {
+        const entName = metadata?.repositoryName || 'Enterprise';
+        const entId = generateElementId('Enterprise' as ObjectType);
+        next.addObject({
+          id: entId,
+          type: 'Enterprise' as ObjectType,
+          attributes: {
+            name: entName,
+            description: 'Auto-created Enterprise root',
+            elementType: 'Enterprise',
+            createdBy: actor,
+            createdAt,
+            lastModifiedAt: createdAt,
+            lastModifiedBy: actor,
+            lifecycleState: defaultLifecycle,
+          },
+        });
+      }
+
+      const attributes: Record<string, unknown> = {
+        name: defaultName,
+        description: '',
+        elementType: defaultType,
+        createdBy: actor,
+        createdAt,
+        lastModifiedAt: createdAt,
+        lastModifiedBy: actor,
+        lifecycleState: defaultLifecycle,
+      };
+      const res = next.addObject({ id: elementId, type: defaultType, attributes });
+      if (!res.ok) {
+        message.error(res.error);
+        return;
+      }
+      const applied = trySetEaRepository(next);
+      if (!applied.ok) {
+        message.error('Failed to apply repository changes.');
+        return;
+      }
+
+      auditObjectMutation({
+        userId: actor,
+        actionType: 'CREATE',
+        objectId: elementId,
+        objectType: defaultType,
+        before: null,
+        after: attributes,
+      });
+      emitExplorerEvent({
+        type: 'OBJECT_CREATED',
+        objectId: elementId,
+        objectType: defaultType,
+        timestamp: createdAt,
+        actor,
+      });
+
+      setRefreshToken((x) => x + 1);
+
+      // Ensure the parent category is expanded so the new item is visible
+      setExpandedKeys((prev) => {
+        const keySet = new Set(prev);
+        keySet.add(nodeKey);
+        return Array.from(keySet);
+      });
+
+      // Select the new element in the tree
+      const elementKey = EXPLORER_KEYS.element(elementId);
+      setSelection({ kind: 'repository', keys: [elementKey] });
+      setSelectedElement({ id: elementId, type: defaultType, source: 'Explorer' });
+
+      // Start inline rename so user can immediately name the element
+      setTimeout(() => {
+        setRenamingKey(elementId);
+        setRenameValue(defaultName);
+        setTimeout(() => renameInputRef.current?.focus?.(), 50);
+      }, 150);
+
+      message.success(`${titleForObjectType(defaultType)} created.`);
+    },
+    [
+      actor,
+      eaRepository,
+      guardAction,
+      initializationState.status,
+      metadata?.lifecycleCoverage,
+      metadata?.referenceFramework,
+      metadata?.repositoryName,
+      openRouteTab,
+      openWorkspaceTab,
       setSelectedElement,
       setSelection,
       trySetEaRepository,
@@ -2401,6 +2615,12 @@ const ExplorerTree: React.FC = () => {
       const renderedTitle =
         highlightTerm && titleText ? highlightText(titleText) : node.title;
 
+      // Detect quickCreate metadata on folder nodes for the "+" button
+      const quickCreate = (node as any)?.data?.quickCreate as
+        | Record<string, unknown>
+        | undefined;
+      const showCreateButton = Boolean(quickCreate) && !node.isLeaf;
+
       return (
         <Dropdown trigger={['contextMenu']} menu={menuForKey(k)}>
           <span
@@ -2415,9 +2635,10 @@ const ExplorerTree: React.FC = () => {
               handleDoubleClick(k);
             }}
             title={dragTitle}
+            style={showCreateButton ? { display: 'inline-flex', alignItems: 'center', gap: 0, width: '100%' } : undefined}
           >
             {fwTags.length > 0 ? (
-              <Space size={6}>
+              <Space size={6} style={{ flex: 1 }}>
                 <span className={styles.explorerTreeLabel}>
                   {renderedTitle as any}
                 </span>
@@ -2428,9 +2649,58 @@ const ExplorerTree: React.FC = () => {
                 ))}
               </Space>
             ) : (
-              <span className={styles.explorerTreeLabel}>
+              <span className={styles.explorerTreeLabel} style={showCreateButton ? { flex: 1 } : undefined}>
                 {renderedTitle as any}
               </span>
+            )}
+            {showCreateButton && (
+              <Tooltip title="Create new item" mouseEnterDelay={0.4}>
+                <span
+                  role="button"
+                  aria-label="Create new"
+                  tabIndex={0}
+                  className="explorer-quick-create-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 18,
+                    height: 18,
+                    marginLeft: 4,
+                    borderRadius: 3,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    lineHeight: '16px',
+                    cursor: 'pointer',
+                    color: '#595959',
+                    flexShrink: 0,
+                    opacity: 0.6,
+                    transition: 'opacity 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = '1';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = '0.6';
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    quickCreateFromCategory(k, quickCreate!);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      quickCreateFromCategory(k, quickCreate!);
+                    }
+                  }}
+                >
+                  +
+                </span>
+              </Tooltip>
             )}
           </span>
         </Dropdown>
@@ -2447,6 +2717,7 @@ const ExplorerTree: React.FC = () => {
       highlightText,
       matchedKeys,
       menuForKey,
+      quickCreateFromCategory,
       renameValue,
       renamingKey,
     ],

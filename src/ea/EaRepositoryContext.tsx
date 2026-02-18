@@ -949,13 +949,10 @@ export const EaRepositoryProvider: React.FC<{ children: React.ReactNode }> = ({
             } as const;
           }
         } else {
-          if (nextHasNonEnterpriseObjects) {
-            return {
-              ok: false,
-              error:
-                'Initialization must create the Enterprise root first; add other elements after initialization.',
-            } as const;
-          }
+          // Enterprise root is being created (or was just created in this batch).
+          // Allow adding other elements alongside the Enterprise root so that
+          // auto-initialization from Explorer / Create workflows can include
+          // both the Enterprise root and the new element in a single update.
         }
       }
 

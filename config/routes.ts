@@ -54,6 +54,10 @@
     component: './impact-analysis',
   },
   {
+    path: '/analysis/overview',
+    component: './analysis/overview',
+  },
+  {
     path: '/interoperability',
     component: './interoperability',
   },

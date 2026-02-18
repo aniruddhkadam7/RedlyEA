@@ -863,28 +863,31 @@ export function buildExplorerTree(
           'capability',
         ),
         elementLeaves(objectsById, visCapabilities),
-        typedContainerData(visCapabilities, 'Business'),
+        { ...typedContainerData(visCapabilities, 'Business'), quickCreate: { defaultType: (visCapabilities[0] ?? 'Capability') as ObjectType, category: 'Business' } },
       ),
       collectionNode(
         EXPLORER_KEYS.businessProcesses(archName),
         'Processes',
         iconAsset('/rendering/archimate-icons/business-process.svg', 'process'),
         elementLeaves(objectsById, visProcesses),
-        typedContainerData(visProcesses, 'Business'),
+        { ...typedContainerData(visProcesses, 'Business'), quickCreate: { defaultType: (visProcesses[0] ?? 'BusinessProcess') as ObjectType, category: 'Business' } },
       ),
       collectionNode(
         EXPLORER_KEYS.businessActors(archName),
         'Actors',
         iconAsset('/rendering/archimate-icons/business-actor.svg', 'actor'),
         elementLeaves(objectsById, visActors),
-        typedContainerData(visActors, 'Business'),
+        { ...typedContainerData(visActors, 'Business'), quickCreate: { defaultType: (visActors[0] ?? 'Department') as ObjectType, category: 'Business' } },
       ),
     ],
-    typedContainerData(
-      [...visCapabilities, ...visProcesses, ...visActors],
-      'Business',
-      visCapabilities[0] ?? visProcesses[0] ?? visActors[0],
-    ),
+    {
+      ...typedContainerData(
+        [...visCapabilities, ...visProcesses, ...visActors],
+        'Business',
+        visCapabilities[0] ?? visProcesses[0] ?? visActors[0],
+      ),
+      quickCreate: { defaultType: 'BusinessProcess' as ObjectType, category: 'Business' },
+    },
   );
 
   const applicationsNode: DataNode = collectionNode(
@@ -897,7 +900,7 @@ export function buildExplorerTree(
         'Applications',
         appArchIcon,
         elementLeaves(objectsById, visApplications),
-        typedContainerData(visApplications, 'Application'),
+        { ...typedContainerData(visApplications, 'Application'), quickCreate: { defaultType: (visApplications[0] ?? 'Application') as ObjectType, category: 'Application' } },
       ),
       collectionNode(
         EXPLORER_KEYS.appAPIs(archName),
@@ -907,7 +910,7 @@ export function buildExplorerTree(
           'api',
         ),
         elementLeaves(objectsById, visAPIs),
-        typedContainerData(visAPIs, 'Application'),
+        { ...typedContainerData(visAPIs, 'Application'), quickCreate: { defaultType: (visAPIs[0] ?? 'API') as ObjectType, category: 'Application' } },
       ),
       collectionNode(
         EXPLORER_KEYS.appServices(archName),
@@ -917,14 +920,17 @@ export function buildExplorerTree(
           'service',
         ),
         elementLeaves(objectsById, visServices),
-        typedContainerData(visServices, 'Application'),
+        { ...typedContainerData(visServices, 'Application'), quickCreate: { defaultType: (visServices[0] ?? 'ApplicationService') as ObjectType, category: 'Application' } },
       ),
     ],
-    typedContainerData(
-      [...visApplications, ...visAPIs, ...visServices],
-      'Application',
-      visApplications[0] ?? visServices[0] ?? visAPIs[0],
-    ),
+    {
+      ...typedContainerData(
+        [...visApplications, ...visAPIs, ...visServices],
+        'Application',
+        visApplications[0] ?? visServices[0] ?? visAPIs[0],
+      ),
+      quickCreate: { defaultType: 'Application' as ObjectType, category: 'Application' },
+    },
   );
 
   const dataNode: DataNode = collectionNode(
@@ -937,7 +943,7 @@ export function buildExplorerTree(
         'Data Entities',
         dataArchIcon,
         elementLeaves(objectsById, visDataEntities),
-        typedContainerData(visDataEntities, 'Data'),
+        { ...typedContainerData(visDataEntities, 'Data'), quickCreate: { defaultType: 'Database' as ObjectType, category: 'Data' } },
       ),
       collectionNode(
         EXPLORER_KEYS.dataStores(archName),
@@ -947,14 +953,17 @@ export function buildExplorerTree(
           'datastore',
         ),
         elementLeaves(objectsById, visDataStores),
-        typedContainerData(visDataStores, 'Data'),
+        { ...typedContainerData(visDataStores, 'Data'), quickCreate: { defaultType: (visDataStores[0] ?? 'Storage') as ObjectType, category: 'Data' } },
       ),
     ],
-    typedContainerData(
-      [...visDataEntities, ...visDataStores],
-      'Data',
-      visDataEntities[0] ?? visDataStores[0],
-    ),
+    {
+      ...typedContainerData(
+        [...visDataEntities, ...visDataStores],
+        'Data',
+        visDataEntities[0] ?? visDataStores[0],
+      ),
+      quickCreate: { defaultType: 'Database' as ObjectType, category: 'Data' },
+    },
   );
 
   const technologyNode: DataNode = collectionNode(
@@ -967,7 +976,7 @@ export function buildExplorerTree(
         'Infrastructure',
         techArchIcon,
         elementLeaves(objectsById, visInfrastructure),
-        typedContainerData(visInfrastructure, 'Technology'),
+        { ...typedContainerData(visInfrastructure, 'Technology'), quickCreate: { defaultType: (visInfrastructure[0] ?? 'Node') as ObjectType, category: 'Technology' } },
       ),
       collectionNode(
         EXPLORER_KEYS.techNetwork(archName),
@@ -977,21 +986,24 @@ export function buildExplorerTree(
           'network',
         ),
         elementLeaves(objectsById, visNetwork),
-        typedContainerData(visNetwork, 'Technology'),
+        { ...typedContainerData(visNetwork, 'Technology'), quickCreate: { defaultType: (visNetwork[0] ?? 'Network') as ObjectType, category: 'Technology' } },
       ),
       collectionNode(
         EXPLORER_KEYS.techCloud(archName),
         'Cloud Resources',
         iconAsset('/rendering/archimate-icons/technology-service.svg', 'cloud'),
         elementLeaves(objectsById, visCloud),
-        typedContainerData(visCloud, 'Technology'),
+        { ...typedContainerData(visCloud, 'Technology'), quickCreate: { defaultType: (visCloud[0] ?? 'CloudService') as ObjectType, category: 'Technology' } },
       ),
     ],
-    typedContainerData(
-      [...visInfrastructure, ...visNetwork, ...visCloud],
-      'Technology',
-      visInfrastructure[0] ?? visCloud[0] ?? visNetwork[0],
-    ),
+    {
+      ...typedContainerData(
+        [...visInfrastructure, ...visNetwork, ...visCloud],
+        'Technology',
+        visInfrastructure[0] ?? visCloud[0] ?? visNetwork[0],
+      ),
+      quickCreate: { defaultType: 'Node' as ObjectType, category: 'Technology' },
+    },
   );
 
   const securityNode: DataNode = collectionNode(
@@ -1098,6 +1110,7 @@ export function buildExplorerTree(
         filterRelsByTypes(['INTEGRATES_WITH', 'EXPOSES', 'PROVIDED_BY']),
       ),
     ],
+    { quickCreate: { action: 'create-relationship' } },
   );
 
   // Catalogues sub-tree
@@ -1142,6 +1155,7 @@ export function buildExplorerTree(
         data: { catalogKey: 'project-portfolio' },
       },
     ],
+    { quickCreate: { action: 'open-catalog', defaultCatalog: 'applications' } },
   );
 
   // Matrices sub-tree
@@ -1179,6 +1193,7 @@ export function buildExplorerTree(
         data: { matrixKey: 'risk-vs-app' },
       },
     ],
+    { quickCreate: { action: 'open-matrix', defaultMatrix: 'app-vs-cap' } },
   );
 
   // Diagrams sub-tree
@@ -1222,6 +1237,7 @@ export function buildExplorerTree(
         strategyViews,
       ),
     ],
+    { quickCreate: { action: 'create-diagram' } },
   );
 
   // Roadmaps sub-tree
@@ -1296,6 +1312,7 @@ export function buildExplorerTree(
               ],
       ),
     ],
+    { quickCreate: { action: 'open-roadmap-planner' } },
   );
 
   // The Architecture container
