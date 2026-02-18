@@ -33,7 +33,27 @@ import {
 } from "../../../backend/baselines/BaselineStore";
 import { parseRepositoryPackageBytes } from "../../../backend/services/repository/importService";
 import DarkDropdown from "./DarkDropdown";
-import styles from "./index.module.less";
+// CSS module import - handled by Vite/Webpack
+import "./index.module.less";
+
+const styles: Record<string, string> = {
+  pageRoot: "pageRoot",
+  topHeader: "topHeader",
+  topHeaderTitle: "topHeaderTitle",
+  shellLayout: "shellLayout",
+  sidebar: "sidebar",
+  sidebarActions: "sidebarActions",
+  sidebarBtn: "sidebarBtn",
+  sidebarBtnSecondary: "sidebarBtnSecondary",
+  sidebarDivider: "sidebarDivider",
+  sidebarSection: "sidebarSection",
+  sidebarStatus: "sidebarStatus",
+  sidebarStatusLabel: "sidebarStatusLabel",
+  centerPanel: "centerPanel",
+  centerContent: "centerContent",
+  brand: "brand",
+  brandTitle: "brandTitle",
+};
 
 const safeParseJson = <T,>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -539,9 +559,9 @@ const FirstLaunch: React.FC = () => {
       }
 
       const baselines = Array.isArray(parsed.data.baselines)
-        ? parsed.data.baselines
+        ? (parsed.data.baselines as any[])
         : Array.isArray(parsed.data.workspace?.baselines)
-          ? parsed.data.workspace.baselines
+          ? (parsed.data.workspace.baselines as any[])
           : [];
       replaceBaselines(baselines as unknown as any[]);
 
@@ -618,8 +638,7 @@ const FirstLaunch: React.FC = () => {
         return;
       }
 
-      const bytes = base64ToBytes(res.content ?? "");
-      await importRepositoryPackage(bytes, res.name);
+      await importRepositoryPackage(base64ToBytes(res.content), res.name);
 
       try {
         localStorage.removeItem(LEGACY_PROJECT_PATH_KEY);

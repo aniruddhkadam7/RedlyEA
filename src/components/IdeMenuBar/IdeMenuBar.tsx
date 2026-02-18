@@ -53,11 +53,22 @@ import {
   type RedlyExportSource,
 } from "@/services/persistence";
 import {
+  buildRedlyFile,
+  parseRedlyFile,
+  type RedlyExportSource,
+} from "@/services/persistence";
+import {
   listBaselines,
   replaceBaselines,
 } from "../../../backend/baselines/BaselineStore";
 import { buildRepositoryPackageBytes } from "../../../backend/services/repository/exportService";
 import { parseRepositoryPackageBytes } from "../../../backend/services/repository/importService";
+
+let styles: Record<string, string> = {};
+try {
+  // @ts-ignore
+  styles = require("./style.module.less");
+} catch {}
 
 let styles: Record<string, string> = {};
 try {
@@ -78,6 +89,9 @@ const downloadTextFile = (fileName: string, text: string, mime: string) => {
 };
 
 const downloadBytesFile = (fileName: string, bytes: Uint8Array) => {
+  const buffer = new ArrayBuffer(bytes.length);
+  new Uint8Array(buffer).set(bytes);
+  const blob = new Blob([buffer], { type: "application/zip" });
   const buffer = new ArrayBuffer(bytes.length);
   new Uint8Array(buffer).set(bytes);
   const blob = new Blob([buffer], { type: "application/zip" });
@@ -444,6 +458,7 @@ const IdeMenuBar: React.FC = () => {
       organizationName: org,
       industry: newRepoDraft.industry.trim() || undefined,
       architectureScope: newRepoDraft.architectureScope,
+      referenceFramework: newRepoDraft.referenceFramework as any as "Custom",
       referenceFramework: newRepoDraft.referenceFramework as any as "Custom",
       frameworkConfig:
         newRepoDraft.referenceFramework === "Custom"
@@ -970,6 +985,11 @@ const IdeMenuBar: React.FC = () => {
         : Array.isArray(parsed.data.workspace?.baselines)
           ? parsed.data.workspace.baselines
           : [];
+      replaceBaselines(
+        (baselines as any[]).map((b) => ({
+          ...b,
+        })) as any[],
+      );
       replaceBaselines(
         (baselines as any[]).map((b) => ({
           ...b,
@@ -1561,7 +1581,7 @@ const IdeMenuBar: React.FC = () => {
         })),
         viewLayouts: mergedLayouts,
         designWorkspaces,
-        baselines: [...listBaselines()] as any[],
+        baselines: listBaselines() as any[],
         importHistory: snapshot?.importHistory ?? [],
         versionHistory: snapshot?.versionHistory ?? [],
         schemaVersion: "1",
@@ -1660,6 +1680,11 @@ const IdeMenuBar: React.FC = () => {
           ...d,
         })) as any[],
       );
+      ViewStore.replaceAll(
+        (pkg.diagrams as any[]).map((d) => ({
+          ...d,
+        })) as any[],
+      );
 
       // Restore layouts
       for (const diagram of pkg.diagrams) {
@@ -1686,6 +1711,11 @@ const IdeMenuBar: React.FC = () => {
       const baselines = Array.isArray(pkg.repository.baselines)
         ? pkg.repository.baselines
         : [];
+      replaceBaselines(
+        (baselines as any[]).map((b) => ({
+          ...b,
+        })) as any[],
+      );
       replaceBaselines(
         (baselines as any[]).map((b) => ({
           ...b,
@@ -2567,11 +2597,15 @@ const IdeMenuBar: React.FC = () => {
 
     // Show checking message
     const hideId = message.loading("Checking for updates...", 0);
+    const hideId = message.loading("Checking for updates...", 0);
 
     try {
       const result = await window.eaDesktop?.updater?.check();
       if (typeof hideId === "string") message.destroy(hideId);
+      const result = await window.eaDesktop?.updater?.check();
+      if (typeof hideId === "string") message.destroy(hideId);
 
+      if (!result?.ok) {
       if (!result?.ok) {
         // Graceful message for dev mode or when updater isn't available
         Modal.info({
@@ -2609,11 +2643,12 @@ const IdeMenuBar: React.FC = () => {
           cancelText: "Later",
           onOk: async () => {
             const hideDownloadId = message.loading("Downloading update...", 0);
+            const hideDownloadId = message.loading("Downloading update...", 0);
             try {
               const dlResult = await window.eaDesktop?.updater?.download();
               if (typeof hideDownloadId === "string")
                 message.destroy(hideDownloadId);
-              if (dlResult?.ok) {
+              if (dlResult.ok) {
                 Modal.confirm({
                   title: "Update Ready",
                   content:
@@ -2635,6 +2670,8 @@ const IdeMenuBar: React.FC = () => {
             } catch (dlErr) {
               if (typeof hideDownloadId === "string")
                 message.destroy(hideDownloadId);
+              if (typeof hideDownloadId === "string")
+                message.destroy(hideDownloadId);
               Modal.error({
                 title: "Download Failed",
                 content:
@@ -2652,6 +2689,8 @@ const IdeMenuBar: React.FC = () => {
         });
       }
     } catch (err) {
+      if (typeof hideId === "string") message.destroy(hideId);
+      else message.destroy();
       if (typeof hideId === "string") message.destroy(hideId);
       else message.destroy();
       Modal.error({

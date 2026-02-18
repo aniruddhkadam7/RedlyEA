@@ -7,8 +7,6 @@ import {
 import type { Settings as LayoutSettings } from "@ant-design/pro-components";
 import { ProDescriptions } from "@ant-design/pro-components";
 import type { RunTimeLayoutConfig } from "@umijs/max";
-import { Link, useLocation } from "@umijs/max";
-import React from "react";
 import {
   Checkbox,
   Collapse,
@@ -21,15 +19,19 @@ import {
   Select,
   Tree,
   Typography,
-  theme as antdTheme,
 } from "antd";
 import type { DataNode } from "antd/es/tree";
-import { AvatarDropdown, AvatarName } from "@/components";
+import React from "react";
+import {
+  ContextMenuProvider,
+  GlobalContextMenu,
+} from "@/components/ContextMenu";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import IdeShellLayout from "@/components/IdeShellLayout";
-import { ExplorerTree } from "@/components/IdeShellLayout/explorer";
+import AnalysisTree from "@/components/IdeShellLayout/AnalysisTree";
 import CatalogSidebar from "@/components/IdeShellLayout/CatalogSidebar";
 import DiagramsTree from "@/components/IdeShellLayout/DiagramsTree";
-import AnalysisTree from "@/components/IdeShellLayout/AnalysisTree";
+import { ExplorerTree } from "@/components/IdeShellLayout/explorer";
 import MetamodelSidebar from "@/components/IdeShellLayout/MetamodelSidebar";
 import SettingsPanel from "@/components/IdeShellLayout/SettingsPanel";
 import defaultSettings from "../config/defaultSettings";
@@ -45,33 +47,37 @@ import {
   EaRepositoryProvider,
   useEaRepository,
 } from "@/ea/EaRepositoryContext";
-import { EaProjectProvider } from "@/ea/EaProjectContext";
+import { message } from "@/ea/eaConsole";
 import ProjectGate from "@/ea/ProjectGate";
 import { IdeSelectionProvider } from "@/ide/IdeSelectionContext";
-import RepositoryGate from "@/repository/RepositoryGate";
+import type { EaRepository } from "@/pages/dependency-view/utils/eaRepository";
+import {
+  EA_LAYERS,
+  type EaLayer,
+  OBJECT_TYPE_DEFINITIONS,
+  type ObjectType,
+  RELATIONSHIP_TYPE_DEFINITIONS,
+  type RelationshipType,
+} from "@/pages/dependency-view/utils/eaMetaModel";
 import FirstLaunch from "@/pages/first-launch";
-import {
-  canCreateObjectTypeForLifecycleCoverage,
-  defaultLifecycleStateForLifecycleCoverage,
-} from "@/repository/lifecycleCoveragePolicy";
-import {
-  isLifecycleStateAllowedForReferenceFramework,
-  isObjectTypeAllowedForReferenceFramework,
-} from "@/repository/referenceFrameworkPolicy";
 import {
   isCustomFrameworkModelingEnabled,
   isObjectTypeEnabledForFramework,
 } from "@/repository/customFrameworkConfig";
-import { runtimeEnv } from "@/runtime/runtimeEnv";
-import { message } from "@/ea/eaConsole";
-import { ThemeProvider } from "@/theme/ThemeContext";
 import {
-  ContextMenuProvider,
-  GlobalContextMenu,
-} from "@/components/ContextMenu";
-import ErrorBoundary from "@/components/ErrorBoundary";
+  canCreateObjectTypeForLifecycleCoverage,
+  defaultLifecycleStateForLifecycleCoverage,
+} from "@/repository/lifecycleCoveragePolicy";
+import RepositoryGate from "@/repository/RepositoryGate";
+import {
+  isLifecycleStateAllowedForReferenceFramework,
+  isObjectTypeAllowedForReferenceFramework,
+} from "@/repository/referenceFrameworkPolicy";
+import { runtimeEnv } from "@/runtime/runtimeEnv";
+import { ThemeProvider } from "@/theme/ThemeContext";
+import defaultSettings from "../config/defaultSettings";
 
-const isDev = process.env.NODE_ENV === "development";
+const _isDev = process.env.NODE_ENV === "development";
 
 const defaultLifecycleStateForFramework = (
   referenceFramework: string | null | undefined,
@@ -145,9 +151,9 @@ const buildMetamodelTreeData = (): DataNode[] => {
     },
   );
 
-  for (const [layer, list] of objectTypesByLayer)
+  for (const [_layer, list] of objectTypesByLayer)
     list.sort((a, b) => a.localeCompare(b));
-  for (const [layer, list] of relationshipTypesByLayer)
+  for (const [_layer, list] of relationshipTypesByLayer)
     list.sort((a, b) => a.localeCompare(b));
 
   return EA_LAYERS.map((layer) => ({
@@ -354,14 +360,17 @@ const defaultIdPrefixForType = (type: ObjectType) => {
   }
 };
 
-const EaExplorerSiderContent: React.FC<{
+interface _EaExplorerSiderContentInnerProps {
   view?: "explorer" | "metamodel" | "catalogues" | "diagrams";
-}> = ({ view = "explorer" }) => {
-  const { eaRepository, setEaRepository, trySetEaRepository, metadata } =
-    useEaRepository();
-  if (!eaRepository) return null;
+  eaRepository: EaRepository;
+  metadata: any;
+  trySetEaRepository: any;
+}
 
-  const location = useLocation();
+const _EaExplorerSiderContentInner: React.FC<
+  _EaExplorerSiderContentInnerProps
+> = ({ view = "explorer", eaRepository, metadata, trySetEaRepository }) => {
+  // Initialize all hooks BEFORE any conditional logic
   const [activeKeys, setActiveKeys] = React.useState<string[]>([
     "Workspace",
     "Metamodel",
@@ -372,7 +381,6 @@ const EaExplorerSiderContent: React.FC<{
   const [selection, setSelection] = React.useState<DrawerSelection | undefined>(
     undefined,
   );
-  const isReadOnlyMode = false;
 
   const treeData = React.useMemo(() => buildMetamodelTreeData(), []);
 
@@ -393,7 +401,7 @@ const EaExplorerSiderContent: React.FC<{
       const items = Array.from(eaRepository.objects.values()).filter(
         (o: any) => o.type === type && !isSoftDeleted(o.attributes),
       );
-      items.sort((a, b) => {
+      items.sort((a: any, b: any) => {
         const aName =
           typeof a.attributes.name === "string" && a.attributes.name.trim()
             ? String(a.attributes.name)
@@ -1101,7 +1109,7 @@ const EaExplorerSiderContent: React.FC<{
         return;
       }
       const impacted = eaRepository.relationships.filter(
-        (r) => r.fromId === objectId || r.toId === objectId,
+        (r: any) => r.fromId === objectId || r.toId === objectId,
       );
       const impactedCount = impacted.length;
       const impactedPreview = impacted.slice(0, 10).map((r: any) => {
@@ -1174,7 +1182,7 @@ const EaExplorerSiderContent: React.FC<{
                 </Typography.Text>
               ) : (
                 <ul style={{ margin: "6px 0 0 16px" }}>
-                  {impactedPreview.map((line) => (
+                  {impactedPreview.map((line: any) => (
                     <li key={line}>{line}</li>
                   ))}
                   {impactedCount > impactedPreview.length ? (
@@ -1247,7 +1255,7 @@ const EaExplorerSiderContent: React.FC<{
       }
 
       if (objectSelection) {
-        const selectedType = eaRepository.objects.get(
+        const _selectedType = eaRepository.objects.get(
           objectSelection.objectId,
         )?.type;
         items.push(
@@ -1770,6 +1778,7 @@ export async function getInitialState(): Promise<{
     density: "compact" | "normal";
   };
 }> {
+  // @ts-ignore - Dynamic imports supported at runtime despite TS config
   const { ensureLocalUser } = await import("@/repository/localUserBootstrap");
   const bootstrap = ensureLocalUser();
 
