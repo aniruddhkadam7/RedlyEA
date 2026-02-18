@@ -1581,7 +1581,7 @@ const IdeMenuBar: React.FC = () => {
         })),
         viewLayouts: mergedLayouts,
         designWorkspaces,
-        baselines: listBaselines() as any[],
+        baselines: [...listBaselines()] as any[],
         importHistory: snapshot?.importHistory ?? [],
         versionHistory: snapshot?.versionHistory ?? [],
         schemaVersion: "1",
@@ -2648,7 +2648,7 @@ const IdeMenuBar: React.FC = () => {
               const dlResult = await window.eaDesktop?.updater?.download();
               if (typeof hideDownloadId === "string")
                 message.destroy(hideDownloadId);
-              if (dlResult.ok) {
+              if (dlResult?.ok) {
                 Modal.confirm({
                   title: "Update Ready",
                   content:
