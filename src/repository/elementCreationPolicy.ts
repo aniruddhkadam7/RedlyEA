@@ -38,6 +38,7 @@ import type { GovernanceMode } from './repositoryMetadata';
  */
 export type ElementCreationSource =
   | 'toolbox'
+  | 'explorer'
   | 'explorer-context-menu'
   | 'canvas'
   | 'ai-agent'
@@ -102,7 +103,7 @@ export type PermissionChainOutcome =
 export function validateElementCreationSource(
   source: ElementCreationSource,
 ): ElementCreationGuard {
-  if (source === 'toolbox') {
+  if (source === 'toolbox' || source === 'explorer') {
     return { ok: true, source };
   }
 
@@ -110,7 +111,7 @@ export function validateElementCreationSource(
     return {
       ok: false,
       source,
-      reason: 'Explorer does not create elements. Use the EA Toolbox instead.',
+      reason: 'Use the Explorer "+" button or Toolbox to create elements.',
     };
   }
 
@@ -143,7 +144,7 @@ export function validateElementCreationSource(
  * Policy constant for documentation and enforcement.
  */
 export const ELEMENT_CREATION_POLICY = {
-  allowedSource: 'toolbox' as const,
+  allowedSources: ['toolbox', 'explorer'] as const,
   blockedSources: [
     'explorer-context-menu',
     'canvas',

@@ -54,7 +54,7 @@ const ANALYSIS_ITEMS: Array<{
 ];
 
 const AnalysisTree: React.FC = () => {
-  const { openWorkspaceTab } = useIdeShell();
+  const { openWorkspaceTab, openRouteTab } = useIdeShell();
   const { setSelection } = useIdeSelection();
   const [selectedKey, setSelectedKey] = React.useState<string>(
     `analysis:${DEFAULT_IMPACT_ANALYSIS_SECTION}`,
@@ -89,6 +89,12 @@ const AnalysisTree: React.FC = () => {
 
               setSelectedKey(item.key);
               setSelection({ kind: 'analysis', keys: [item.key] });
+
+              if (item.key === 'analysis:overview') {
+                openRouteTab('/analysis/overview');
+                return;
+              }
+
               openWorkspaceTab({ type: 'analysis', kind: 'impact' });
               dispatchImpactAnalysisSection(section);
             },
@@ -96,7 +102,7 @@ const AnalysisTree: React.FC = () => {
         ],
       },
     ],
-    [openWorkspaceTab, selectedKey, setSelection],
+    [openWorkspaceTab, openRouteTab, selectedKey, setSelection],
   );
 
   return <NavigationSidebar ariaLabel="Analysis navigation" groups={groups} />;
