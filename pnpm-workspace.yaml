@@ -1,5 +1,7 @@
+packages: []
+
 ignoredBuiltDependencies:
-  - '@scarf/scarf'
+  - "@scarf/scarf"
   - core-js
   - core-js-pure
   - electron
