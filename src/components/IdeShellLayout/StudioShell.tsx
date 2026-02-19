@@ -99,10 +99,21 @@ import {
   type ObjectType,
   RELATIONSHIP_TYPE_DEFINITIONS,
   type RelationshipType,
+  registerCustomObjectTypes,
+  registerCustomRelationshipTypes,
+  unregisterAllCustomObjectTypes,
+  unregisterAllCustomRelationshipTypes,
 } from '@/pages/dependency-view/utils/eaMetaModel';
 import type { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
 import type { RepositoryRole } from '@/repository/accessControl';
 import { recordAuditEvent } from '@/repository/auditLog';
+import {
+  buildCustomToolboxRelationships,
+  buildCustomToolboxVisuals,
+  type CustomToolboxRelationship,
+  type CustomToolboxVisual,
+  loadCustomMetaModel,
+} from '@/repository/customArchitectMetaModel';
 import {
   isCustomFrameworkModelingEnabled,
   isObjectTypeEnabledForFramework,
@@ -1379,6 +1390,26 @@ const StudioShell: React.FC<StudioShellProps> = ({
   );
   const ensureToolboxElementType = React.useCallback(
     (type: ObjectType, label?: string, visualKind?: string | null) => {
+      // CUSTOM (Architect Mode): find synthetic visual for custom types
+      if (isCustomArchitectMode) {
+        const customVis = customToolboxVisuals.find(
+          (v) =>
+            v.type === (type as string) &&
+            (!visualKind || v.kind === visualKind),
+        );
+        if (customVis) {
+          return {
+            kind: customVis.kind,
+            type: customVis.type as ObjectType,
+            layer: 'Custom' as EaLayer,
+            label: customVis.label,
+            shape: (customVis.shape || 'round-rectangle') as EaVisualShape,
+            icon: customVis.icon,
+            color: customVis.color,
+            border: customVis.border,
+          };
+        }
+      }
       const visual = resolveEaVisualForElement({
         type,
         visualKindOverride: visualKind ?? undefined,
@@ -1391,10 +1422,17 @@ const StudioShell: React.FC<StudioShellProps> = ({
       }
       return visual;
     },
-    [],
+    [isCustomArchitectMode, customToolboxVisuals],
   );
   const ensureToolboxRelationshipType = React.useCallback(
     (type: RelationshipType, label?: string) => {
+      // CUSTOM (Architect Mode): custom relationship types are always valid
+      if (isCustomArchitectMode) {
+        const isCustomRel = customToolboxRelationships.some(
+          (r) => r.type === (type as string),
+        );
+        if (isCustomRel) return true;
+      }
       if (!RELATIONSHIP_TYPE_DEFINITIONS[type]) {
         message.error(
           `Toolbox item "${label ?? type}" is not yet wired to the canvas (missing relationship mapping).`,
@@ -1403,7 +1441,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
       }
       return true;
     },
-    [],
+    [isCustomArchitectMode, customToolboxRelationships],
   );
   const studioHeaderRef = React.useRef<HTMLDivElement | null>(null);
   const studioLeftRef = React.useRef<HTMLDivElement | null>(null);
@@ -2188,6 +2226,71 @@ const StudioShell: React.FC<StudioShellProps> = ({
     return ViewpointRegistry.get(view.viewpointId) ?? null;
   }, [activeView, activeViewIsWorking, viewContext?.viewId]);
 
+  // ---------------------------------------------------------------------------
+  // Custom (Architect Mode) toolbox: dynamic metamodel state
+  // ---------------------------------------------------------------------------
+  const isCustomArchitectMode = metadata?.initializationMode === 'CUSTOM';
+
+  const [customMetaModelRevision, setCustomMetaModelRevision] =
+    React.useState(0);
+
+  // Listen for metamodel changes (element/relationship type CRUD) and refresh
+  React.useEffect(() => {
+    if (!isCustomArchitectMode) return;
+    const handler = () => setCustomMetaModelRevision((r) => r + 1);
+    window.addEventListener('ea:customMetaModelChanged', handler);
+    return () =>
+      window.removeEventListener('ea:customMetaModelChanged', handler);
+  }, [isCustomArchitectMode]);
+
+  // Register custom types with the global validator whenever metamodel changes
+  React.useEffect(() => {
+    if (!isCustomArchitectMode || !metadata?.repositoryName) {
+      unregisterAllCustomObjectTypes();
+      unregisterAllCustomRelationshipTypes();
+      return;
+    }
+    const model = loadCustomMetaModel(metadata.repositoryName);
+    const objTypes = model.elementTypes.map((et) => et.name);
+    const relTypes = model.relationshipTypes.map((rt) => rt.name);
+    unregisterAllCustomObjectTypes();
+    unregisterAllCustomRelationshipTypes();
+    registerCustomObjectTypes(objTypes);
+    registerCustomRelationshipTypes(relTypes);
+    return () => {
+      unregisterAllCustomObjectTypes();
+      unregisterAllCustomRelationshipTypes();
+    };
+  }, [
+    isCustomArchitectMode,
+    metadata?.repositoryName,
+    customMetaModelRevision,
+  ]);
+
+  const customToolboxVisuals: CustomToolboxVisual[] = React.useMemo(() => {
+    if (!isCustomArchitectMode || !metadata?.repositoryName) return [];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _rev = customMetaModelRevision; // reactive dependency
+    return buildCustomToolboxVisuals(metadata.repositoryName);
+  }, [
+    isCustomArchitectMode,
+    metadata?.repositoryName,
+    customMetaModelRevision,
+  ]);
+
+  const customToolboxRelationships: CustomToolboxRelationship[] =
+    React.useMemo(() => {
+      if (!isCustomArchitectMode || !metadata?.repositoryName) return [];
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _rev = customMetaModelRevision;
+      return buildCustomToolboxRelationships(metadata.repositoryName);
+    }, [
+      isCustomArchitectMode,
+      metadata?.repositoryName,
+      customMetaModelRevision,
+    ]);
+  // ---------------------------------------------------------------------------
+
   const paletteElementTypes = React.useMemo(() => {
     const seen = new Set<ObjectType>();
     return EA_VISUALS.map((visual) => visual.type).filter((type) => {
@@ -2234,22 +2337,39 @@ const StudioShell: React.FC<StudioShellProps> = ({
   }, [frameworkFilteredElementTypes, layerVisibility]);
 
   const toolboxComponentItems = React.useMemo(() => {
+    // CUSTOM (Architect Mode): use synthetic custom visuals instead of EA_VISUALS
+    if (isCustomArchitectMode) return customToolboxVisuals as any[];
     const allowedTypeSet = new Set(visiblePaletteElementTypes);
     return EA_VISUALS.filter(
       (visual) =>
         visual.layer !== 'Technology' && allowedTypeSet.has(visual.type),
     );
-  }, [visiblePaletteElementTypes]);
+  }, [visiblePaletteElementTypes, isCustomArchitectMode, customToolboxVisuals]);
 
   const toolboxTechnologyItems = React.useMemo(() => {
+    // CUSTOM (Architect Mode): no technology split — everything is in components tab
+    if (isCustomArchitectMode) return [];
     const allowedTypeSet = new Set(visiblePaletteElementTypes);
     return EA_VISUALS.filter(
       (visual) =>
         visual.layer === 'Technology' && allowedTypeSet.has(visual.type),
     );
-  }, [visiblePaletteElementTypes]);
+  }, [visiblePaletteElementTypes, isCustomArchitectMode]);
 
   const paletteRelationships = React.useMemo(() => {
+    // CUSTOM (Architect Mode): use custom relationship types
+    if (isCustomArchitectMode) {
+      return customToolboxRelationships.map((r) => ({
+        type: r.type as RelationshipType,
+        label: r.label,
+        layer: 'Custom' as EaLayer,
+        description: '',
+        fromTypes: [] as ObjectType[],
+        toTypes: [] as ObjectType[],
+        attributes: [],
+        _isCustom: true,
+      }));
+    }
     const allowed = EA_CONNECTOR_REGISTRY.map(
       (entry) => entry.type,
     ) as RelationshipType[];
@@ -2273,11 +2393,27 @@ const StudioShell: React.FC<StudioShellProps> = ({
           relDef.toTypes.some((to) => visibleElementSet.has(to))
         );
       });
-  }, [layerVisibility, visiblePaletteElementTypes]);
+  }, [
+    layerVisibility,
+    visiblePaletteElementTypes,
+    isCustomArchitectMode,
+    customToolboxRelationships,
+  ]);
 
   const visualByType = React.useMemo(() => {
-    return new Map(EA_VISUALS.map((entry) => [entry.type, entry] as const));
-  }, []);
+    const map = new Map(
+      EA_VISUALS.map((entry) => [entry.type, entry] as const),
+    );
+    // CUSTOM (Architect Mode): add custom visuals to the lookup
+    if (isCustomArchitectMode) {
+      for (const cv of customToolboxVisuals) {
+        if (!map.has(cv.type as ObjectType)) {
+          map.set(cv.type as ObjectType, cv as any);
+        }
+      }
+    }
+    return map;
+  }, [isCustomArchitectMode, customToolboxVisuals]);
 
   const renderTypeIcon = React.useCallback(
     (type?: ObjectType | null) => {
@@ -2295,6 +2431,20 @@ const StudioShell: React.FC<StudioShellProps> = ({
       if (visual?.icon) {
         return <img src={visual.icon} alt={type} width={16} height={16} />;
       }
+      // CUSTOM (Architect Mode): use custom visual color if available
+      if (isCustomArchitectMode) {
+        const customVis = customToolboxVisuals.find(
+          (v) => v.type === (type as string),
+        );
+        if (customVis) {
+          const bg = customVis.color || '#69b1ff';
+          return (
+            <span className={styles.studioTypeIcon} style={{ background: bg }}>
+              {customVis.label.charAt(0).toUpperCase()}
+            </span>
+          );
+        }
+      }
       const layer = OBJECT_TYPE_DEFINITIONS[type]?.layer;
       const layerColor: Record<string, string> = {
         Business: '#95de64',
@@ -2310,7 +2460,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
         </span>
       );
     },
-    [visualByType],
+    [visualByType, isCustomArchitectMode, customToolboxVisuals],
   );
 
   const applyLayerVisibility = React.useCallback(() => {
@@ -2351,6 +2501,15 @@ const StudioShell: React.FC<StudioShellProps> = ({
 
   const validateStudioElementType = React.useCallback(
     (type: ObjectType): boolean => {
+      // CUSTOM (Architect Mode): custom types bypass static checks
+      if (isCustomArchitectMode) {
+        const isCustomType = customToolboxVisuals.some(
+          (v) => v.type === (type as string),
+        );
+        if (isCustomType) return true;
+        // Fall through for any built-in types that might somehow be referenced
+      }
+
       if (!OBJECT_TYPE_DEFINITIONS[type]) {
         message.error(`Element type "${type}" is not allowed in Studio.`);
         return false;
@@ -2418,7 +2577,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
 
       return true;
     },
-    [metadata],
+    [metadata, isCustomArchitectMode, customToolboxVisuals],
   );
 
   const toCanvasPosition = React.useCallback(
@@ -2826,6 +2985,13 @@ const StudioShell: React.FC<StudioShellProps> = ({
   const isHierarchicalView = Boolean(hierarchyRelationshipType);
 
   const quickCreateTypeOptions = React.useMemo(() => {
+    // CUSTOM (Architect Mode): use custom element type names
+    if (isCustomArchitectMode) {
+      return customToolboxVisuals.map((v) => ({
+        value: v.type as ObjectType,
+        label: v.label,
+      }));
+    }
     const baseTypes = [...visiblePaletteElementTypes];
     const seen = new Set<ObjectType>();
     return baseTypes
@@ -2835,7 +3001,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
         return Boolean(OBJECT_TYPE_DEFINITIONS[type]);
       })
       .map((type) => ({ value: type, label: type }));
-  }, [visiblePaletteElementTypes]);
+  }, [visiblePaletteElementTypes, isCustomArchitectMode, customToolboxVisuals]);
 
   const resolveChildCreationSpec = React.useCallback(
     (
@@ -12232,14 +12398,16 @@ const StudioShell: React.FC<StudioShellProps> = ({
           items={[
             {
               key: 'components',
-              label: 'Components',
+              label: isCustomArchitectMode ? 'Element Types' : 'Components',
               children:
                 toolboxComponentItems.length === 0 ? (
                   <Typography.Text
                     type="secondary"
                     className={styles.studioToolboxEmpty}
                   >
-                    No components available for this viewpoint.
+                    {isCustomArchitectMode
+                      ? 'No element types defined yet. Open Metamodel to create types.'
+                      : 'No components available for this viewpoint.'}
                   </Typography.Text>
                 ) : (
                   <div className={styles.studioToolboxGrid}>
@@ -12337,6 +12505,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
             {
               key: 'nodes',
               label: 'Nodes',
+              hidden: isCustomArchitectMode,
               children:
                 toolboxTechnologyItems.length === 0 ? (
                   <Typography.Text
@@ -12440,14 +12609,16 @@ const StudioShell: React.FC<StudioShellProps> = ({
             },
             {
               key: 'connections',
-              label: 'Connections',
+              label: isCustomArchitectMode ? 'Relationships' : 'Connections',
               children:
                 paletteRelationships.length === 0 ? (
                   <Typography.Text
                     type="secondary"
                     className={styles.studioToolboxEmpty}
                   >
-                    No connections available for this viewpoint.
+                    {isCustomArchitectMode
+                      ? 'No relationship types defined yet. Open Metamodel to add types.'
+                      : 'No connections available for this viewpoint.'}
                   </Typography.Text>
                 ) : (
                   <div className={styles.studioToolboxGrid}>
@@ -12549,6 +12720,7 @@ const StudioShell: React.FC<StudioShellProps> = ({
             {
               key: 'connectors',
               label: 'Connectors',
+              hidden: isCustomArchitectMode,
               children:
                 paletteRelationships.length === 0 ? (
                   <Typography.Text

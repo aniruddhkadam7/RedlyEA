@@ -5,7 +5,20 @@
  * Designed for instant situational awareness: vulnerabilities, dangerous systems,
  * change safety, and investment needs in under 10 seconds.
  */
-import React from 'react';
+
+import {
+  AlertOutlined,
+  ApartmentOutlined,
+  BulbOutlined,
+  ClusterOutlined,
+  DashboardOutlined,
+  ExclamationCircleOutlined,
+  LinkOutlined,
+  RadarChartOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   Badge,
@@ -23,36 +36,22 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
+import React from 'react';
 import {
-  AlertOutlined,
-  ApartmentOutlined,
-  BulbOutlined,
-  ClusterOutlined,
-  DashboardOutlined,
-  ExclamationCircleOutlined,
-  LinkOutlined,
-  RadarChartOutlined,
-  SafetyCertificateOutlined,
-  TeamOutlined,
-  WarningOutlined,
-} from '@ant-design/icons';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
-import {
-  getArchitectureOverviewSnapshot,
-  precomputeArchitectureOverviewInBackground,
   type ArchitectureOverviewSnapshot,
   type CentralityNode,
+  getArchitectureOverviewSnapshot,
+  precomputeArchitectureOverviewInBackground,
 } from '@/analysis/architectureOverviewEngine';
 import {
   computeFragilityRiskSnapshot,
   type FragilityRiskSnapshot,
 } from '@/analysis/fragilityRiskEngine';
+import { dispatchImpactAnalysisSection } from '@/analysis/impactAnalysisMode';
 import { getImpactAnalysisSnapshot } from '@/analysis/impactDependencyEngine';
-import {
-  dispatchImpactAnalysisSection,
-} from '@/analysis/impactAnalysisMode';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useIdeShell } from '@/components/IdeShellLayout';
+import { useEaRepository } from '@/ea/EaRepositoryContext';
 
 /* ---------- Safe chart imports ---------- */
 let Pie: React.ComponentType<any> | null = null;
@@ -60,7 +59,7 @@ let Column: React.ComponentType<any> | null = null;
 let Bar: React.ComponentType<any> | null = null;
 let Area: React.ComponentType<any> | null = null;
 let Treemap: React.ComponentType<any> | null = null;
-let Heatmap: React.ComponentType<any> | null = null;
+let _Heatmap: React.ComponentType<any> | null = null;
 let Bubble: React.ComponentType<any> | null = null;
 try {
   /* eslint-disable @typescript-eslint/no-var-requires */
@@ -70,7 +69,7 @@ try {
   Bar = charts.Bar ?? null;
   Area = charts.Area ?? null;
   Treemap = charts.Treemap ?? null;
-  Heatmap = charts.Heatmap ?? null;
+  _Heatmap = charts.Heatmap ?? null;
   Bubble = charts.Bubble ?? null;
   /* eslint-enable */
 } catch {
@@ -98,12 +97,15 @@ const CARD_STYLE: React.CSSProperties = {
 
 /* ---------- Small reusable chart wrappers ---------- */
 
-const FallbackList: React.FC<{ items: Array<{ label: string; value: number; color?: string }> }> = ({
-  items,
-}) => (
+const FallbackList: React.FC<{
+  items: Array<{ label: string; value: number; color?: string }>;
+}> = ({ items }) => (
   <Space direction="vertical" style={{ width: '100%' }}>
     {items.slice(0, 8).map((item) => (
-      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+      <div
+        key={item.label}
+        style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}
+      >
         {item.color ? (
           <Badge color={item.color} text={item.label} />
         ) : (
@@ -131,12 +133,21 @@ const Row1ExecutiveBar: React.FC<{
           strokeColor={HEALTH_COLOR(snapshot.healthScore)}
           width={100}
           format={(p) => (
-            <span style={{ fontSize: 20, fontWeight: 700, color: HEALTH_COLOR(p ?? 0) }}>
+            <span
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: HEALTH_COLOR(p ?? 0),
+              }}
+            >
               {p}
             </span>
           )}
         />
-        <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+        <Typography.Text
+          type="secondary"
+          style={{ fontSize: 11, display: 'block', marginTop: 2 }}
+        >
           Architecture Health
         </Typography.Text>
       </Card>
@@ -149,7 +160,9 @@ const Row1ExecutiveBar: React.FC<{
           <Progress
             type="dashboard"
             percent={fragilitySnapshot.aggregateFragilityScore}
-            strokeColor={FRAGILITY_COLOR(fragilitySnapshot.aggregateFragilityScore)}
+            strokeColor={FRAGILITY_COLOR(
+              fragilitySnapshot.aggregateFragilityScore,
+            )}
             width={100}
             format={(p) => (
               <span
@@ -163,7 +176,10 @@ const Row1ExecutiveBar: React.FC<{
               </span>
             )}
           />
-          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 11, display: 'block', marginTop: 2 }}
+          >
             Fragility Score
           </Typography.Text>
         </Card>
@@ -240,7 +256,11 @@ const Row1ExecutiveBar: React.FC<{
                 title={kpi.title}
                 value={kpi.value}
                 prefix={kpi.icon}
-                valueStyle={kpi.color ? { color: kpi.color, fontSize: 20 } : { fontSize: 20 }}
+                valueStyle={
+                  kpi.color
+                    ? { color: kpi.color, fontSize: 20 }
+                    : { fontSize: 20 }
+                }
               />
             </Card>
           </Col>
@@ -251,9 +271,9 @@ const Row1ExecutiveBar: React.FC<{
 );
 
 /* ---------- Row 2: Risk Distribution Charts ---------- */
-const Row2RiskDistribution: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
-  snapshot,
-}) => {
+const Row2RiskDistribution: React.FC<{
+  snapshot: ArchitectureOverviewSnapshot;
+}> = ({ snapshot }) => {
   const riskPieData = snapshot.riskDistribution
     .filter((d) => d.count > 0)
     .map((d) => ({ type: d.bucket, value: d.count }));
@@ -284,8 +304,14 @@ const Row2RiskDistribution: React.FC<{ snapshot: ArchitectureOverviewSnapshot }>
                 radius={0.85}
                 height={200}
                 legend={{ position: 'right' }}
-                color={({ type }: { type: string }) => RISK_COLORS[type] ?? '#1677ff'}
-                label={{ type: 'inner', offset: '-30%', style: { fontSize: 12 } }}
+                color={({ type }: { type: string }) =>
+                  RISK_COLORS[type] ?? '#1677ff'
+                }
+                label={{
+                  type: 'inner',
+                  offset: '-30%',
+                  style: { fontSize: 12 },
+                }}
               />
             </ErrorBoundary>
           ) : (
@@ -314,7 +340,11 @@ const Row2RiskDistribution: React.FC<{ snapshot: ArchitectureOverviewSnapshot }>
                   type === 'Owned' ? '#52c41a' : '#ff4d4f'
                 }
                 legend={{ position: 'right' }}
-                label={{ type: 'inner', offset: '-30%', style: { fontSize: 12 } }}
+                label={{
+                  type: 'inner',
+                  offset: '-30%',
+                  style: { fontSize: 12 },
+                }}
               />
             </ErrorBoundary>
           ) : (
@@ -381,35 +411,45 @@ const Row2RiskDistribution: React.FC<{ snapshot: ArchitectureOverviewSnapshot }>
 };
 
 /* ---------- Row 3: Operational Risk Heatmap (Process × App) ---------- */
-const Row3ProcessHeatmap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
-  snapshot,
-}) => {
+const Row3ProcessHeatmap: React.FC<{
+  snapshot: ArchitectureOverviewSnapshot;
+}> = ({ snapshot }) => {
   const { processes, cells } = snapshot.processCoverageMatrix;
 
   if (processes.length === 0 || cells.length === 0) {
     return (
-      <Card size="small" title="Operational Risk Heatmap — Process × Application Coverage" style={CARD_STYLE}>
+      <Card
+        size="small"
+        title="Operational Risk Heatmap — Process × Application Coverage"
+        style={CARD_STYLE}
+      >
         <Empty description="No process-application relationships found" />
       </Card>
     );
   }
 
   // Build fast lookup
-  const cellMap = new Map<string, typeof cells[0]>();
-  cells.forEach((c) => cellMap.set(`${c.processId}::${c.appId}`, c));
+  const cellMap = new Map<string, (typeof cells)[0]>();
+  for (const c of cells) cellMap.set(`${c.processId}::${c.appId}`, c);
 
   // Get unique apps from cells
   const appIds = Array.from(new Set(cells.map((c) => c.appId)));
   const appNames = new Map<string, string>();
-  cells.forEach((c) => appNames.set(c.appId, c.appName));
+  for (const c of cells) appNames.set(c.appId, c.appName);
 
   const statusColor = (status: 'single' | 'weak' | 'redundant') =>
     status === 'single' ? '#cf1322' : status === 'weak' ? '#d46b08' : '#52c41a';
 
   return (
-    <Card size="small" title="Operational Risk Heatmap — Process × Application Coverage" style={CARD_STYLE}>
+    <Card
+      size="small"
+      title="Operational Risk Heatmap — Process × Application Coverage"
+      style={CARD_STYLE}
+    >
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
+        <table
+          style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}
+        >
           <thead>
             <tr>
               <th
@@ -448,7 +488,8 @@ const Row3ProcessHeatmap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
               <tr
                 key={proc.id}
                 style={{
-                  background: rowIdx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)',
+                  background:
+                    rowIdx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)',
                 }}
               >
                 <td
@@ -508,16 +549,46 @@ const Row3ProcessHeatmap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
 
       <Space size={16} style={{ marginTop: 8 }}>
         <Space size={4}>
-          <div style={{ width: 12, height: 12, borderRadius: 3, background: '#cf1322', display: 'inline-block' }} />
-          <Typography.Text style={{ fontSize: 11 }}>Single app (SPOF)</Typography.Text>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 3,
+              background: '#cf1322',
+              display: 'inline-block',
+            }}
+          />
+          <Typography.Text style={{ fontSize: 11 }}>
+            Single app (SPOF)
+          </Typography.Text>
         </Space>
         <Space size={4}>
-          <div style={{ width: 12, height: 12, borderRadius: 3, background: '#d46b08', display: 'inline-block' }} />
-          <Typography.Text style={{ fontSize: 11 }}>2 apps (weak)</Typography.Text>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 3,
+              background: '#d46b08',
+              display: 'inline-block',
+            }}
+          />
+          <Typography.Text style={{ fontSize: 11 }}>
+            2 apps (weak)
+          </Typography.Text>
         </Space>
         <Space size={4}>
-          <div style={{ width: 12, height: 12, borderRadius: 3, background: '#52c41a', display: 'inline-block' }} />
-          <Typography.Text style={{ fontSize: 11 }}>3+ apps (redundant)</Typography.Text>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 3,
+              background: '#52c41a',
+              display: 'inline-block',
+            }}
+          />
+          <Typography.Text style={{ fontSize: 11 }}>
+            3+ apps (redundant)
+          </Typography.Text>
         </Space>
       </Space>
     </Card>
@@ -525,9 +596,9 @@ const Row3ProcessHeatmap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
 };
 
 /* ---------- Row 4: Infrastructure Concentration ---------- */
-const Row4Infrastructure: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
-  snapshot,
-}) => {
+const Row4Infrastructure: React.FC<{
+  snapshot: ArchitectureOverviewSnapshot;
+}> = ({ snapshot }) => {
   const { serverBubbles, dbSharingEdges } = snapshot;
 
   const bubbleData = serverBubbles
@@ -569,7 +640,14 @@ const Row4Infrastructure: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
           ) : (
             <Space direction="vertical" style={{ width: '100%' }}>
               {serverBubbles.slice(0, 8).map((s) => (
-                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  key={s.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Typography.Text ellipsis style={{ maxWidth: 200 }}>
                     {s.name}
                   </Typography.Text>
@@ -579,7 +657,10 @@ const Row4Infrastructure: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
                     showInfo={false}
                     style={{ width: 100 }}
                   />
-                  <Typography.Text strong style={{ minWidth: 40, textAlign: 'right' }}>
+                  <Typography.Text
+                    strong
+                    style={{ minWidth: 40, textAlign: 'right' }}
+                  >
                     {s.appCount} apps
                   </Typography.Text>
                 </div>
@@ -599,7 +680,13 @@ const Row4Infrastructure: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
                 <div key={dbName}>
                   <Space style={{ marginBottom: 2 }}>
                     <Tag
-                      color={apps.length >= 4 ? 'error' : apps.length >= 2 ? 'warning' : 'default'}
+                      color={
+                        apps.length >= 4
+                          ? 'error'
+                          : apps.length >= 2
+                            ? 'warning'
+                            : 'default'
+                      }
                     >
                       {apps.length} apps
                     </Tag>
@@ -614,7 +701,9 @@ const Row4Infrastructure: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
                       </Tag>
                     ))}
                     {apps.length > 5 && (
-                      <Tag style={{ fontSize: 11 }}>+{apps.length - 5} more</Tag>
+                      <Tag style={{ fontSize: 11 }}>
+                        +{apps.length - 5} more
+                      </Tag>
                     )}
                   </div>
                 </div>
@@ -654,7 +743,10 @@ const Row5VendorRisk: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
                 yField="vendor"
                 height={220}
                 colorField="vendor"
-                label={{ position: 'right', formatter: (d: any) => `${d.score}` }}
+                label={{
+                  position: 'right',
+                  formatter: (d: any) => `${d.score}`,
+                }}
                 tooltip={{
                   formatter: (d: any) => ({
                     name: d.vendor,
@@ -668,7 +760,11 @@ const Row5VendorRisk: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
               {topVendors.slice(0, 8).map((v) => (
                 <div
                   key={v.vendor}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
                 >
                   <Typography.Text ellipsis style={{ maxWidth: 180 }}>
                     {v.vendor}
@@ -696,17 +792,29 @@ const Row5VendorRisk: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
             {topVendors.slice(0, 6).map((v) => (
               <div key={v.vendor}>
                 <div
-                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: 2,
+                  }}
                 >
                   <Typography.Text strong style={{ fontSize: 12 }}>
                     {v.vendor}
                   </Typography.Text>
                   <Tag
                     color={
-                      v.riskScore >= 70 ? 'error' : v.riskScore >= 40 ? 'warning' : 'default'
+                      v.riskScore >= 70
+                        ? 'error'
+                        : v.riskScore >= 40
+                          ? 'warning'
+                          : 'default'
                     }
                   >
-                    {v.riskScore >= 70 ? 'HIGH' : v.riskScore >= 40 ? 'MED' : 'LOW'}
+                    {v.riskScore >= 70
+                      ? 'HIGH'
+                      : v.riskScore >= 40
+                        ? 'MED'
+                        : 'LOW'}
                   </Tag>
                 </div>
                 <Space size={12} style={{ paddingLeft: 4 }}>
@@ -732,14 +840,21 @@ const Row6SpofDetector: React.FC<{
   fragilitySnapshot: FragilityRiskSnapshot | null;
   onExploreSystem: (id: string) => void;
 }> = ({ snapshot, fragilitySnapshot, onExploreSystem }) => {
-  const centralityNodes: CentralityNode[] = snapshot.centralityNodes.slice(0, 20);
+  const centralityNodes: CentralityNode[] = snapshot.centralityNodes.slice(
+    0,
+    20,
+  );
   const spofs = fragilitySnapshot?.spofCandidates.slice(0, 8) ?? [];
 
   return (
     <Row gutter={[12, 12]}>
       {/* Centrality bubble map */}
       <Col xs={24} md={14}>
-        <Card size="small" title="Centrality Map — Node Size = Dependency Centrality" style={CARD_STYLE}>
+        <Card
+          size="small"
+          title="Centrality Map — Node Size = Dependency Centrality"
+          style={CARD_STYLE}
+        >
           <div
             style={{
               display: 'flex',
@@ -756,10 +871,10 @@ const Row6SpofDetector: React.FC<{
                 node.riskLevel === 'critical'
                   ? '#cf1322'
                   : node.riskLevel === 'high'
-                  ? '#d46b08'
-                  : node.riskLevel === 'medium'
-                  ? '#d4b106'
-                  : '#389e0d';
+                    ? '#d46b08'
+                    : node.riskLevel === 'medium'
+                      ? '#d4b106'
+                      : '#389e0d';
               return (
                 <Tooltip
                   key={node.id}
@@ -786,13 +901,18 @@ const Row6SpofDetector: React.FC<{
                       flexShrink: 0,
                     }}
                   >
-                    {node.name.length > 10 ? node.name.slice(0, 8) + '…' : node.name}
+                    {node.name.length > 10
+                      ? `${node.name.slice(0, 8)}…`
+                      : node.name}
                   </div>
                 </Tooltip>
               );
             })}
             {centralityNodes.length === 0 && (
-              <Empty description="No dependency data" style={{ margin: 'auto' }} />
+              <Empty
+                description="No dependency data"
+                style={{ margin: 'auto' }}
+              />
             )}
           </div>
         </Card>
@@ -817,8 +937,15 @@ const Row6SpofDetector: React.FC<{
                   onClick={() => onExploreSystem(spof.id)}
                 >
                   <Space size={4}>
-                    {spof.isHardSpof && <Tag color="error" style={{ fontSize: 10 }}>HARD</Tag>}
-                    <Typography.Text ellipsis style={{ maxWidth: 150, fontSize: 12 }}>
+                    {spof.isHardSpof && (
+                      <Tag color="error" style={{ fontSize: 10 }}>
+                        HARD
+                      </Tag>
+                    )}
+                    <Typography.Text
+                      ellipsis
+                      style={{ maxWidth: 150, fontSize: 12 }}
+                    >
                       {spof.name}
                     </Typography.Text>
                   </Space>
@@ -830,7 +957,9 @@ const Row6SpofDetector: React.FC<{
                       percent={spof.fragilityScore}
                       size="small"
                       showInfo={false}
-                      strokeColor={spof.fragilityScore >= 70 ? '#cf1322' : '#d46b08'}
+                      strokeColor={
+                        spof.fragilityScore >= 70 ? '#cf1322' : '#d46b08'
+                      }
                       style={{ width: 60 }}
                     />
                   </Space>
@@ -845,9 +974,9 @@ const Row6SpofDetector: React.FC<{
 };
 
 /* ---------- Row 7: Capability Coverage Map ---------- */
-const Row7CapabilityCoverage: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
-  snapshot,
-}) => {
+const Row7CapabilityCoverage: React.FC<{
+  snapshot: ArchitectureOverviewSnapshot;
+}> = ({ snapshot }) => {
   const caps = snapshot.capabilityCoverage;
 
   const treemapData = {
@@ -876,17 +1005,19 @@ const Row7CapabilityCoverage: React.FC<{ snapshot: ArchitectureOverviewSnapshot 
               supportLevel === 'green'
                 ? '#52c41a'
                 : supportLevel === 'yellow'
-                ? '#faad14'
-                : '#ff4d4f'
+                  ? '#faad14'
+                  : '#ff4d4f'
             }
-            label={{ formatter: (d: any) => d.name }}
+            label={{ formatter: (d: any) => d?.name ?? d?.data?.name ?? '' }}
           />
         </ErrorBoundary>
       ) : (
         <Row gutter={[8, 8]}>
           {caps.map((c) => (
             <Col span={4} key={c.id}>
-              <Tooltip title={`${c.appCount} supporting apps${c.strategicImportance ? ` · ${c.strategicImportance}` : ''}`}>
+              <Tooltip
+                title={`${c.appCount} supporting apps${c.strategicImportance ? ` · ${c.strategicImportance}` : ''}`}
+              >
                 <Card
                   size="small"
                   style={{
@@ -895,7 +1026,9 @@ const Row7CapabilityCoverage: React.FC<{ snapshot: ArchitectureOverviewSnapshot 
                     cursor: 'default',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
                     <div
                       style={{
                         width: 8,
@@ -909,7 +1042,10 @@ const Row7CapabilityCoverage: React.FC<{ snapshot: ArchitectureOverviewSnapshot 
                       {c.name}
                     </Typography.Text>
                   </div>
-                  <Typography.Text type="secondary" style={{ fontSize: 10, paddingLeft: 12 }}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 10, paddingLeft: 12 }}
+                  >
                     {c.appCount} apps
                   </Typography.Text>
                 </Card>
@@ -944,9 +1080,9 @@ const Row7CapabilityCoverage: React.FC<{ snapshot: ArchitectureOverviewSnapshot 
 };
 
 /* ---------- Row 8: Change Risk Timeline ---------- */
-const Row8ChangeTimeline: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
-  snapshot,
-}) => {
+const Row8ChangeTimeline: React.FC<{
+  snapshot: ArchitectureOverviewSnapshot;
+}> = ({ snapshot }) => {
   const { changeRiskTimeline } = snapshot;
 
   if (changeRiskTimeline.length === 0) {
@@ -958,7 +1094,11 @@ const Row8ChangeTimeline: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
   }
 
   return (
-    <Card size="small" title="Change Risk Timeline — Last 30 Data Points" style={CARD_STYLE}>
+    <Card
+      size="small"
+      title="Change Risk Timeline — Last 30 Data Points"
+      style={CARD_STYLE}
+    >
       {Area ? (
         <ErrorBoundary>
           <Area
@@ -982,7 +1122,11 @@ const Row8ChangeTimeline: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> =
           {changeRiskTimeline.slice(-10).map((entry) => (
             <div
               key={entry.date}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
               <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                 {entry.date}
@@ -1027,7 +1171,7 @@ const Row9MiniArchMap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
     }
 
     const centralityNodes = snapshot.centralityNodes.slice(0, 40);
-    const nodeIds = new Set(centralityNodes.map((n) => n.id));
+    const _nodeIds = new Set(centralityNodes.map((n) => n.id));
 
     // Build edges from the top 40 centrality nodes only
     const elements: any[] = [
@@ -1035,7 +1179,8 @@ const Row9MiniArchMap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
         group: 'nodes',
         data: {
           id: node.id,
-          label: node.name.length > 14 ? node.name.slice(0, 12) + '…' : node.name,
+          label:
+            node.name.length > 14 ? `${node.name.slice(0, 12)}…` : node.name,
           centrality: node.centrality,
           risk: node.riskLevel,
         },
@@ -1063,13 +1208,14 @@ const Row9MiniArchMap: React.FC<{ snapshot: ArchitectureOverviewSnapshot }> = ({
               return r === 'critical'
                 ? '#cf1322'
                 : r === 'high'
-                ? '#d46b08'
-                : r === 'medium'
-                ? '#d4b106'
-                : '#389e0d';
+                  ? '#d46b08'
+                  : r === 'medium'
+                    ? '#d4b106'
+                    : '#389e0d';
             },
             width: (ele: any) => Math.max(16, ele.data('centrality') * 50 + 10),
-            height: (ele: any) => Math.max(16, ele.data('centrality') * 50 + 10),
+            height: (ele: any) =>
+              Math.max(16, ele.data('centrality') * 50 + 10),
             color: '#ccc',
             'text-background-color': 'transparent',
           },
@@ -1105,14 +1251,15 @@ const ArchitectureIntelligenceDashboard: React.FC = () => {
   const { openWorkspaceTab } = useIdeShell();
 
   /* ---- Compute snapshots ---- */
-  const overviewSnapshot = React.useMemo<ArchitectureOverviewSnapshot | null>(() => {
-    if (!eaRepository) return null;
-    try {
-      return getArchitectureOverviewSnapshot(eaRepository);
-    } catch {
-      return null;
-    }
-  }, [eaRepository]);
+  const overviewSnapshot =
+    React.useMemo<ArchitectureOverviewSnapshot | null>(() => {
+      if (!eaRepository) return null;
+      try {
+        return getArchitectureOverviewSnapshot(eaRepository);
+      } catch {
+        return null;
+      }
+    }, [eaRepository]);
 
   const impactSnapshot = React.useMemo(() => {
     if (!eaRepository) return null;
@@ -1139,7 +1286,7 @@ const ArchitectureIntelligenceDashboard: React.FC = () => {
   }, [eaRepository]);
 
   /* ---- Subscribe to repository changes ---- */
-  const [tick, setTick] = React.useState(0);
+  const [_tick, setTick] = React.useState(0);
   React.useEffect(() => {
     const handler = () => setTick((t) => t + 1);
     window.addEventListener('ea:repositoryChanged', handler);

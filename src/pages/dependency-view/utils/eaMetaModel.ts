@@ -663,10 +663,44 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<
   },
 } as const;
 
+// ---------------------------------------------------------------------------
+// Custom (Architect Mode) type extension registry
+// ---------------------------------------------------------------------------
+
+const _customObjectTypeRegistry = new Set<string>();
+const _customRelationshipTypeRegistry = new Set<string>();
+
+/**
+ * Register custom element type names so that `isValidObjectType` accepts them.
+ * Only used by CUSTOM (Architect Mode) repositories.
+ */
+export function registerCustomObjectTypes(types: string[]): void {
+  for (const t of types) _customObjectTypeRegistry.add(t);
+}
+
+/** Remove all previously registered custom object types. */
+export function unregisterAllCustomObjectTypes(): void {
+  _customObjectTypeRegistry.clear();
+}
+
+/**
+ * Register custom relationship type names so that `isValidRelationshipType`
+ * accepts them.  Only used by CUSTOM (Architect Mode) repositories.
+ */
+export function registerCustomRelationshipTypes(types: string[]): void {
+  for (const t of types) _customRelationshipTypeRegistry.add(t);
+}
+
+/** Remove all previously registered custom relationship types. */
+export function unregisterAllCustomRelationshipTypes(): void {
+  _customRelationshipTypeRegistry.clear();
+}
+
 export function isValidObjectType(type: unknown): type is ObjectType {
   return (
     typeof type === 'string' &&
-    (OBJECT_TYPES as readonly string[]).includes(type)
+    ((OBJECT_TYPES as readonly string[]).includes(type) ||
+      _customObjectTypeRegistry.has(type))
   );
 }
 
@@ -675,6 +709,7 @@ export function isValidRelationshipType(
 ): type is RelationshipType {
   return (
     typeof type === 'string' &&
-    (RELATIONSHIP_TYPES as readonly string[]).includes(type)
+    ((RELATIONSHIP_TYPES as readonly string[]).includes(type) ||
+      _customRelationshipTypeRegistry.has(type))
   );
 }

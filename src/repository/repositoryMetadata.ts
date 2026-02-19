@@ -9,6 +9,13 @@ export type GovernanceMode = 'Strict' | 'Advisory';
 export type LifecycleCoverage = 'As-Is' | 'To-Be' | 'Both';
 export type TimeHorizon = 'Current' | '1–3 years' | 'Strategic';
 
+/**
+ * Repository initialization mode.
+ * - REDLY: full Redly Framework seeding (default, existing behavior).
+ * - CUSTOM: empty repository — architect builds their own metamodel.
+ */
+export type InitializationMode = 'REDLY' | 'CUSTOM';
+
 export type RepositoryOwner = {
   /** Stable user identity (prefer user ID over display name). */
   userId: string;
@@ -43,6 +50,12 @@ export type EaRepositoryMetadata = {
   /** Framework-specific configuration (e.g. Custom meta-model enablement). */
   frameworkConfig?: FrameworkConfig;
 
+  /**
+   * Repository initialization mode.
+   * REDLY = full framework seeding (default). CUSTOM = empty architect-driven repo.
+   */
+  initializationMode?: InitializationMode;
+
   createdAt: string;
 };
 
@@ -69,6 +82,8 @@ export const TIME_HORIZONS: TimeHorizon[] = [
   '1–3 years',
   'Strategic',
 ];
+
+export const INITIALIZATION_MODES: InitializationMode[] = ['REDLY', 'CUSTOM'];
 
 export const validateRepositoryMetadata = (
   value: unknown,
@@ -138,6 +153,9 @@ export const validateRepositoryMetadata = (
       ? (v.frameworkConfig as FrameworkConfig)
       : undefined;
 
+  const initializationMode: InitializationMode =
+    v?.initializationMode === 'CUSTOM' ? 'CUSTOM' : 'REDLY';
+
   return {
     ok: true,
     metadata: {
@@ -156,6 +174,7 @@ export const validateRepositoryMetadata = (
         displayName: ownerDisplayName || undefined,
       },
       frameworkConfig,
+      initializationMode,
       createdAt,
     },
   };

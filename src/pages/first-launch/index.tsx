@@ -4,36 +4,37 @@ import {
   ImportOutlined,
   PlusOutlined,
   RightOutlined,
-} from "@ant-design/icons";
-import { history } from "@umijs/max";
-import { Dropdown, Form, Input, Modal } from "antd";
-import React from "react";
-import { v4 as uuid } from "uuid";
-import { ViewLayoutStore } from "@/diagram-studio/view-runtime/ViewLayoutStore";
-import { ViewStore } from "@/diagram-studio/view-runtime/ViewStore";
-import { DesignWorkspaceStore } from "@/ea/DesignWorkspaceStore";
-import { useEaProject } from "@/ea/EaProjectContext";
-import { useEaRepository } from "@/ea/EaRepositoryContext";
-import { message } from "@/ea/eaConsole";
+} from '@ant-design/icons';
+import { history } from '@umijs/max';
+import { Dropdown, Form, Input, Modal, Radio, Tooltip } from 'antd';
+import React from 'react';
+import { v4 as uuid } from 'uuid';
+import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
+import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
+import { DesignWorkspaceStore } from '@/ea/DesignWorkspaceStore';
+import { useEaProject } from '@/ea/EaProjectContext';
+import { useEaRepository } from '@/ea/EaRepositoryContext';
+import { message } from '@/ea/eaConsole';
 import {
   ARCHITECTURE_SCOPES,
   type ArchitectureScope,
+  type InitializationMode,
   LIFECYCLE_COVERAGE_OPTIONS,
   type LifecycleCoverage,
   REFERENCE_FRAMEWORKS,
   type ReferenceFramework,
   TIME_HORIZONS,
   type TimeHorizon,
-} from "@/repository/repositoryMetadata";
-import { buildLegacyPayloadFromPackage } from "@/repository/repositoryPackageAdapter";
-import { parseRedlyFile } from "@/services/persistence/redlyImportService";
+} from '@/repository/repositoryMetadata';
+import { buildLegacyPayloadFromPackage } from '@/repository/repositoryPackageAdapter';
+import { parseRedlyFile } from '@/services/persistence/redlyImportService';
 import {
   listBaselines,
   replaceBaselines,
-} from "../../../backend/baselines/BaselineStore";
-import { parseRepositoryPackageBytes } from "../../../backend/services/repository/importService";
-import DarkDropdown from "./DarkDropdown";
-import styles from "./index.module.less";
+} from '../../../backend/baselines/BaselineStore';
+import { parseRepositoryPackageBytes } from '../../../backend/services/repository/importService';
+import DarkDropdown from './DarkDropdown';
+import styles from './index.module.less';
 
 const safeParseJson = <T,>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -70,15 +71,15 @@ const FirstLaunch: React.FC = () => {
   } = useEaRepository();
   const { createProject, refreshProject } = useEaProject();
 
-  const ACTIVE_REPO_ID_KEY = "ea.repository.activeId";
-  const ACTIVE_REPO_NAME_KEY = "ea.repository.activeName";
-  const PROJECT_DIRTY_KEY = "ea.project.dirty";
-  const PROJECT_STATUS_EVENT = "ea:projectStatusChanged";
-  const RECENT_REPOSITORIES_KEY = "ea.repository.recent";
-  const LEGACY_PROJECT_PATH_KEY = "ea.project.filePath";
-  const LEGACY_RECENT_PROJECTS_KEY = "ea.project.recent";
+  const ACTIVE_REPO_ID_KEY = 'ea.repository.activeId';
+  const ACTIVE_REPO_NAME_KEY = 'ea.repository.activeName';
+  const PROJECT_DIRTY_KEY = 'ea.project.dirty';
+  const PROJECT_STATUS_EVENT = 'ea:projectStatusChanged';
+  const RECENT_REPOSITORIES_KEY = 'ea.repository.recent';
+  const LEGACY_PROJECT_PATH_KEY = 'ea.project.filePath';
+  const LEGACY_RECENT_PROJECTS_KEY = 'ea.project.recent';
 
-  const [mode, setMode] = React.useState<"home" | "create">("home");
+  const [mode, setMode] = React.useState<'home' | 'create'>('home');
   const [legacyImportAvailable, setLegacyImportAvailable] =
     React.useState(false);
   const [_legacyImporting, setLegacyImporting] = React.useState(false);
@@ -98,6 +99,7 @@ const FirstLaunch: React.FC = () => {
     referenceFramework: ReferenceFramework;
     lifecycleCoverage: LifecycleCoverage;
     timeHorizon: TimeHorizon;
+    initializationMode: InitializationMode;
   }>();
   const repositoryRef = React.useRef({ eaRepository, metadata });
 
@@ -134,7 +136,7 @@ const FirstLaunch: React.FC = () => {
           } catch {
             // ignore
           }
-        } else if (typeof opts.repositoryId === "string") {
+        } else if (typeof opts.repositoryId === 'string') {
           try {
             localStorage.setItem(ACTIVE_REPO_ID_KEY, opts.repositoryId);
           } catch {
@@ -148,7 +150,7 @@ const FirstLaunch: React.FC = () => {
           } catch {
             // ignore
           }
-        } else if (typeof opts.repositoryName === "string") {
+        } else if (typeof opts.repositoryName === 'string') {
           try {
             localStorage.setItem(ACTIVE_REPO_NAME_KEY, opts.repositoryName);
           } catch {
@@ -156,7 +158,7 @@ const FirstLaunch: React.FC = () => {
           }
         }
 
-        if (typeof opts.dirty === "boolean") {
+        if (typeof opts.dirty === 'boolean') {
           try {
             localStorage.setItem(PROJECT_DIRTY_KEY, String(opts.dirty));
           } catch {
@@ -182,10 +184,10 @@ const FirstLaunch: React.FC = () => {
   const applyProjectPayload = React.useCallback(
     (payload: any) => {
       const snapshot = payload?.repository?.snapshot ?? null;
-      if (!snapshot || typeof snapshot !== "object") {
+      if (!snapshot || typeof snapshot !== 'object') {
         return {
           ok: false,
-          error: "Invalid repository data: missing snapshot.",
+          error: 'Invalid repository data: missing snapshot.',
         } as const;
       }
 
@@ -214,10 +216,10 @@ const FirstLaunch: React.FC = () => {
       ViewStore.replaceAll(viewItems);
 
       for (const v of viewItems as Array<{ id?: string }>) {
-        const id = String(v?.id ?? "").trim();
+        const id = String(v?.id ?? '').trim();
         if (!id) continue;
         const layout = viewLayouts?.[id];
-        if (layout && typeof layout === "object") {
+        if (layout && typeof layout === 'object') {
           ViewLayoutStore.set(
             id,
             layout as Record<string, { x: number; y: number }>,
@@ -227,7 +229,7 @@ const FirstLaunch: React.FC = () => {
         }
       }
 
-      const repositoryName = snapshot?.metadata?.repositoryName || "default";
+      const repositoryName = snapshot?.metadata?.repositoryName || 'default';
       const designWorkspaces = Array.isArray(snapshotStudio?.designWorkspaces)
         ? snapshotStudio.designWorkspaces
         : Array.isArray(payload?.studioState?.designWorkspaces)
@@ -236,15 +238,15 @@ const FirstLaunch: React.FC = () => {
       DesignWorkspaceStore.replaceAll(repositoryName, designWorkspaces);
 
       const ideLayout = payload?.studioState?.ideLayout ?? null;
-      if (ideLayout && typeof ideLayout === "object") {
+      if (ideLayout && typeof ideLayout === 'object') {
         const map: Array<[string, string | null | undefined]> = [
-          ["ide.activity", ideLayout.activity],
-          ["ide.sidebar.open", ideLayout.sidebarOpen],
-          ["ide.sidebar.width", ideLayout.sidebarWidth],
-          ["ide.bottom.open", ideLayout.bottomOpen],
-          ["ide.bottom.height", ideLayout.bottomHeight],
-          ["ide.panel.dock", ideLayout.panelDock],
-          ["ide.panel.right.width", ideLayout.rightPanelWidth],
+          ['ide.activity', ideLayout.activity],
+          ['ide.sidebar.open', ideLayout.sidebarOpen],
+          ['ide.sidebar.width', ideLayout.sidebarWidth],
+          ['ide.bottom.open', ideLayout.bottomOpen],
+          ['ide.bottom.height', ideLayout.bottomHeight],
+          ['ide.panel.dock', ideLayout.panelDock],
+          ['ide.panel.right.width', ideLayout.rightPanelWidth],
         ];
         for (const [key, value] of map) {
           if (value === null || value === undefined) continue;
@@ -257,15 +259,15 @@ const FirstLaunch: React.FC = () => {
       }
 
       const prefs = payload?.studioState?.preferences ?? null;
-      if (prefs && typeof prefs === "object") {
+      if (prefs && typeof prefs === 'object') {
         const prefMap: Array<[string, string | null | undefined]> = [
-          ["ea.applicationGrouping", prefs.applicationGrouping],
+          ['ea.applicationGrouping', prefs.applicationGrouping],
           [
-            "ea.programmeScope.showTechnology",
+            'ea.programmeScope.showTechnology',
             prefs.programmeScopeShowTechnology,
           ],
-          ["ea.seed.banner.dismissed", prefs.seedBannerDismissed],
-          ["ea.catalogDefined", prefs.catalogDefined],
+          ['ea.seed.banner.dismissed', prefs.seedBannerDismissed],
+          ['ea.catalogDefined', prefs.catalogDefined],
         ];
         for (const [key, value] of prefMap) {
           if (value === null || value === undefined) continue;
@@ -285,9 +287,9 @@ const FirstLaunch: React.FC = () => {
       replaceBaselines(baselines as unknown as any[]);
 
       try {
-        window.dispatchEvent(new Event("ea:repositoryChanged"));
-        window.dispatchEvent(new Event("ea:viewsChanged"));
-        window.dispatchEvent(new Event("ea:workspacesChanged"));
+        window.dispatchEvent(new Event('ea:repositoryChanged'));
+        window.dispatchEvent(new Event('ea:viewsChanged'));
+        window.dispatchEvent(new Event('ea:workspacesChanged'));
       } catch {
         // Best-effort only.
       }
@@ -369,26 +371,26 @@ const FirstLaunch: React.FC = () => {
     const views = ViewStore.list();
     const viewLayouts = ViewLayoutStore.listAll();
 
-    const repositoryName = repoState.metadata.repositoryName || "default";
+    const repositoryName = repoState.metadata.repositoryName || 'default';
     const designWorkspaces = DesignWorkspaceStore.list(repositoryName);
 
     const studioState = {
       ideLayout: {
-        activity: readLocalStorage("ide.activity"),
-        sidebarOpen: readLocalStorage("ide.sidebar.open"),
-        sidebarWidth: readLocalStorage("ide.sidebar.width"),
-        bottomOpen: readLocalStorage("ide.bottom.open"),
-        bottomHeight: readLocalStorage("ide.bottom.height"),
-        panelDock: readLocalStorage("ide.panel.dock"),
-        rightPanelWidth: readLocalStorage("ide.panel.right.width"),
+        activity: readLocalStorage('ide.activity'),
+        sidebarOpen: readLocalStorage('ide.sidebar.open'),
+        sidebarWidth: readLocalStorage('ide.sidebar.width'),
+        bottomOpen: readLocalStorage('ide.bottom.open'),
+        bottomHeight: readLocalStorage('ide.bottom.height'),
+        panelDock: readLocalStorage('ide.panel.dock'),
+        rightPanelWidth: readLocalStorage('ide.panel.right.width'),
       },
       preferences: {
-        applicationGrouping: readLocalStorage("ea.applicationGrouping"),
+        applicationGrouping: readLocalStorage('ea.applicationGrouping'),
         programmeScopeShowTechnology: readLocalStorage(
-          "ea.programmeScope.showTechnology",
+          'ea.programmeScope.showTechnology',
         ),
-        seedBannerDismissed: readLocalStorage("ea.seed.banner.dismissed"),
-        catalogDefined: readLocalStorage("ea.catalogDefined"),
+        seedBannerDismissed: readLocalStorage('ea.seed.banner.dismissed'),
+        catalogDefined: readLocalStorage('ea.catalogDefined'),
       },
       viewLayouts,
       designWorkspaces,
@@ -448,19 +450,19 @@ const FirstLaunch: React.FC = () => {
     }) => {
       if (!entry.id) return;
       if (!window.eaDesktop?.loadManagedRepository) {
-        message.info("Open Repository is available in the desktop app.");
+        message.info('Open Repository is available in the desktop app.');
         return;
       }
 
       const res = await window.eaDesktop.loadManagedRepository(entry.id);
       if (!res.ok) {
-        Modal.error({ title: "Open Repository failed", content: res.error });
+        Modal.error({ title: 'Open Repository failed', content: res.error });
         return;
       }
       if (!res.content) {
         Modal.error({
-          title: "Open Repository failed",
-          content: "Empty repository data.",
+          title: 'Open Repository failed',
+          content: 'Empty repository data.',
         });
         return;
       }
@@ -470,7 +472,7 @@ const FirstLaunch: React.FC = () => {
         const applied = applyProjectPayload(payload);
         if (!applied.ok) {
           Modal.error({
-            title: "Open Repository failed",
+            title: 'Open Repository failed',
             content: applied.error,
           });
           return;
@@ -480,14 +482,14 @@ const FirstLaunch: React.FC = () => {
           payload?.meta?.repositoryName ||
           payload?.repository?.metadata?.repositoryName ||
           entry.name ||
-          "EA Repository";
+          'EA Repository';
 
         try {
           await createProject({
             name,
             description: payload?.meta?.organizationName
               ? `${payload.meta.organizationName} EA repository`
-              : "",
+              : '',
           });
         } catch {
           // Best-effort only.
@@ -506,13 +508,13 @@ const FirstLaunch: React.FC = () => {
           name,
           description,
         });
-        message.success("Repository opened.");
-        history.push("/workspace");
+        message.success('Repository opened.');
+        history.push('/workspace');
       } catch (err) {
         Modal.error({
-          title: "Open Repository failed",
+          title: 'Open Repository failed',
           content:
-            err instanceof Error ? err.message : "Invalid repository data.",
+            err instanceof Error ? err.message : 'Invalid repository data.',
         });
       }
     },
@@ -551,7 +553,7 @@ const FirstLaunch: React.FC = () => {
         payload?.repository?.metadata?.repositoryName ||
         repoState.metadata?.repositoryName ||
         sourceName ||
-        "Imported Repository";
+        'Imported Repository';
       const description = payload?.meta?.organizationName
         ? `${payload.meta.organizationName} EA repository`
         : repoState.metadata?.organizationName
@@ -575,8 +577,8 @@ const FirstLaunch: React.FC = () => {
       }
 
       updateRecentProjects({ id: repositoryId, name, description });
-      message.success("Repository imported.");
-      history.push("/workspace");
+      message.success('Repository imported.');
+      history.push('/workspace');
     },
     [
       applyProjectPayload,
@@ -593,20 +595,20 @@ const FirstLaunch: React.FC = () => {
     const raw = readLocalStorage(LEGACY_RECENT_PROJECTS_KEY);
     const parsed = safeParseJson<Array<{ path?: string }>>(raw, []);
     const candidate = parsed.find(
-      (item) => typeof item.path === "string" && item.path.trim(),
+      (item) => typeof item.path === 'string' && item.path.trim(),
     );
     return candidate?.path?.trim() || null;
   }, [LEGACY_PROJECT_PATH_KEY, LEGACY_RECENT_PROJECTS_KEY]);
 
   const handleLegacyImport = React.useCallback(async () => {
     if (!window.eaDesktop?.importLegacyProjectAtPath) {
-      message.info("Legacy import is available in the desktop app.");
+      message.info('Legacy import is available in the desktop app.');
       return;
     }
 
     const legacyPath = resolveLegacyProjectPath();
     if (!legacyPath) {
-      message.info("No legacy repository detected.");
+      message.info('No legacy repository detected.');
       return;
     }
 
@@ -618,7 +620,7 @@ const FirstLaunch: React.FC = () => {
         return;
       }
 
-      const bytes = base64ToBytes(res.content ?? "");
+      const bytes = base64ToBytes(res.content ?? '');
       await importRepositoryPackage(bytes, res.name);
 
       try {
@@ -636,29 +638,29 @@ const FirstLaunch: React.FC = () => {
   const onImportFileSelected = async (file: File | undefined) => {
     if (!file) return;
     const lower = file.name.toLowerCase();
-    if (!lower.endsWith(".eapkg") && !lower.endsWith(".zip")) {
-      message.info("Please choose an .eapkg or .zip repository package.");
+    if (!lower.endsWith('.eapkg') && !lower.endsWith('.zip')) {
+      message.info('Please choose an .eapkg or .zip repository package.');
       return;
     }
     try {
       const buffer = await file.arrayBuffer();
       await importRepositoryPackage(new Uint8Array(buffer), file.name);
     } catch (e: any) {
-      message.error(e?.message || "Failed to import repository.");
+      message.error(e?.message || 'Failed to import repository.');
     }
   };
 
   const onOpenRepositoryFileSelected = React.useCallback(
     async (file: File | undefined) => {
       if (!file) return;
-      if (!file.name.toLowerCase().endsWith(".redly")) {
-        message.info("Please choose a .Redly repository file.");
+      if (!file.name.toLowerCase().endsWith('.redly')) {
+        message.info('Please choose a .Redly repository file.');
         return;
       }
       if (file.size === 0) {
         Modal.error({
-          title: "Open Repository failed",
-          content: "The selected file is empty.",
+          title: 'Open Repository failed',
+          content: 'The selected file is empty.',
         });
         return;
       }
@@ -673,9 +675,9 @@ const FirstLaunch: React.FC = () => {
           rawBytes[1] !== 0x4b
         ) {
           Modal.error({
-            title: "Open Repository failed",
+            title: 'Open Repository failed',
             content:
-              "The selected file is not a valid .Redly archive. It does not have a ZIP header.",
+              'The selected file is not a valid .Redly archive. It does not have a ZIP header.',
           });
           return;
         }
@@ -683,7 +685,7 @@ const FirstLaunch: React.FC = () => {
         const parsed = await parseRedlyFile(rawBytes);
         if (!parsed.ok) {
           Modal.error({
-            title: "Open Repository failed",
+            title: 'Open Repository failed',
             content: parsed.error,
           });
           return;
@@ -733,7 +735,7 @@ const FirstLaunch: React.FC = () => {
         const applied = applyProjectPayload(payload);
         if (!applied.ok) {
           Modal.error({
-            title: "Open Repository failed",
+            title: 'Open Repository failed',
             content: applied.error,
           });
           return;
@@ -741,8 +743,8 @@ const FirstLaunch: React.FC = () => {
 
         const repositoryName =
           (pkg.repository.metadata as any)?.repositoryName ||
-          file.name.replace(/\.redly$/i, "") ||
-          "EA Repository";
+          file.name.replace(/\.redly$/i, '') ||
+          'EA Repository';
         const description = (pkg.repository.metadata as any)?.organizationName
           ? `${(pkg.repository.metadata as any).organizationName} EA repository`
           : null;
@@ -751,7 +753,7 @@ const FirstLaunch: React.FC = () => {
         try {
           await createProject({
             name: repositoryName,
-            description: description ?? "",
+            description: description ?? '',
           });
         } catch {
           // Best-effort only.
@@ -780,13 +782,13 @@ const FirstLaunch: React.FC = () => {
           name: repositoryName,
           description,
         });
-        message.success("Repository opened from .Redly file.");
-        history.push("/workspace");
+        message.success('Repository opened from .Redly file.');
+        history.push('/workspace');
       } catch (err) {
         Modal.error({
-          title: "Open Repository failed",
+          title: 'Open Repository failed',
           content:
-            err instanceof Error ? err.message : "Failed to open .Redly file.",
+            err instanceof Error ? err.message : 'Failed to open .Redly file.',
         });
       }
     },
@@ -859,13 +861,13 @@ const FirstLaunch: React.FC = () => {
       void readRecentProjects();
     };
     window.addEventListener(PROJECT_STATUS_EVENT, onStatus as EventListener);
-    window.addEventListener("storage", onStatus as EventListener);
+    window.addEventListener('storage', onStatus as EventListener);
     return () => {
       window.removeEventListener(
         PROJECT_STATUS_EVENT,
         onStatus as EventListener,
       );
-      window.removeEventListener("storage", onStatus as EventListener);
+      window.removeEventListener('storage', onStatus as EventListener);
     };
   }, [PROJECT_STATUS_EVENT, readRecentProjects]);
 
@@ -885,10 +887,10 @@ const FirstLaunch: React.FC = () => {
           const format = (item as any)?.format as string | undefined;
           const content = (item as any)?.content as string | undefined;
           if (
-            format === "eapkg" ||
-            item.name?.toLowerCase().endsWith(".eapkg")
+            format === 'eapkg' ||
+            item.name?.toLowerCase().endsWith('.eapkg')
           ) {
-            const bytes = base64ToBytes(content ?? "");
+            const bytes = base64ToBytes(content ?? '');
             await importRepositoryPackage(bytes, item.name);
           }
         } catch {
@@ -904,10 +906,10 @@ const FirstLaunch: React.FC = () => {
         const format = (payload as any)?.format as string | undefined;
         const content = (payload as any)?.content as string | undefined;
         if (
-          format === "eapkg" ||
-          payload.name?.toLowerCase().endsWith(".eapkg")
+          format === 'eapkg' ||
+          payload.name?.toLowerCase().endsWith('.eapkg')
         ) {
-          const bytes = base64ToBytes(content ?? "");
+          const bytes = base64ToBytes(content ?? '');
           void importRepositoryPackage(bytes, payload.name);
         }
       });
@@ -933,7 +935,7 @@ const FirstLaunch: React.FC = () => {
             <button
               type="button"
               className={styles.sidebarBtn}
-              onClick={() => setMode("create")}
+              onClick={() => setMode('create')}
             >
               <PlusOutlined /> Create New Repository
             </button>
@@ -973,26 +975,26 @@ const FirstLaunch: React.FC = () => {
             ref={importFileInputRef}
             type="file"
             accept=".eapkg,.zip,application/zip,application/x-zip-compressed,application/octet-stream"
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
             onChange={(e) => {
               void onImportFileSelected(e.target.files?.[0]);
-              e.currentTarget.value = "";
+              e.currentTarget.value = '';
             }}
           />
           <input
             ref={openRepositoryInputRef}
             type="file"
             accept=".redly,.Redly,application/zip,application/octet-stream"
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
             onChange={(e) => {
               void onOpenRepositoryFileSelected(e.target.files?.[0]);
-              e.currentTarget.value = "";
+              e.currentTarget.value = '';
             }}
           />
         </div>
 
         {/* ── CENTER PANEL — context surface ── */}
-        {mode === "home" ? (
+        {mode === 'home' ? (
           <div className={styles.centerPanel}>
             <div className={styles.centerContent}>
               {/* branding */}
@@ -1025,7 +1027,7 @@ const FirstLaunch: React.FC = () => {
                 <div className={styles.recentList}>
                   {recentProjects.length ? (
                     recentProjects.map((item) => {
-                      const desc = item.description || "EA repository";
+                      const desc = item.description || 'EA repository';
                       const timeStr = item.lastOpened
                         ? new Date(item.lastOpened).toLocaleString()
                         : null;
@@ -1034,24 +1036,24 @@ const FirstLaunch: React.FC = () => {
                           key={`${item.id}-${item.name}`}
                           menu={{
                             items: [
-                              { key: "open", label: "Open" },
-                              { key: "remove", label: "Remove from Recent" },
-                              { type: "divider" },
+                              { key: 'open', label: 'Open' },
+                              { key: 'remove', label: 'Remove from Recent' },
+                              { type: 'divider' },
                               {
-                                key: "reveal",
-                                label: "Reveal in Explorer",
+                                key: 'reveal',
+                                label: 'Reveal in Explorer',
                                 disabled: true,
                               },
                             ],
                             onClick: ({ key, domEvent }) => {
                               domEvent.stopPropagation();
-                              if (key === "open")
+                              if (key === 'open')
                                 void handleOpenRecentProject(item);
-                              else if (key === "remove")
+                              else if (key === 'remove')
                                 removeRecentProject(item.id);
                             },
                           }}
-                          trigger={["contextMenu"]}
+                          trigger={['contextMenu']}
                         >
                           <button
                             type="button"
@@ -1122,10 +1124,11 @@ const FirstLaunch: React.FC = () => {
                 size="middle"
                 requiredMark={false}
                 initialValues={{
-                  architectureScope: "Enterprise",
-                  referenceFramework: "Custom",
-                  lifecycleCoverage: "Both",
-                  timeHorizon: "1–3 years",
+                  architectureScope: 'Enterprise',
+                  referenceFramework: 'Custom',
+                  lifecycleCoverage: 'Both',
+                  timeHorizon: '1–3 years',
+                  initializationMode: 'REDLY' as InitializationMode,
                 }}
                 onValuesChange={() => {
                   const v = form.getFieldsValue();
@@ -1135,8 +1138,25 @@ const FirstLaunch: React.FC = () => {
                   );
                 }}
                 onFinish={(values) => {
+                  const initMode = values.initializationMode || 'REDLY';
+                  const isCustomInit = initMode === 'CUSTOM';
+
+                  // For CUSTOM initialization mode, start with empty metamodel
+                  const customOverrides = isCustomInit
+                    ? {
+                        initializationMode: 'CUSTOM' as InitializationMode,
+                        frameworkConfig: {
+                          custom: {
+                            enabledObjectTypes: [] as string[],
+                            enabledRelationshipTypes: [] as string[],
+                          },
+                        },
+                      }
+                    : { initializationMode: 'REDLY' as InitializationMode };
+
                   const res = createNewRepository({
                     ...values,
+                    ...customOverrides,
                   });
                   if (!res.ok) {
                     message.error(res.error);
@@ -1145,12 +1165,12 @@ const FirstLaunch: React.FC = () => {
 
                   try {
                     const intent =
-                      values.architectureScope === "Domain"
-                        ? "business.capabilities"
-                        : values.architectureScope === "Programme"
-                          ? "implmig.programmes"
-                          : "business.enterprises";
-                    localStorage.setItem("ea.startup.open.v1", intent);
+                      values.architectureScope === 'Domain'
+                        ? 'business.capabilities'
+                        : values.architectureScope === 'Programme'
+                          ? 'implmig.programmes'
+                          : 'business.enterprises';
+                    localStorage.setItem('ea.startup.open.v1', intent);
                   } catch {
                     // Best-effort only.
                   }
@@ -1180,13 +1200,13 @@ const FirstLaunch: React.FC = () => {
 
                     const payload = await buildProjectPayload();
                     if (!payload) {
-                      message.error("Failed to create repository data.");
+                      message.error('Failed to create repository data.');
                       return;
                     }
 
                     if (!window.eaDesktop?.saveManagedRepository) {
                       message.info(
-                        "Managed repositories are available in the desktop app.",
+                        'Managed repositories are available in the desktop app.',
                       );
                       return;
                     }
@@ -1210,10 +1230,10 @@ const FirstLaunch: React.FC = () => {
                       name: values.repositoryName,
                       description,
                     });
-                    history.push("/workspace");
+                    history.push('/workspace');
                   })();
 
-                  message.success("Repository created.");
+                  message.success('Repository created.');
                 }}
               >
                 {/* ── Section 1: Basic Information ── */}
@@ -1222,15 +1242,53 @@ const FirstLaunch: React.FC = () => {
                 </div>
                 <Form.Item
                   name="repositoryName"
-                  rules={[{ required: true, whitespace: true, message: "" }]}
+                  rules={[{ required: true, whitespace: true, message: '' }]}
                 >
                   <Input placeholder="Repository name" autoFocus />
                 </Form.Item>
                 <Form.Item
                   name="organizationName"
-                  rules={[{ required: true, whitespace: true, message: "" }]}
+                  rules={[{ required: true, whitespace: true, message: '' }]}
                 >
                   <Input placeholder="Organization name" />
+                </Form.Item>
+
+                {/* ── Section 1b: Initialization Mode ── */}
+                <div className={styles.createFormSectionDivider} />
+                <div className={styles.createFormSectionLabel}>
+                  Initialization Mode
+                </div>
+                <Form.Item
+                  name="initializationMode"
+                  style={{ marginBottom: 16 }}
+                >
+                  <Radio.Group
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    <Tooltip
+                      title="Creates a fully-seeded repository with predefined architecture layers, catalogues, matrices, and metamodel."
+                      placement="right"
+                    >
+                      <Radio value="REDLY" style={{ color: 'inherit' }}>
+                        <span style={{ fontWeight: 500 }}>
+                          Redly Framework{' '}
+                        </span>
+                        <span style={{ opacity: 0.6, fontSize: 12 }}>
+                          (Recommended)
+                        </span>
+                      </Radio>
+                    </Tooltip>
+                    <Tooltip
+                      title="Creates an empty repository. You define your own element types, relationship types, and architecture structure from scratch."
+                      placement="right"
+                    >
+                      <Radio value="CUSTOM" style={{ color: 'inherit' }}>
+                        <span style={{ fontWeight: 500 }}>
+                          Custom (Architect Mode)
+                        </span>
+                      </Radio>
+                    </Tooltip>
+                  </Radio.Group>
                 </Form.Item>
 
                 {/* ── Section 2: Architecture Defaults ── */}
@@ -1299,7 +1357,7 @@ const FirstLaunch: React.FC = () => {
                     type="button"
                     className={styles.createFormBackBtn}
                     onClick={() => {
-                      setMode("home");
+                      setMode('home');
                       setCreateFormReady(false);
                     }}
                   >
@@ -1307,7 +1365,7 @@ const FirstLaunch: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className={`${styles.createFormSubmitBtn} ${createFormReady ? styles.createFormSubmitReady : ""}`}
+                    className={`${styles.createFormSubmitBtn} ${createFormReady ? styles.createFormSubmitReady : ''}`}
                     disabled={!createFormReady}
                   >
                     Create Repository
