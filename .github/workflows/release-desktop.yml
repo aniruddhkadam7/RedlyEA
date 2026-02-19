@@ -3,13 +3,13 @@
 # Builds for Windows, macOS, and Linux, then uploads to GitHub Releases
 #
 # Prerequisites:
-# 1. Create a GitHub Personal Access Token with 'repo' scope
-# 2. Add it as a repository secret named GH_TOKEN
+# None! Uses default GitHub token for authentication
 #
 # Usage:
-# 1. Update version: npm version patch/minor/major
-# 2. Push tags: git push --tags
-# 3. This workflow runs automatically
+# 1. Create a version tag: git tag v1.0.0
+# 2. Push the tag: git push origin --tags
+# 3. Or create release via GitHub UI → Releases → Create new release
+# 4. This workflow runs automatically
 
 name: Release Desktop App
 
@@ -162,11 +162,11 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-  # Create release notes
+  # Create release notes and upload artifacts
   create-release-notes:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && always()
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout code
@@ -174,8 +174,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+          pattern: release-*
+
+      - name: Organize artifacts for release
+        shell: bash
+        run: |
+          mkdir -p release-files
+          find ./all-artifacts -type f -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.yml" -o -name "*.yaml" -o -name "*.blockmap" | while read file; do
+            cp "$file" release-files/
+          done
+          echo "Files ready for release:"
+          ls -lh release-files/
+
       - name: Generate release notes
         id: notes
+        shell: bash
         run: |
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
@@ -196,17 +213,18 @@ jobs:
           echo "" >> release_notes.md
           echo "| Platform | Download |" >> release_notes.md
           echo "|----------|----------|" >> release_notes.md
-          echo "| Windows (Installer) | RedlyAI-Setup-${CURRENT_TAG#v}.exe |" >> release_notes.md
-          echo "| Windows (Portable) | RedlyAI-${CURRENT_TAG#v}.exe |" >> release_notes.md
-          echo "| macOS | RedlyAI-${CURRENT_TAG#v}.dmg |" >> release_notes.md
-          echo "| Linux (AppImage) | RedlyAI-${CURRENT_TAG#v}.AppImage |" >> release_notes.md
-          echo "| Linux (Debian) | redlyai_${CURRENT_TAG#v}_amd64.deb |" >> release_notes.md
+          echo "| Windows (Installer) | RedlyAI-Setup-*.exe |" >> release_notes.md
+          echo "| Windows (Portable) | RedlyAI-*.exe |" >> release_notes.md
+          echo "| macOS | RedlyAI-*.dmg |" >> release_notes.md
+          echo "| Linux (AppImage) | RedlyAI-*.AppImage |" >> release_notes.md
+          echo "| Linux (Debian) | *.deb |" >> release_notes.md
 
-      - name: Update release
+      - name: Create GitHub Release with artifacts
         uses: softprops/action-gh-release@v1
         with:
           body_path: release_notes.md
+          files: release-files/*
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

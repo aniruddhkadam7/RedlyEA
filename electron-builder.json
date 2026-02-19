@@ -95,7 +95,7 @@
     "uninstallerIcon": "build/icons/icon.ico",
     "installerHeader": "build/icons/icon.ico",
     "installerSidebar": "build/icons/icon.ico"
-  }
+  },
   "mac": {
     "target": ["dmg", "zip"],
     "icon": "build/icons/icon.icns",
