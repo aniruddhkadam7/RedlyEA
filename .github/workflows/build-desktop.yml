@@ -1,0 +1,92 @@
+# GitHub Actions workflow for building RedlyAI Electron app on main branch
+# Triggers on push to main branch
+# Builds Windows .exe installer and portable executables
+
+name: Build Desktop App (Main Branch)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Limit concurrent builds
+concurrency:
+  group: build-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and package Electron app for Windows
+        run: pnpm run release:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check build artifacts
+        shell: bash
+        run: |
+          echo "Checking for build artifacts in release/ directory..."
+          ls -lh release/ || echo "Release directory is empty or missing!"
+          find release/ -type f \( -name "*.exe" -o -name "*.yml" \) 2>/dev/null | head -20 || echo "No installers found!"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            release/*.exe
+            release/*.yml
+            release/*.blockmap
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/*.exe
+            release/*.yml
+            release/*.blockmap
+          tag_name: build-${{ github.sha }}
+          body: |
+            Windows build from main branch commit: ${{ github.sha }}
+            Build triggered by: ${{ github.actor }}
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

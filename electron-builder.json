@@ -8,8 +8,8 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "manish-lal12",
-    "repo": "EA-CI-CD"
+    "owner": "aniruddhkadam7",
+    "repo": "RedlyEA"
   },
   "files": [
     {
