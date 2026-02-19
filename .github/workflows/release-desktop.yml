@@ -1,6 +1,6 @@
 # GitHub Actions workflow for building and publishing RedlyAI Electron app
 # Triggers on version tags (v1.0.0, v1.0.1, etc.)
-# Builds for Windows, macOS, and Linux, then uploads to GitHub Releases
+# Builds Windows .exe only (to avoid billing issues with multiple platforms)
 #
 # Prerequisites:
 # None! Uses default GitHub token for authentication
@@ -9,7 +9,7 @@
 # 1. Create a version tag: git tag v1.0.0
 # 2. Push the tag: git push origin --tags
 # 3. Or create release via GitHub UI → Releases → Create new release
-# 4. This workflow runs automatically
+# 4. This workflow automatically builds and uploads .exe files
 
 name: Release Desktop App
 
@@ -17,42 +17,18 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release (e.g., 1.0.0)"
-        required: false
-        type: string
+  workflow_dispatch
 
-# Limit concurrent releases
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Build job for each platform
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-            artifact: windows
-          - os: macos-latest
-            platform: mac
-            artifact: macos
-          - os: ubuntu-latest
-            platform: linux
-            artifact: linux
-
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -80,158 +56,51 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # macOS: Import code signing certificate
-      - name: Import macOS signing certificate
-        if: matrix.platform == 'mac' && env.APPLE_CERTIFICATE_BASE64 != ''
+      - name: Build app
+        run: pnpm run build
         env:
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-          rm certificate.p12
+          CI: true
+          NODE_ENV: production
 
-      # Linux: Install additional dependencies for building
-      - name: Install Linux build dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libarchive-tools rpm
+      - name: Run build validation
+        run: pnpm run validate:build
 
-      # Build and publish the Electron app (release scripts handle build, icons, and packaging)
-      - name: Build and publish Electron app
-        run: |
-          if [ "${{ matrix.platform }}" = "win" ]; then
-            echo "Building for Windows (NSIS + Portable)..."
-            pnpm run release:win
-          elif [ "${{ matrix.platform }}" = "mac" ]; then
-            echo "Building for macOS (DMG + ZIP)..."
-            pnpm run release:mac
-          elif [ "${{ matrix.platform }}" = "linux" ]; then
-            echo "Building for Linux (AppImage + DEB)..."
-            pnpm run release:linux
-          fi
-        shell: bash
+      - name: Generate icons
+        run: pnpm run desktop:icons
+
+      - name: Build Windows installer and portable exe
+        run: npx electron-builder --config electron-builder.json --win --publish never
         env:
-          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          NODE_ENV: production
 
-      - name: Check build artifacts
+      - name: List created files
+        shell: pwsh
         run: |
-          echo "Checking for build artifacts in release/ directory..."
-          ls -lh release/ || echo "Release directory is empty or missing!"
-          find release/ -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" \) 2>/dev/null | head -20 || echo "No installers found!"
-        shell: bash
+          Write-Host "=== Files in release/ directory ===" -ForegroundColor Green
+          Get-ChildItem -Path release -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize
+          Write-Host ""
+          Write-Host "=== Total files ===" -ForegroundColor Green
+          (Get-ChildItem -Path release -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count
 
-      # Upload artifacts (for debugging, artifacts are also on GitHub Releases)
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.artifact }}
-          path: |
-            release/*.exe
-            release/*.dmg
-            release/*.zip
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.yml
-            release/*.yaml
-            release/*.blockmap
-          retention-days: 7
-          if-no-files-found: warn
-
-  # Create release notes and upload artifacts
-  create-release-notes:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./build-output
-
-      - name: List downloaded artifacts
-        shell: bash
+      - name: Verify .exe files exist
+        shell: pwsh
         run: |
-          echo "=== All downloaded artifacts ==="
-          find ./build-output -type f | sort
-          echo ""
-          echo "=== Files ready for release ==="
-          find ./build-output -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) | sort
+          $exeFiles = Get-ChildItem -Path release -Filter "*.exe" -ErrorAction SilentlyContinue
+          if ($exeFiles.Count -eq 0) {
+            Write-Host "ERROR: No .exe files found!" -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Found $($exeFiles.Count) .exe file(s):" -ForegroundColor Green
+          $exeFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
 
-      - name: Prepare release files
-        shell: bash
-        run: |
-          mkdir -p release-artifacts
-          # Copy all executable files
-          find ./build-output -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) -exec cp {} release-artifacts/ \;
-          # Also copy update files
-          find ./build-output -type f \( -name "*.yml" -o -name "*.yaml" -o -name "*.blockmap" \) -exec cp {} release-artifacts/ \;
-
-          echo "=== Files to be uploaded to release ==="
-          ls -lh release-artifacts/
-
-      - name: Generate release notes
-        id: notes
-        shell: bash
-        run: |
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-
-          echo "## What's Changed" > release_notes.md
-          echo "" >> release_notes.md
-
-          if [ -n "$PREV_TAG" ]; then
-            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> release_notes.md
-          else
-            git log --pretty=format:"- %s (%h)" -20 >> release_notes.md
-          fi
-
-          echo "" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Downloads" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "| Platform | Download |" >> release_notes.md
-          echo "|----------|----------|" >> release_notes.md
-          echo "| Windows (Installer) | RedlyAI-Setup-*.exe |" >> release_notes.md
-          echo "| Windows (Portable) | RedlyAI-*.exe |" >> release_notes.md
-          echo "| macOS | RedlyAI-*.dmg |" >> release_notes.md
-          echo "| Linux (AppImage) | RedlyAI-*.AppImage |" >> release_notes.md
-          echo "| Linux (Debian) | *.deb |" >> release_notes.md
-
-      - name: Create GitHub Release with artifacts
+      - name: Upload .exe files to release
         uses: softprops/action-gh-release@v1
         with:
-          body_path: release_notes.md
           files: |
-            release-artifacts/*.exe
-            release-artifacts/*.dmg
-            release-artifacts/*.AppImage
-            release-artifacts/*.deb
-            release-artifacts/*.rpm
-            release-artifacts/*.yml
-            release-artifacts/*.yaml
-            release-artifacts/*.blockmap
+            release/**/*.exe
+            release/**/*.yml
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
