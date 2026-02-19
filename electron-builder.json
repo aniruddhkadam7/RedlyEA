@@ -92,9 +92,7 @@
     "shortcutName": "RedlyAI Architecture Studio",
     "artifactName": "${productName}-${version}-Setup.${ext}",
     "installerIcon": "build/icons/icon.ico",
-    "uninstallerIcon": "build/icons/icon.ico",
-    "installerHeader": "build/icons/icon.ico",
-    "installerSidebar": "build/icons/icon.ico"
+    "uninstallerIcon": "build/icons/icon.ico"
   },
   "mac": {
     "target": ["dmg", "zip"],

@@ -1,15 +1,16 @@
 # GitHub Actions workflow for building and publishing RedlyAI Electron app
 # Triggers on version tags (v1.0.0, v1.0.1, etc.)
-# Builds Windows .exe only (to avoid billing issues with multiple platforms)
+# Builds Windows .exe and uploads to GitHub Releases
 #
-# Prerequisites:
-# None! Uses default GitHub token for authentication
+# How it works:
+# 1. You create a tag (git tag v1.0.0) and push it, OR create a release via GitHub UI
+# 2. GitHub Actions detects the tag and runs this workflow
+# 3. The workflow builds the .exe files on a Windows runner
+# 4. The .exe files are uploaded to the GitHub Release page
+# 5. Source code (zip/tar.gz) always appears - that's GitHub's default, not from this workflow
 #
-# Usage:
-# 1. Create a version tag: git tag v1.0.0
-# 2. Push the tag: git push origin --tags
-# 3. Or create release via GitHub UI → Releases → Create new release
-# 4. This workflow automatically builds and uploads .exe files
+# The source code archives CANNOT be removed - GitHub adds them automatically.
+# Your .exe files will appear ALONGSIDE them under Assets.
 
 name: Release Desktop App
 
@@ -17,7 +18,10 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -56,51 +60,71 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build app
+      - name: Build web app
         run: pnpm run build
         env:
           CI: true
           NODE_ENV: production
+          ELECTRON_BUILD: "1"
 
-      - name: Run build validation
+      - name: Validate build output
         run: pnpm run validate:build
 
       - name: Generate icons
         run: pnpm run desktop:icons
+        continue-on-error: true
 
-      - name: Build Windows installer and portable exe
-        run: npx electron-builder --config electron-builder.json --win --publish never
-        env:
-          NODE_ENV: production
-
-      - name: List created files
+      - name: Ensure build icons directory exists
         shell: pwsh
         run: |
-          Write-Host "=== Files in release/ directory ===" -ForegroundColor Green
-          Get-ChildItem -Path release -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize
-          Write-Host ""
-          Write-Host "=== Total files ===" -ForegroundColor Green
-          (Get-ChildItem -Path release -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count
+          # Ensure build/icons directory exists with at least a fallback icon
+          if (-not (Test-Path "build/icons")) {
+            New-Item -ItemType Directory -Path "build/icons" -Force | Out-Null
+            Write-Host "Created build/icons directory"
+          }
+          # If icon.ico was not generated, copy the PNG as fallback
+          if (-not (Test-Path "build/icons/icon.ico")) {
+            if (Test-Path "public/icons/icon-512x512.png") {
+              Copy-Item "public/icons/icon-512x512.png" "build/icons/icon.png" -Force
+              Write-Host "WARNING: icon.ico not found, copied PNG fallback"
+            }
+          }
+          Write-Host "Icons directory contents:"
+          Get-ChildItem -Path "build/icons" -ErrorAction SilentlyContinue
+
+      - name: Build Windows installer and portable exe
+        shell: pwsh
+        run: |
+          Write-Host "Building Windows executables..." -ForegroundColor Green
+          npx electron-builder --config electron-builder.json --win --publish never
+          Write-Host "electron-builder finished with exit code: $LASTEXITCODE"
+
+      - name: List build output
+        shell: pwsh
+        run: |
+          Write-Host "=== All files in release/ ===" -ForegroundColor Green
+          Get-ChildItem -Path release -Recurse -ErrorAction SilentlyContinue | Format-Table Name, Length -AutoSize
 
       - name: Verify .exe files exist
         shell: pwsh
         run: |
-          $exeFiles = Get-ChildItem -Path release -Filter "*.exe" -ErrorAction SilentlyContinue
+          $exeFiles = Get-ChildItem -Path release -Filter "*.exe" -Recurse -ErrorAction SilentlyContinue
           if ($exeFiles.Count -eq 0) {
-            Write-Host "ERROR: No .exe files found!" -ForegroundColor Red
+            Write-Host "ERROR: No .exe files found in release/ directory!" -ForegroundColor Red
+            Write-Host "Build likely failed. Check the 'Build Windows installer' step above for errors." -ForegroundColor Red
             exit 1
           }
-          Write-Host "Found $($exeFiles.Count) .exe file(s):" -ForegroundColor Green
-          $exeFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
+          Write-Host "SUCCESS: Found $($exeFiles.Count) .exe file(s):" -ForegroundColor Green
+          $exeFiles | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
 
-      - name: Upload .exe files to release
-        uses: softprops/action-gh-release@v1
+      - name: Upload .exe to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/**/*.exe
-            release/**/*.yml
-          draft: false
-          prerelease: false
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
+          fail_on_unmatched_files: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
