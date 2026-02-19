@@ -116,10 +116,7 @@ const lifecycleOptionsForFramework = (
 type MetamodelSelection =
   | { kind: "objectType"; layer: EaLayer; type: ObjectType }
   | { kind: "relationshipType"; layer: EaLayer; type: RelationshipType };
-  | { kind: "objectType"; layer: EaLayer; type: ObjectType }
-  | { kind: "relationshipType"; layer: EaLayer; type: RelationshipType };
 
-type CatalogueSelection = { kind: "catalogueObject"; objectId: string };
 type CatalogueSelection = { kind: "catalogueObject"; objectId: string };
 
 type DrawerSelection = MetamodelSelection | CatalogueSelection;
