@@ -37,12 +37,12 @@ import type { GovernanceMode } from "./repositoryMetadata";
  * This is a runtime guard that can be called before element creation.
  */
 export type ElementCreationSource =
-  | "toolbox"
-  | "explorer"
-  | "explorer-context-menu"
-  | "canvas"
-  | "ai-agent"
-  | "unknown";
+  | 'toolbox'
+  | 'explorer'
+  | 'explorer-context-menu'
+  | 'canvas'
+  | 'ai-agent'
+  | 'unknown';
 
 export interface ElementCreationGuard {
   ok: boolean;
@@ -103,7 +103,7 @@ export type PermissionChainOutcome =
 export function validateElementCreationSource(
   source: ElementCreationSource,
 ): ElementCreationGuard {
-  if (source === "toolbox") {
+  if (source === 'toolbox' || source === 'explorer') {
     return { ok: true, source };
   }
 
@@ -111,7 +111,7 @@ export function validateElementCreationSource(
     return {
       ok: false,
       source,
-      reason: "Use the Toolbox to create elements, not Explorer.",
+      reason: 'Use the Explorer "+" button or Toolbox to create elements.',
     };
   }
 
@@ -152,7 +152,7 @@ export function validateElementCreationSource(
  * Policy constant for documentation and enforcement.
  */
 export const ELEMENT_CREATION_POLICY = {
-  allowedSources: ["toolbox"] as const,
+  allowedSources: ['toolbox', 'explorer'] as const,
   blockedSources: [
     "explorer",
     "explorer-context-menu",

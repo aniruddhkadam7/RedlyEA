@@ -66,14 +66,14 @@ export const EXPLORER_KEYS = {
   root: (workspaceName: string) => `ws:${workspaceName}`,
 
   // Level 1 — Top sections
-  repository: "section:repository",
-  metamodel: "section:metamodel",
-  architectures: "section:architectures",
-  frameworkPackages: "section:framework-packages",
-  modelLibrary: "section:model-library",
-  baselines: "section:baselines",
-  reports: "section:reports",
-  settings: "section:settings",
+  repository: 'section:repository',
+  metamodel: 'section:metamodel',
+  architectures: 'section:architectures',
+  frameworkPackages: 'section:framework-packages',
+  modelLibrary: 'section:model-library',
+  baselines: 'section:baselines',
+  reports: 'section:reports',
+  settings: 'section:settings',
 
   // Repository sub-items
   repoProperties: "section:repository:properties",

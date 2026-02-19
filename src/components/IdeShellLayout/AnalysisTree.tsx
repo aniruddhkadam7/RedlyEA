@@ -88,14 +88,14 @@ const AnalysisTree: React.FC = () => {
               if (!section) return;
 
               setSelectedKey(item.key);
-              setSelection({ kind: "analysis", keys: [item.key] });
+              setSelection({ kind: 'analysis', keys: [item.key] });
 
-              if (item.key === "analysis:overview") {
-                openRouteTab("/analysis/overview");
+              if (item.key === 'analysis:overview') {
+                openRouteTab('/analysis/overview');
                 return;
               }
 
-              openWorkspaceTab({ type: "analysis", kind: "impact" });
+              openWorkspaceTab({ type: 'analysis', kind: 'impact' });
               dispatchImpactAnalysisSection(section);
             },
           })),

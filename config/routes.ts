@@ -54,8 +54,12 @@
     component: "./impact-analysis",
   },
   {
-    path: "/analysis/overview",
-    component: "./analysis/overview",
+    path: '/analysis/overview',
+    component: './analysis/overview',
+  },
+  {
+    path: '/interoperability',
+    component: './interoperability',
   },
   {
     path: "/interoperability",
