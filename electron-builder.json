@@ -12,15 +12,29 @@
     "repo": "EA-CI-CD"
   },
   "files": [
-    "dist/**/*",
-    "electron/**/*",
-    "public/favicon.ico",
-    "!node_modules/.cache",
-    "!**/*.map",
-    "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-    "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-    "!**/node_modules/*.d.ts",
-    "!**/node_modules/.bin"
+    {
+      "from": ".",
+      "to": ".",
+      "filter": [
+        "dist/**/*",
+        "electron/**/*",
+        "public/favicon.ico",
+        "node_modules/**/*",
+        "package.json"
+      ]
+    }
+  ],
+  "extraFiles": [
+    {
+      "from": "dist",
+      "to": "dist",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron",
+      "to": "electron",
+      "filter": ["**/*"]
+    }
   ],
   "asarUnpack": ["electron/**/*"],
   "extraMetadata": {
@@ -38,14 +52,33 @@
   ],
   "icon": "build/icons/icon",
   "win": {
-    "target": ["nsis", "portable"],
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
     "icon": "build/icons/icon.ico",
+    "certificateFile": null,
+    "certificatePassword": null,
+    "signingHashAlgorithms": ["sha256"],
     "fileAssociations": [
       {
         "ext": "eapkg",
         "name": "EA Repository Package",
         "description": "Enterprise Architecture Repository",
         "icon": "build/icons/eapkg-icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "redly",
+        "name": "Redly Repository File",
+        "description": "Redly Repository File",
+        "icon": "build/icons/icon.ico",
         "role": "Editor"
       }
     ]
@@ -56,8 +89,13 @@
     "perMachine": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "RedlyAI Architecture Studio"
-  },
+    "shortcutName": "RedlyAI Architecture Studio",
+    "artifactName": "${productName}-${version}-Setup.${ext}",
+    "installerIcon": "build/icons/icon.ico",
+    "uninstallerIcon": "build/icons/icon.ico",
+    "installerHeader": "build/icons/icon.ico",
+    "installerSidebar": "build/icons/icon.ico"
+  }
   "mac": {
     "target": ["dmg", "zip"],
     "icon": "build/icons/icon.icns",

@@ -33,27 +33,7 @@ import {
 } from "../../../backend/baselines/BaselineStore";
 import { parseRepositoryPackageBytes } from "../../../backend/services/repository/importService";
 import DarkDropdown from "./DarkDropdown";
-// CSS module import - handled by Vite/Webpack
-import "./index.module.less";
-
-const styles: Record<string, string> = {
-  pageRoot: "pageRoot",
-  topHeader: "topHeader",
-  topHeaderTitle: "topHeaderTitle",
-  shellLayout: "shellLayout",
-  sidebar: "sidebar",
-  sidebarActions: "sidebarActions",
-  sidebarBtn: "sidebarBtn",
-  sidebarBtnSecondary: "sidebarBtnSecondary",
-  sidebarDivider: "sidebarDivider",
-  sidebarSection: "sidebarSection",
-  sidebarStatus: "sidebarStatus",
-  sidebarStatusLabel: "sidebarStatusLabel",
-  centerPanel: "centerPanel",
-  centerContent: "centerContent",
-  brand: "brand",
-  brandTitle: "brandTitle",
-};
+import styles from "./index.module.less";
 
 const safeParseJson = <T,>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -302,7 +282,7 @@ const FirstLaunch: React.FC = () => {
         : Array.isArray(payload?.repository?.baselines)
           ? payload.repository.baselines
           : [];
-      replaceBaselines(baselines);
+      replaceBaselines(baselines as unknown as any[]);
 
       try {
         window.dispatchEvent(new Event("ea:repositoryChanged"));
@@ -559,11 +539,11 @@ const FirstLaunch: React.FC = () => {
       }
 
       const baselines = Array.isArray(parsed.data.baselines)
-        ? (parsed.data.baselines as any[])
+        ? parsed.data.baselines
         : Array.isArray(parsed.data.workspace?.baselines)
-          ? (parsed.data.workspace.baselines as any[])
+          ? parsed.data.workspace.baselines
           : [];
-      replaceBaselines(baselines);
+      replaceBaselines(baselines as unknown as any[]);
 
       const repoState = await waitForRepositoryReady();
       const name =
@@ -638,7 +618,8 @@ const FirstLaunch: React.FC = () => {
         return;
       }
 
-      await importRepositoryPackage(base64ToBytes(res.content), res.name);
+      const bytes = base64ToBytes(res.content ?? "");
+      await importRepositoryPackage(bytes, res.name);
 
       try {
         localStorage.removeItem(LEGACY_PROJECT_PATH_KEY);
@@ -819,21 +800,27 @@ const FirstLaunch: React.FC = () => {
   );
 
   const readRecentProjects = React.useCallback(async () => {
+    // Always start with an empty list
+    setRecentProjects([]);
+
     if (window.eaDesktop?.listManagedRepositories) {
       const res = await window.eaDesktop.listManagedRepositories();
       if (res.ok) {
         // Only show repositories that have been actually opened (have lastOpenedAt set)
         // This prevents showing all existing repos when app is newly installed
-        const openedRepos = res.items.filter((item) => item.lastOpenedAt);
-        setRecentProjects(
-          openedRepos.map((item) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description ?? null,
-            lastOpened: item.lastOpenedAt ?? null,
-          })),
-        );
-        return;
+        const openedRepos = res.items.filter((item) => !!item.lastOpenedAt);
+        if (openedRepos.length > 0) {
+          setRecentProjects(
+            openedRepos.map((item) => ({
+              id: item.id,
+              name: item.name,
+              description: item.description ?? null,
+              lastOpened: item.lastOpenedAt ?? null,
+            })),
+          );
+          return;
+        }
+        // If no managed repos have been opened, fall through to localStorage
       }
     }
 
@@ -849,8 +836,8 @@ const FirstLaunch: React.FC = () => {
           }>
         >(raw, []);
         // Only show repositories that have been actually opened (have lastOpened set)
-        const openedRepos = parsed.filter((item) => item.lastOpened);
-        if (openedRepos.length) {
+        const openedRepos = parsed.filter((item) => !!item.lastOpened);
+        if (openedRepos.length > 0) {
           setRecentProjects(
             openedRepos.map((item) => ({
               id: item.id,
@@ -859,14 +846,10 @@ const FirstLaunch: React.FC = () => {
               lastOpened: item.lastOpened ?? null,
             })),
           );
-          return;
         }
       }
-
-      // Don't show active repo unless it was explicitly opened
-      setRecentProjects([]);
     } catch {
-      setRecentProjects([]);
+      // ignore
     }
   }, [ACTIVE_REPO_ID_KEY, ACTIVE_REPO_NAME_KEY, RECENT_REPOSITORIES_KEY]);
 

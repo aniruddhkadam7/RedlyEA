@@ -105,9 +105,33 @@ jobs:
       # Build and publish the Electron app (release scripts handle build, icons, and packaging)
       - name: Build and publish Electron app
         run: |
-          if [ "${{ matrix.platform }}" = "win" ]; then pnpm run release:win; fi
-          if [ "${{ matrix.platform }}" = "mac" ]; then pnpm run release:mac; fi
-          if [ "${{ matrix.platform }}" = "linux" ]; then pnpm run release:linux; fi
+          if [ "${{ matrix.platform }}" = "win" ]; then
+            echo "Building for Windows (NSIS + Portable)..."
+            pnpm run release:win
+          elif [ "${{ matrix.platform }}" = "mac" ]; then
+            echo "Building for macOS (DMG + ZIP)..."
+            pnpm run release:mac
+          elif [ "${{ matrix.platform }}" = "linux" ]; then
+            echo "Building for Linux (AppImage + DEB)..."
+            pnpm run release:linux
+          fi
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      - name: Check build artifacts
+        run: |
+          echo "Checking for build artifacts in release/ directory..."
+          ls -lh release/ || echo "Release directory is empty or missing!"
+          find release/ -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" \) 2>/dev/null | head -20 || echo "No installers found!"
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
