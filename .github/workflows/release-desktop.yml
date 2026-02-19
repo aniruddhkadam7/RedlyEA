@@ -45,9 +45,14 @@ jobs:
           version: 9
 
       - name: Get pnpm store directory
-        shell: bash
+        shell: pwsh
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          $storePath = pnpm store path 2>$null
+          if (-not $storePath) {
+            $storePath = Join-Path $env:LOCALAPPDATA "pnpm/store/v3"
+          }
+          echo "STORE_PATH=$storePath" >> $env:GITHUB_ENV
+          Write-Host "pnpm store path: $storePath"
 
       - name: Cache pnpm modules
         uses: actions/cache@v4
