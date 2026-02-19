@@ -144,8 +144,6 @@ const metamodelIcon = iconAsset(
 );
 const reportIcon = iconAsset("/icons/explorer/report.svg", "report");
 const settingsIcon = iconAsset("/icons/explorer/settings.svg", "settings");
-const reportIcon = iconAsset("/icons/explorer/report.svg", "report");
-const settingsIcon = iconAsset("/icons/explorer/settings.svg", "settings");
 const fallbackGenericIcon = React.createElement(FolderOutlined);
 
 const iconForLayer = (layer: string): React.ReactNode => {

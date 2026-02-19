@@ -51,14 +51,6 @@ import { message } from "@/ea/eaConsole";
 import ProjectGate from "@/ea/ProjectGate";
 import { IdeSelectionProvider } from "@/ide/IdeSelectionContext";
 import type { EaRepository } from "@/pages/dependency-view/utils/eaRepository";
-import {
-  EA_LAYERS,
-  type EaLayer,
-  OBJECT_TYPE_DEFINITIONS,
-  type ObjectType,
-  RELATIONSHIP_TYPE_DEFINITIONS,
-  type RelationshipType,
-} from "@/pages/dependency-view/utils/eaMetaModel";
 import FirstLaunch from "@/pages/first-launch";
 import {
   isCustomFrameworkModelingEnabled,
@@ -75,7 +67,6 @@ import {
 } from "@/repository/referenceFrameworkPolicy";
 import { runtimeEnv } from "@/runtime/runtimeEnv";
 import { ThemeProvider } from "@/theme/ThemeContext";
-import defaultSettings from "../config/defaultSettings";
 
 const _isDev = process.env.NODE_ENV === "development";
 
@@ -98,14 +89,7 @@ const lifecycleOptionsForFramework = (
     if (lifecycleCoverage === "To-Be") return ["Target"];
     if (lifecycleCoverage === "As-Is") return ["Baseline"];
     return ["Baseline", "Target"];
-  if (referenceFramework === "TOGAF") {
-    if (lifecycleCoverage === "To-Be") return ["Target"];
-    if (lifecycleCoverage === "As-Is") return ["Baseline"];
-    return ["Baseline", "Target"];
   }
-  if (lifecycleCoverage === "To-Be") return ["To-Be"];
-  if (lifecycleCoverage === "As-Is") return ["As-Is"];
-  return ["As-Is", "To-Be"];
   if (lifecycleCoverage === "To-Be") return ["To-Be"];
   if (lifecycleCoverage === "As-Is") return ["As-Is"];
   return ["As-Is", "To-Be"];
@@ -133,12 +117,6 @@ const buildMetamodelTreeData = (): DataNode[] => {
     objectTypesByLayer.get(def.layer)?.push(type);
   });
 
-  (Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as RelationshipType[]).forEach(
-    (type) => {
-      const def = RELATIONSHIP_TYPE_DEFINITIONS[type];
-      relationshipTypesByLayer.get(def.layer)?.push(type);
-    },
-  );
   (Object.keys(RELATIONSHIP_TYPE_DEFINITIONS) as RelationshipType[]).forEach(
     (type) => {
       const def = RELATIONSHIP_TYPE_DEFINITIONS[type];
@@ -190,11 +168,6 @@ const parseMetamodelSelection = (
 ): MetamodelSelection | undefined => {
   if (key.startsWith("objectType:")) {
     const type = key.replace("objectType:", "") as ObjectType;
-const parseMetamodelSelection = (
-  key: string,
-): MetamodelSelection | undefined => {
-  if (key.startsWith("objectType:")) {
-    const type = key.replace("objectType:", "") as ObjectType;
     if (!OBJECT_TYPE_DEFINITIONS[type]) return undefined;
     return { kind: "objectType", type, layer: getLayerForObjectType(type) };
   }
@@ -206,20 +179,10 @@ const parseMetamodelSelection = (
       type,
       layer: getLayerForRelationshipType(type),
     };
-    return {
-      kind: "relationshipType",
-      type,
-      layer: getLayerForRelationshipType(type),
-    };
   }
   return undefined;
 };
 
-const parseCatalogueSelection = (
-  key: string,
-): CatalogueSelection | undefined => {
-  if (!key.startsWith("catalogueObject:")) return undefined;
-  const objectId = key.replace("catalogueObject:", "").trim();
 const parseCatalogueSelection = (
   key: string,
 ): CatalogueSelection | undefined => {
@@ -774,28 +737,8 @@ const _EaExplorerSiderContentInner: React.FC<
           message.warning(
             "Custom framework: define at least one element type in Metamodel to enable modeling.",
           );
-      if (metadata?.referenceFramework === "Custom") {
-        if (
-          !isCustomFrameworkModelingEnabled(
-            "Custom",
-            metadata?.frameworkConfig ?? undefined,
-          )
-        ) {
-          message.warning(
-            "Custom framework: define at least one element type in Metamodel to enable modeling.",
-          );
           return;
         }
-        if (
-          !isObjectTypeEnabledForFramework(
-            "Custom",
-            metadata?.frameworkConfig ?? undefined,
-            source.type,
-          )
-        ) {
-          message.warning(
-            `Custom framework: element type "${source.type}" is not enabled.`,
-          );
         if (
           !isObjectTypeEnabledForFramework(
             "Custom",
@@ -810,15 +753,6 @@ const _EaExplorerSiderContentInner: React.FC<
         }
       }
 
-      if (
-        !isObjectTypeAllowedForReferenceFramework(
-          metadata?.referenceFramework,
-          source.type,
-        )
-      ) {
-        message.warning(
-          `Type "${source.type}" is not enabled for the selected Reference Framework.`,
-        );
       if (
         !isObjectTypeAllowedForReferenceFramework(
           metadata?.referenceFramework,
@@ -831,10 +765,6 @@ const _EaExplorerSiderContentInner: React.FC<
         return;
       }
 
-      const lifecycleGuard = canCreateObjectTypeForLifecycleCoverage(
-        metadata?.lifecycleCoverage,
-        source.type,
-      );
       const lifecycleGuard = canCreateObjectTypeForLifecycleCoverage(
         metadata?.lifecycleCoverage,
         source.type,
@@ -849,23 +779,8 @@ const _EaExplorerSiderContentInner: React.FC<
       let name = "";
       let lifecycleState = "";
       let admPhase = "";
-      let name = "";
-      let lifecycleState = "";
-      let admPhase = "";
       let copyOwnership = false;
       let copyAdmPhase = false;
-      const lifecycleOptions = lifecycleOptionsForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
-      const lifecyclePlaceholder = defaultLifecycleStateForFramework(
-        metadata?.referenceFramework,
-        metadata?.lifecycleCoverage,
-      );
-      const hasOwnership = Boolean(
-        (source.attributes as any)?.ownerId ||
-        (source.attributes as any)?.ownerType,
-      );
       const lifecycleOptions = lifecycleOptionsForFramework(
         metadata?.referenceFramework,
         metadata?.lifecycleCoverage,
@@ -939,15 +854,6 @@ const _EaExplorerSiderContentInner: React.FC<
             message.warning(
               "Lifecycle state is not allowed for the selected Reference Framework.",
             );
-          if (
-            !isLifecycleStateAllowedForReferenceFramework(
-              metadata?.referenceFramework,
-              finalLifecycle,
-            )
-          ) {
-            message.warning(
-              "Lifecycle state is not allowed for the selected Reference Framework.",
-            );
             return Promise.reject();
           }
           // ADM Phase validation only for TOGAF (not currently supported)
@@ -978,14 +884,6 @@ const _EaExplorerSiderContentInner: React.FC<
         },
       });
     },
-    [
-      eaRepository,
-      metadata?.frameworkConfig,
-      metadata?.lifecycleCoverage,
-      metadata?.referenceFramework,
-      selectCatalogueObject,
-      trySetEaRepository,
-    ],
     [
       eaRepository,
       metadata?.frameworkConfig,
@@ -1026,18 +924,6 @@ const _EaExplorerSiderContentInner: React.FC<
           target.attributes.name.trim()
             ? String(target.attributes.name)
             : r.toId;
-        const sourceName =
-          source &&
-          typeof source.attributes?.name === "string" &&
-          source.attributes.name.trim()
-            ? String(source.attributes.name)
-            : r.fromId;
-        const targetName =
-          target &&
-          typeof target.attributes?.name === "string" &&
-          target.attributes.name.trim()
-            ? String(target.attributes.name)
-            : r.toId;
         return `${sourceName} —${r.type}→ ${targetName}`;
       });
       let removeRelationships = false;
@@ -1056,17 +942,8 @@ const _EaExplorerSiderContentInner: React.FC<
                 ? existing.attributes.name
                 : existing.id}
               ". Relationships are kept unless explicitly removed.
-              Deletes "
-              {typeof existing.attributes?.name === "string" &&
-              existing.attributes.name.trim()
-                ? existing.attributes.name
-                : existing.id}
-              ". Relationships are kept unless explicitly removed.
             </Typography.Text>
             <div>
-              <Typography.Text type="secondary">
-                Impacted relationships ({impactedCount})
-              </Typography.Text>
               <Typography.Text type="secondary">
                 Impacted relationships ({impactedCount})
               </Typography.Text>
@@ -1100,9 +977,6 @@ const _EaExplorerSiderContentInner: React.FC<
             next.relationships = next.relationships.filter(
               (r) => r.fromId !== objectId && r.toId !== objectId,
             );
-            next.relationships = next.relationships.filter(
-              (r) => r.fromId !== objectId && r.toId !== objectId,
-            );
           }
           const res = next.updateObjectAttributes(
             objectId,
@@ -1116,10 +990,6 @@ const _EaExplorerSiderContentInner: React.FC<
 
           const applied = trySetEaRepository(next);
           if (!applied.ok) return Promise.reject();
-          if (
-            selection?.kind === "catalogueObject" &&
-            selection.objectId === objectId
-          ) {
           if (
             selection?.kind === "catalogueObject" &&
             selection.objectId === objectId
@@ -1159,15 +1029,6 @@ const _EaExplorerSiderContentInner: React.FC<
             danger: true,
             disabled: isReadOnlyMode,
           },
-          { key: "new", label: "Create in Toolbox", disabled: true },
-          { key: "duplicate", label: "Duplicate", disabled: isReadOnlyMode },
-          { type: "divider" },
-          {
-            key: "delete",
-            label: "Delete (soft delete)",
-            danger: true,
-            disabled: isReadOnlyMode,
-          },
         );
       }
 
@@ -1185,16 +1046,10 @@ const _EaExplorerSiderContentInner: React.FC<
                   (objectSelection
                     ? eaRepository.objects.get(objectSelection.objectId)?.type
                     : undefined);
-                  (objectSelection
-                    ? eaRepository.objects.get(objectSelection.objectId)?.type
-                    : undefined);
                 if (targetType) createNewElement(targetType);
                 return;
               }
               if (!objectSelection) return;
-              if (key === "duplicate")
-                duplicateElement(objectSelection.objectId);
-              if (key === "delete") softDeleteElement(objectSelection.objectId);
               if (key === "duplicate")
                 duplicateElement(objectSelection.objectId);
               if (key === "delete") softDeleteElement(objectSelection.objectId);
@@ -1204,19 +1059,9 @@ const _EaExplorerSiderContentInner: React.FC<
           <span style={{ display: "inline-flex", width: "100%" }}>
             {node.title}
           </span>
-          <span style={{ display: "inline-flex", width: "100%" }}>
-            {node.title}
-          </span>
         </Dropdown>
       );
     },
-    [
-      createNewElement,
-      duplicateElement,
-      eaRepository.objects,
-      metadata?.lifecycleCoverage,
-      softDeleteElement,
-    ],
     [
       createNewElement,
       duplicateElement,
@@ -1254,11 +1099,6 @@ const _EaExplorerSiderContentInner: React.FC<
             Object not found in repository.
           </Typography.Text>
         );
-        return (
-          <Typography.Text type="secondary">
-            Object not found in repository.
-          </Typography.Text>
-        );
       }
 
       const dataSource = {
@@ -1269,26 +1109,13 @@ const _EaExplorerSiderContentInner: React.FC<
           typeof obj.attributes.name === "string" && obj.attributes.name.trim()
             ? obj.attributes.name
             : obj.id,
-          typeof obj.attributes.name === "string" && obj.attributes.name.trim()
-            ? obj.attributes.name
-            : obj.id,
       } as Record<string, unknown>;
 
       const editableKeys = new Set<string>(["name"]);
       if (obj.type === "Application") {
         editableKeys.add("criticality");
         editableKeys.add("lifecycle");
-      const editableKeys = new Set<string>(["name"]);
-      if (obj.type === "Application") {
-        editableKeys.add("criticality");
-        editableKeys.add("lifecycle");
       }
-      if (
-        obj.type === "CapabilityCategory" ||
-        obj.type === "Capability" ||
-        obj.type === "SubCapability"
-      ) {
-        editableKeys.add("category");
       if (
         obj.type === "CapabilityCategory" ||
         obj.type === "Capability" ||
@@ -1306,11 +1133,7 @@ const _EaExplorerSiderContentInner: React.FC<
           formItemProps: {
             rules: [{ required: true, message: "Name is required" }],
           },
-          title: "Name",
-          dataIndex: "name",
-          formItemProps: {
-            rules: [{ required: true, message: "Name is required" }],
-          },
+        },
       ] as any[];
 
       if (editableKeys.has("category")) {
@@ -1323,32 +1146,22 @@ const _EaExplorerSiderContentInner: React.FC<
             title: "Criticality",
             dataIndex: "criticality",
             valueType: "select",
-            title: "Criticality",
-            dataIndex: "criticality",
-            valueType: "select",
             valueEnum: {
               high: { text: "high" },
               medium: { text: "medium" },
               low: { text: "low" },
-              high: { text: "high" },
-              medium: { text: "medium" },
-              low: { text: "low" },
             },
+          },
           {
             title: "Lifecycle",
             dataIndex: "lifecycle",
             valueType: "select",
-            title: "Lifecycle",
-            dataIndex: "lifecycle",
-            valueType: "select",
             valueEnum: {
               planned: { text: "planned" },
               active: { text: "active" },
               deprecated: { text: "deprecated" },
-              planned: { text: "planned" },
-              active: { text: "active" },
-              deprecated: { text: "deprecated" },
             },
+          },
         );
       }
 
@@ -1383,20 +1196,12 @@ const _EaExplorerSiderContentInner: React.FC<
             Unknown object type.
           </Typography.Text>
         );
-        return (
-          <Typography.Text type="secondary">
-            Unknown object type.
-          </Typography.Text>
-        );
       }
       const attributes = def.attributes ?? [];
       const outgoing = def.allowedOutgoingRelationships ?? [];
       const incoming = def.allowedIncomingRelationships ?? [];
       return (
         <>
-          <Typography.Paragraph style={{ marginBottom: 12 }}>
-            {def.description}
-          </Typography.Paragraph>
           <Typography.Paragraph style={{ marginBottom: 12 }}>
             {def.description}
           </Typography.Paragraph>
@@ -1423,11 +1228,6 @@ const _EaExplorerSiderContentInner: React.FC<
           Unknown relationship type.
         </Typography.Text>
       );
-      return (
-        <Typography.Text type="secondary">
-          Unknown relationship type.
-        </Typography.Text>
-      );
     }
     const relAttributes = def.attributes ?? [];
     return (
@@ -1435,20 +1235,8 @@ const _EaExplorerSiderContentInner: React.FC<
         <Typography.Paragraph style={{ marginBottom: 12 }}>
           {def.description}
         </Typography.Paragraph>
-        <Typography.Paragraph style={{ marginBottom: 12 }}>
-          {def.description}
-        </Typography.Paragraph>
         <Descriptions size="small" column={1} bordered>
           <Descriptions.Item label="Layer">{def.layer}</Descriptions.Item>
-          <Descriptions.Item label="From Types">
-            {def.fromTypes.join(", ")}
-          </Descriptions.Item>
-          <Descriptions.Item label="To Types">
-            {def.toTypes.join(", ")}
-          </Descriptions.Item>
-          <Descriptions.Item label="Attributes">
-            {relAttributes.length ? relAttributes.join(", ") : "—"}
-          </Descriptions.Item>
           <Descriptions.Item label="From Types">
             {def.fromTypes.join(", ")}
           </Descriptions.Item>
@@ -1494,18 +1282,10 @@ const _EaExplorerSiderContentInner: React.FC<
           ? [`catalogueObject:${selection.objectId}`]
           : []
       }
-      selectedKeys={
-        selection?.kind === "catalogueObject"
-          ? [`catalogueObject:${selection.objectId}`]
-          : []
-      }
     />
   );
 
   const mainBody = (() => {
-    if (view === "metamodel") return metamodelPanel;
-    if (view === "catalogues") return cataloguesPanel;
-    if (view === "diagrams") return null;
     if (view === "metamodel") return metamodelPanel;
     if (view === "catalogues") return cataloguesPanel;
     if (view === "diagrams") return null;
@@ -1519,18 +1299,10 @@ const _EaExplorerSiderContentInner: React.FC<
             Array.isArray(keys) ? (keys as string[]) : [String(keys)],
           )
         }
-        onChange={(keys) =>
-          setActiveKeys(
-            Array.isArray(keys) ? (keys as string[]) : [String(keys)],
-          )
-        }
         items={[
           {
             key: "Workspace",
             label: (
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
               >
@@ -1545,9 +1317,6 @@ const _EaExplorerSiderContentInner: React.FC<
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
               >
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
                 <ProjectOutlined /> Metamodel
               </span>
             ),
@@ -1556,9 +1325,6 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "Catalogues",
             label: (
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
               >
@@ -1573,16 +1339,10 @@ const _EaExplorerSiderContentInner: React.FC<
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
               >
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
                 <ApartmentOutlined /> Diagrams
               </span>
             ),
             children: (
-              <Typography.Text type="secondary">
-                Define catalog data before creating views.
-              </Typography.Text>
               <Typography.Text type="secondary">
                 Define catalog data before creating views.
               </Typography.Text>
@@ -1653,11 +1413,6 @@ export async function getInitialState(): Promise<{
           userid: bootstrap.value.id,
           access: "admin",
         }
-      ? {
-          name: bootstrap.value.displayName,
-          userid: bootstrap.value.id,
-          access: "admin",
-        }
       : undefined,
     runtimeEnv,
   };
@@ -1688,9 +1443,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
     // 增加一个 loading 的状态
     childrenRender: (children) => {
       // if (initialState?.loading) return <PageLoading />;
-      const pathname =
-        typeof window !== "undefined" ? window.location?.pathname || "" : "";
-      if (pathname.startsWith("/studio")) {
       const pathname =
         typeof window !== "undefined" ? window.location?.pathname || "" : "";
       if (pathname.startsWith("/studio")) {
@@ -1725,6 +1477,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
     },
     navTheme: "light",
   };
+};
 
 /**
  * @name request 配置，可以配置错误处理

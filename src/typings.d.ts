@@ -153,39 +153,8 @@ declare global {
       closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
       // Manual update check
       checkForUpdates: () => Promise<
-      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
-      // Manual update check
-      checkForUpdates: () => Promise<
         { ok: true } | { ok: false; error: string }
       >;
-      // Updater API
-      updater: {
-        check: () => Promise<
-          | { ok: true; updateInfo?: { version: string; releaseDate?: string } }
-          | { ok: false; error: string }
-        >;
-        download: () => Promise<{ ok: true } | { ok: false; error: string }>;
-        install: () => { ok: true } | { ok: false; error: string };
-        getVersion: () => Promise<{ version: string }>;
-        onStatus: (
-          handler: (data: {
-            status:
-              | "checking"
-              | "available"
-              | "not-available"
-              | "downloading"
-              | "downloaded"
-              | "error";
-            version?: string;
-            percent?: number;
-            bytesPerSecond?: number;
-            transferred?: number;
-            total?: number;
-            message?: string;
-          }) => void,
-        ) => void;
-        offStatus: (handler: (data: unknown) => void) => void;
-      };
       // Updater API
       updater: {
         check: () => Promise<
