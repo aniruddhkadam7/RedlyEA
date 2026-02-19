@@ -117,7 +117,6 @@ jobs:
           fi
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -133,16 +132,6 @@ jobs:
           ls -lh release/ || echo "Release directory is empty or missing!"
           find release/ -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" \) 2>/dev/null | head -20 || echo "No installers found!"
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
       # Upload artifacts (for debugging, artifacts are also on GitHub Releases)
       - name: Upload build artifacts
@@ -177,18 +166,28 @@ jobs:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./all-artifacts
-          pattern: release-*
+          path: ./build-output
 
-      - name: Organize artifacts for release
+      - name: List downloaded artifacts
         shell: bash
         run: |
-          mkdir -p release-files
-          find ./all-artifacts -type f -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.yml" -o -name "*.yaml" -o -name "*.blockmap" | while read file; do
-            cp "$file" release-files/
-          done
-          echo "Files ready for release:"
-          ls -lh release-files/
+          echo "=== All downloaded artifacts ==="
+          find ./build-output -type f | sort
+          echo ""
+          echo "=== Files ready for release ==="
+          find ./build-output -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) | sort
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          # Copy all executable files
+          find ./build-output -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) -exec cp {} release-artifacts/ \;
+          # Also copy update files
+          find ./build-output -type f \( -name "*.yml" -o -name "*.yaml" -o -name "*.blockmap" \) -exec cp {} release-artifacts/ \;
+
+          echo "=== Files to be uploaded to release ==="
+          ls -lh release-artifacts/
 
       - name: Generate release notes
         id: notes
@@ -223,7 +222,15 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: release_notes.md
-          files: release-files/*
+          files: |
+            release-artifacts/*.exe
+            release-artifacts/*.dmg
+            release-artifacts/*.AppImage
+            release-artifacts/*.deb
+            release-artifacts/*.rpm
+            release-artifacts/*.yml
+            release-artifacts/*.yaml
+            release-artifacts/*.blockmap
           draft: false
           prerelease: false
         env:
