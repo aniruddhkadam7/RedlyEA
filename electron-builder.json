@@ -63,9 +63,6 @@
       }
     ],
     "icon": "build/icons/icon.ico",
-    "certificateFile": null,
-    "certificatePassword": null,
-    "signingHashAlgorithms": ["sha256"],
     "fileAssociations": [
       {
         "ext": "eapkg",
