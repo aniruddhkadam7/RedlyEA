@@ -221,7 +221,6 @@ declare global {
       >;
       openDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
       closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
-      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
     };
   }
 }

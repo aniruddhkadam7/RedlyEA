@@ -86,8 +86,6 @@ const defaultLifecycleStateForFramework = (
   // Lifecycle Coverage uses As-Is/To-Be. TOGAF uses Baseline/Target.
   if (referenceFramework === "TOGAF") {
     return lifecycleCoverage === "To-Be" ? "Target" : "Baseline";
-  if (referenceFramework === "TOGAF") {
-    return lifecycleCoverage === "To-Be" ? "Target" : "Baseline";
   }
   return defaultLifecycleStateForLifecycleCoverage(lifecycleCoverage as any);
 };
@@ -161,7 +159,6 @@ const buildMetamodelTreeData = (): DataNode[] => {
       {
         key: `layer:${layer}:objects`,
         title: "Element Types",
-        title: "Element Types",
         selectable: false,
         children: (objectTypesByLayer.get(layer) ?? []).map((type) => ({
           key: `objectType:${type}`,
@@ -171,7 +168,6 @@ const buildMetamodelTreeData = (): DataNode[] => {
       },
       {
         key: `layer:${layer}:relationships`,
-        title: "Relationship Types",
         title: "Relationship Types",
         selectable: false,
         children: (relationshipTypesByLayer.get(layer) ?? []).map((type) => ({
@@ -184,10 +180,6 @@ const buildMetamodelTreeData = (): DataNode[] => {
   }));
 };
 
-const getLayerForObjectType = (type: ObjectType): EaLayer =>
-  OBJECT_TYPE_DEFINITIONS[type].layer;
-const getLayerForRelationshipType = (type: RelationshipType): EaLayer =>
-  RELATIONSHIP_TYPE_DEFINITIONS[type].layer;
 const getLayerForObjectType = (type: ObjectType): EaLayer =>
   OBJECT_TYPE_DEFINITIONS[type].layer;
 const getLayerForRelationshipType = (type: RelationshipType): EaLayer =>
@@ -205,10 +197,7 @@ const parseMetamodelSelection = (
     const type = key.replace("objectType:", "") as ObjectType;
     if (!OBJECT_TYPE_DEFINITIONS[type]) return undefined;
     return { kind: "objectType", type, layer: getLayerForObjectType(type) };
-    return { kind: "objectType", type, layer: getLayerForObjectType(type) };
   }
-  if (key.startsWith("relationshipType:")) {
-    const type = key.replace("relationshipType:", "") as RelationshipType;
   if (key.startsWith("relationshipType:")) {
     const type = key.replace("relationshipType:", "") as RelationshipType;
     if (!RELATIONSHIP_TYPE_DEFINITIONS[type]) return undefined;
@@ -238,23 +227,17 @@ const parseCatalogueSelection = (
   const objectId = key.replace("catalogueObject:", "").trim();
   if (!objectId) return undefined;
   return { kind: "catalogueObject", objectId };
-  return { kind: "catalogueObject", objectId };
 };
 
 const parseCatalogueTypeKey = (key: string): ObjectType | undefined => {
   if (!key.startsWith("catalogueType:")) return undefined;
   return key.replace("catalogueType:", "").trim() as ObjectType;
-  if (!key.startsWith("catalogueType:")) return undefined;
-  return key.replace("catalogueType:", "").trim() as ObjectType;
 };
 
 const isSoftDeleted = (attributes: Record<string, unknown>) =>
   attributes._deleted === true;
-const isSoftDeleted = (attributes: Record<string, unknown>) =>
-  attributes._deleted === true;
 
 const makeUniqueId = (repoObjectIds: Set<string>, base: string) => {
-  const normalized = (base ?? "").trim() || "new";
   const normalized = (base ?? "").trim() || "new";
   if (!repoObjectIds.has(normalized)) return normalized;
   let i = 2;
@@ -386,7 +369,6 @@ const _EaExplorerSiderContentInner: React.FC<
   const onMetamodelSelect = (selectedKeys: React.Key[]) => {
     const key = selectedKeys[0];
     if (typeof key !== "string") return;
-    if (typeof key !== "string") return;
     const next = parseMetamodelSelection(key);
     if (!next) return;
     setSelection(next);
@@ -433,27 +415,6 @@ const _EaExplorerSiderContentInner: React.FC<
     const integrationPlatforms = byType("IntegrationPlatform");
     const cloudServices = byType("CloudService");
     const programmes = byType("Programme");
-    const capCategory = byType("CapabilityCategory");
-    const capability = byType("Capability");
-    const subCapability = byType("SubCapability");
-    const enterprises = byType("Enterprise");
-    const businessServices = byType("BusinessService");
-    const processes = byType("BusinessProcess");
-    const departments = byType("Department");
-    const applications = byType("Application");
-    const applicationServices = byType("ApplicationService");
-    const interfaces = byType("Interface");
-    const technology = byType("Technology");
-    const nodes = byType("Node");
-    const compute = byType("Compute");
-    const runtime = byType("Runtime");
-    const databases = byType("Database");
-    const storage = byType("Storage");
-    const apis = byType("API");
-    const messageBrokers = byType("MessageBroker");
-    const integrationPlatforms = byType("IntegrationPlatform");
-    const cloudServices = byType("CloudService");
-    const programmes = byType("Programme");
 
     const leaf = (id: string, title: string): DataNode => ({
       key: `catalogueObject:${id}`,
@@ -464,14 +425,7 @@ const _EaExplorerSiderContentInner: React.FC<
     const toLeaves = (
       items: { id: string; attributes: Record<string, unknown> }[],
     ) =>
-    const toLeaves = (
-      items: { id: string; attributes: Record<string, unknown> }[],
-    ) =>
       items.map((o) => {
-        const name =
-          typeof o.attributes.name === "string" && o.attributes.name.trim()
-            ? String(o.attributes.name)
-            : o.id;
         const name =
           typeof o.attributes.name === "string" && o.attributes.name.trim()
             ? String(o.attributes.name)
@@ -483,13 +437,9 @@ const _EaExplorerSiderContentInner: React.FC<
       {
         key: "catalogues:business",
         title: "Business",
-        key: "catalogues:business",
-        title: "Business",
         selectable: false,
         children: [
           {
-            key: "catalogueType:Enterprise",
-            title: "Enterprises",
             key: "catalogueType:Enterprise",
             title: "Enterprises",
             selectable: false,
@@ -498,13 +448,9 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "catalogues:capabilities",
             title: "Capabilities",
-            key: "catalogues:capabilities",
-            title: "Capabilities",
             selectable: false,
             children: [
               {
-                key: "catalogueType:CapabilityCategory",
-                title: "CapabilityCategory",
                 key: "catalogueType:CapabilityCategory",
                 title: "CapabilityCategory",
                 selectable: false,
@@ -513,14 +459,10 @@ const _EaExplorerSiderContentInner: React.FC<
               {
                 key: "catalogueType:Capability",
                 title: "Capability",
-                key: "catalogueType:Capability",
-                title: "Capability",
                 selectable: false,
                 children: toLeaves(capability),
               },
               {
-                key: "catalogueType:SubCapability",
-                title: "SubCapability",
                 key: "catalogueType:SubCapability",
                 title: "SubCapability",
                 selectable: false,
@@ -531,22 +473,16 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "catalogueType:BusinessService",
             title: "Business Services",
-            key: "catalogueType:BusinessService",
-            title: "Business Services",
             selectable: false,
             children: toLeaves(businessServices),
           },
           {
             key: "catalogueType:BusinessProcess",
             title: "Business Processes",
-            key: "catalogueType:BusinessProcess",
-            title: "Business Processes",
             selectable: false,
             children: toLeaves(processes),
           },
           {
-            key: "catalogueType:Department",
-            title: "Departments",
             key: "catalogueType:Department",
             title: "Departments",
             selectable: false,
@@ -557,13 +493,9 @@ const _EaExplorerSiderContentInner: React.FC<
       {
         key: "catalogues:application",
         title: "Application",
-        key: "catalogues:application",
-        title: "Application",
         selectable: false,
         children: [
           {
-            key: "catalogueType:Application",
-            title: "Applications",
             key: "catalogueType:Application",
             title: "Applications",
             selectable: false,
@@ -572,14 +504,10 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "catalogueType:ApplicationService",
             title: "Application Services",
-            key: "catalogueType:ApplicationService",
-            title: "Application Services",
             selectable: false,
             children: toLeaves(applicationServices),
           },
           {
-            key: "catalogueType:Interface",
-            title: "Interfaces",
             key: "catalogueType:Interface",
             title: "Interfaces",
             selectable: false,
@@ -590,13 +518,9 @@ const _EaExplorerSiderContentInner: React.FC<
       {
         key: "catalogues:technology",
         title: "Technology",
-        key: "catalogues:technology",
-        title: "Technology",
         selectable: false,
         children: [
           {
-            key: "catalogueType:Node",
-            title: "Nodes",
             key: "catalogueType:Node",
             title: "Nodes",
             selectable: false,
@@ -605,14 +529,10 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "catalogueType:Compute",
             title: "Compute",
-            key: "catalogueType:Compute",
-            title: "Compute",
             selectable: false,
             children: toLeaves(compute),
           },
           {
-            key: "catalogueType:Runtime",
-            title: "Runtime",
             key: "catalogueType:Runtime",
             title: "Runtime",
             selectable: false,
@@ -621,14 +541,10 @@ const _EaExplorerSiderContentInner: React.FC<
           {
             key: "catalogueType:Database",
             title: "Databases",
-            key: "catalogueType:Database",
-            title: "Databases",
             selectable: false,
             children: toLeaves(databases),
           },
           {
-            key: "catalogueType:Technology",
-            title: "Infrastructure Services",
             key: "catalogueType:Technology",
             title: "Infrastructure Services",
             selectable: false,
@@ -646,8 +562,6 @@ const _EaExplorerSiderContentInner: React.FC<
       {
         key: "catalogueType:Programme",
         title: "Programmes",
-        key: "catalogueType:Programme",
-        title: "Programmes",
         selectable: false,
         children: toLeaves(programmes),
       },
@@ -655,7 +569,6 @@ const _EaExplorerSiderContentInner: React.FC<
   }, [eaRepository]);
 
   const selectCatalogueObject = React.useCallback((objectId: string) => {
-    setSelection({ kind: "catalogueObject", objectId });
     setSelection({ kind: "catalogueObject", objectId });
     setDrawerOpen(true);
   }, []);
@@ -843,12 +756,10 @@ const _EaExplorerSiderContentInner: React.FC<
     (objectId: string) => {
       if (isReadOnlyMode) {
         message.warning("Read-only mode: duplication is disabled.");
-        message.warning("Read-only mode: duplication is disabled.");
         return;
       }
       const source = eaRepository.objects.get(objectId);
       if (!source) {
-        message.error("Cannot duplicate: object not found.");
         message.error("Cannot duplicate: object not found.");
         return;
       }
@@ -972,8 +883,6 @@ const _EaExplorerSiderContentInner: React.FC<
         title: `Duplicate ${source.type}`,
         okText: "Duplicate",
         cancelText: "Cancel",
-        okText: "Duplicate",
-        cancelText: "Cancel",
         content: (
           <Form layout="vertical">
             <Form.Item label="New ID">
@@ -1014,13 +923,10 @@ const _EaExplorerSiderContentInner: React.FC<
           const finalName = name.trim();
           if (!finalName) {
             message.error("Name is required.");
-            message.error("Name is required.");
             return Promise.reject();
           }
           const finalLifecycle = (lifecycleState ?? "").trim();
-          const finalLifecycle = (lifecycleState ?? "").trim();
           if (!finalLifecycle) {
-            message.error("Lifecycle state is required.");
             message.error("Lifecycle state is required.");
             return Promise.reject();
           }
@@ -1046,8 +952,6 @@ const _EaExplorerSiderContentInner: React.FC<
           }
           // ADM Phase validation only for TOGAF (not currently supported)
 
-          const { ownerId, ownerType, ...restAttributes } =
-            (source.attributes ?? {}) as Record<string, unknown>;
           const { ownerId, ownerType, ...restAttributes } =
             (source.attributes ?? {}) as Record<string, unknown>;
           const attributes: Record<string, unknown> = {
@@ -1096,12 +1000,10 @@ const _EaExplorerSiderContentInner: React.FC<
     (objectId: string) => {
       if (isReadOnlyMode) {
         message.warning("Read-only mode: deletion is disabled.");
-        message.warning("Read-only mode: deletion is disabled.");
         return;
       }
       const existing = eaRepository.objects.get(objectId);
       if (!existing) {
-        message.error("Cannot delete: object not found.");
         message.error("Cannot delete: object not found.");
         return;
       }
@@ -1143,13 +1045,9 @@ const _EaExplorerSiderContentInner: React.FC<
       Modal.confirm({
         title: "Delete element?",
         okText: "Delete",
-        title: "Delete element?",
-        okText: "Delete",
         okButtonProps: { danger: true },
         cancelText: "Cancel",
-        cancelText: "Cancel",
         content: (
-          <div style={{ display: "grid", gap: 8 }}>
           <div style={{ display: "grid", gap: 8 }}>
             <Typography.Text>
               Deletes "
@@ -1173,7 +1071,6 @@ const _EaExplorerSiderContentInner: React.FC<
                 Impacted relationships ({impactedCount})
               </Typography.Text>
               {impactedCount === 0 ? (
-                <Typography.Text type="secondary" style={{ display: "block" }}>
                 <Typography.Text type="secondary" style={{ display: "block" }}>
                   None
                 </Typography.Text>
@@ -1211,7 +1108,6 @@ const _EaExplorerSiderContentInner: React.FC<
             objectId,
             { _deleted: true, deletedAt: Date.now(), hiddenFromDiagrams: true },
             "merge",
-            "merge",
           );
           if (!res.ok) {
             message.error(res.error);
@@ -1241,13 +1137,11 @@ const _EaExplorerSiderContentInner: React.FC<
   const renderCatalogueTitle = React.useCallback(
     (node: any) => {
       const nodeKey = typeof node?.key === "string" ? node.key : "";
-      const nodeKey = typeof node?.key === "string" ? node.key : "";
       const objectSelection = parseCatalogueSelection(nodeKey);
       const typeFromKey = parseCatalogueTypeKey(nodeKey);
 
       const items = [] as any[];
       if (typeFromKey) {
-        items.push({ key: "new", label: "Create in Toolbox", disabled: true });
         items.push({ key: "new", label: "Create in Toolbox", disabled: true });
       }
 
@@ -1282,11 +1176,9 @@ const _EaExplorerSiderContentInner: React.FC<
       return (
         <Dropdown
           trigger={["contextMenu"]}
-          trigger={["contextMenu"]}
           menu={{
             items,
             onClick: ({ key }) => {
-              if (key === "new") {
               if (key === "new") {
                 const targetType =
                   typeFromKey ??
@@ -1337,7 +1229,6 @@ const _EaExplorerSiderContentInner: React.FC<
   const onCatalogueSelect = (selectedKeys: React.Key[]) => {
     const key = selectedKeys[0];
     if (typeof key !== "string") return;
-    if (typeof key !== "string") return;
     const next = parseCatalogueSelection(key);
     if (!next) return;
     setSelection(next);
@@ -1346,19 +1237,15 @@ const _EaExplorerSiderContentInner: React.FC<
 
   const drawerTitle = selection
     ? selection.kind === "objectType"
-    ? selection.kind === "objectType"
       ? `Element Type: ${selection.type}`
-      : selection.kind === "relationshipType"
       : selection.kind === "relationshipType"
         ? `Relationship Type: ${selection.type}`
         : `Catalogue Item: ${selection.objectId}`
-    : "EA Explorer";
     : "EA Explorer";
 
   const drawerBody = (() => {
     if (!selection) return null;
 
-    if (selection.kind === "catalogueObject") {
     if (selection.kind === "catalogueObject") {
       const obj = eaRepository.objects.get(selection.objectId);
       if (!obj) {
@@ -1413,8 +1300,6 @@ const _EaExplorerSiderContentInner: React.FC<
       const columns = [
         { title: "ID", dataIndex: "id", editable: false, copyable: true },
         { title: "Type", dataIndex: "type", editable: false },
-        { title: "ID", dataIndex: "id", editable: false, copyable: true },
-        { title: "Type", dataIndex: "type", editable: false },
         {
           title: "Name",
           dataIndex: "name",
@@ -1426,16 +1311,12 @@ const _EaExplorerSiderContentInner: React.FC<
           formItemProps: {
             rules: [{ required: true, message: "Name is required" }],
           },
-        },
       ] as any[];
 
       if (editableKeys.has("category")) {
         columns.push({ title: "Category", dataIndex: "category" });
-      if (editableKeys.has("category")) {
-        columns.push({ title: "Category", dataIndex: "category" });
       }
 
-      if (obj.type === "Application") {
       if (obj.type === "Application") {
         columns.push(
           {
@@ -1453,7 +1334,6 @@ const _EaExplorerSiderContentInner: React.FC<
               medium: { text: "medium" },
               low: { text: "low" },
             },
-          },
           {
             title: "Lifecycle",
             dataIndex: "lifecycle",
@@ -1469,7 +1349,6 @@ const _EaExplorerSiderContentInner: React.FC<
               active: { text: "active" },
               deprecated: { text: "deprecated" },
             },
-          },
         );
       }
 
@@ -1488,7 +1367,6 @@ const _EaExplorerSiderContentInner: React.FC<
               }
               const next = eaRepository.clone();
               const res = next.updateObjectAttributes(obj.id, patch, "merge");
-              const res = next.updateObjectAttributes(obj.id, patch, "merge");
               if (!res.ok) return;
               trySetEaRepository(next);
             },
@@ -1497,7 +1375,6 @@ const _EaExplorerSiderContentInner: React.FC<
       );
     }
 
-    if (selection.kind === "objectType") {
     if (selection.kind === "objectType") {
       const def = OBJECT_TYPE_DEFINITIONS[selection.type];
       if (!def) {
@@ -1527,14 +1404,11 @@ const _EaExplorerSiderContentInner: React.FC<
             <Descriptions.Item label="Layer">{def.layer}</Descriptions.Item>
             <Descriptions.Item label="Attributes">
               {attributes.length ? attributes.join(", ") : "—"}
-              {attributes.length ? attributes.join(", ") : "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Allowed Outgoing Relationships">
               {outgoing.length ? outgoing.join(", ") : "—"}
-              {outgoing.length ? outgoing.join(", ") : "—"}
             </Descriptions.Item>
             <Descriptions.Item label="Allowed Incoming Relationships">
-              {incoming.length ? incoming.join(", ") : "—"}
               {incoming.length ? incoming.join(", ") : "—"}
             </Descriptions.Item>
           </Descriptions>
@@ -1603,8 +1477,6 @@ const _EaExplorerSiderContentInner: React.FC<
       selectedKeys={
         selection?.kind === "objectType" ||
         selection?.kind === "relationshipType"
-        selection?.kind === "objectType" ||
-        selection?.kind === "relationshipType"
           ? [`${selection.kind}:${selection.type}`]
           : []
       }
@@ -1655,7 +1527,6 @@ const _EaExplorerSiderContentInner: React.FC<
         items={[
           {
             key: "Workspace",
-            key: "Workspace",
             label: (
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
@@ -1669,7 +1540,6 @@ const _EaExplorerSiderContentInner: React.FC<
             children: workspacePanel,
           },
           {
-            key: "Metamodel",
             key: "Metamodel",
             label: (
               <span
@@ -1685,7 +1555,6 @@ const _EaExplorerSiderContentInner: React.FC<
           },
           {
             key: "Catalogues",
-            key: "Catalogues",
             label: (
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
@@ -1699,7 +1568,6 @@ const _EaExplorerSiderContentInner: React.FC<
             children: cataloguesPanel,
           },
           {
-            key: "Diagrams",
             key: "Diagrams",
             label: (
               <span
@@ -1726,7 +1594,6 @@ const _EaExplorerSiderContentInner: React.FC<
   })();
 
   return (
-    <div style={{ height: "100%", overflow: "auto", padding: 8 }}>
     <div style={{ height: "100%", overflow: "auto", padding: 8 }}>
       {mainBody}
 
@@ -1772,7 +1639,6 @@ export async function getInitialState(): Promise<{
     isDesktop: boolean;
     isWeb: boolean;
     density: "compact" | "normal";
-    density: "compact" | "normal";
   };
 }> {
   // @ts-ignore - Dynamic imports supported at runtime despite TS config
@@ -1805,7 +1671,6 @@ export const antd = (memo: Record<string, any>) => {
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
 export const layout: RunTimeLayoutConfig = ({ initialState }) => {
-export const layout: RunTimeLayoutConfig = ({ initialState }) => {
   return {
     ...initialState?.settings,
     headerRender: false,
@@ -1815,7 +1680,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
     logo: false,
     title: false,
     footerRender: false,
-    contentStyle: { padding: 0, height: "100vh", overflow: "hidden" },
     contentStyle: { padding: 0, height: "100vh", overflow: "hidden" },
     menuHeaderRender: undefined,
     menuRender: false,
@@ -1860,9 +1724,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
       );
     },
     navTheme: "light",
-    navTheme: "light",
   };
-};
 
 /**
  * @name request 配置，可以配置错误处理

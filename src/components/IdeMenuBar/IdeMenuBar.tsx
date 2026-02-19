@@ -459,7 +459,6 @@ const IdeMenuBar: React.FC = () => {
       industry: newRepoDraft.industry.trim() || undefined,
       architectureScope: newRepoDraft.architectureScope,
       referenceFramework: newRepoDraft.referenceFramework as any as "Custom",
-      referenceFramework: newRepoDraft.referenceFramework as any as "Custom",
       frameworkConfig:
         newRepoDraft.referenceFramework === "Custom"
           ? newRepoDraft.frameworkConfig
@@ -2597,15 +2596,11 @@ const IdeMenuBar: React.FC = () => {
 
     // Show checking message
     const hideId = message.loading("Checking for updates...", 0);
-    const hideId = message.loading("Checking for updates...", 0);
 
     try {
       const result = await window.eaDesktop?.updater?.check();
       if (typeof hideId === "string") message.destroy(hideId);
-      const result = await window.eaDesktop?.updater?.check();
-      if (typeof hideId === "string") message.destroy(hideId);
 
-      if (!result?.ok) {
       if (!result?.ok) {
         // Graceful message for dev mode or when updater isn't available
         Modal.info({
@@ -2642,7 +2637,6 @@ const IdeMenuBar: React.FC = () => {
           okText: "Download",
           cancelText: "Later",
           onOk: async () => {
-            const hideDownloadId = message.loading("Downloading update...", 0);
             const hideDownloadId = message.loading("Downloading update...", 0);
             try {
               const dlResult = await window.eaDesktop?.updater?.download();
