@@ -29,7 +29,7 @@
   color: #f3f6ff;
 }
 
-:global([data-theme='dark']) .topHeader {
+:global([data-theme="dark"]) .topHeader {
   background: #111827 !important;
   color: #e5e7eb;
 }
@@ -105,11 +105,18 @@
 .topHeader :global(.ant-menu-submenu-arrow),
 .topHeader :global(.ant-menu-overflow-item) {
   color: #f3f6ff !important;
+  background: transparent !important;
+}
+
+.topHeader :global(.ant-menu-horizontal) {
+  background: transparent !important;
+  border-bottom: none !important;
 }
 
 .topHeader :global(.ant-menu-item-selected),
 .topHeader :global(.ant-menu-submenu-selected) {
   color: #ffffff !important;
+  background: transparent !important;
 }
 
 .topHeader :global(.ant-menu-item:hover),
@@ -155,14 +162,19 @@
 }
 
 .headerSearchWrap::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 14px;
   right: 14px;
   bottom: -4px;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(243, 246, 255, 0), rgba(243, 246, 255, 0.8), rgba(243, 246, 255, 0));
+  background: linear-gradient(
+    90deg,
+    rgba(243, 246, 255, 0),
+    rgba(243, 246, 255, 0.8),
+    rgba(243, 246, 255, 0)
+  );
   opacity: 0.75;
 }
 
@@ -175,29 +187,58 @@
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(243, 246, 255, 0.5);
-  background: linear-gradient(180deg, rgba(44, 68, 128, 0.94), rgba(27, 42, 85, 0.98));
-  box-shadow: 0 1px 4px rgba(3, 10, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  background: linear-gradient(
+    180deg,
+    rgba(44, 68, 128, 0.94),
+    rgba(27, 42, 85, 0.98)
+  );
+  box-shadow:
+    0 1px 4px rgba(3, 10, 28, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-:global([data-theme='dark']) .modernHeaderSearch {
+:global([data-theme="dark"]) .modernHeaderSearch {
   border: 1px solid rgba(148, 163, 184, 0.36);
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(17, 24, 39, 0.98));
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.96),
+    rgba(17, 24, 39, 0.98)
+  );
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .modernHeaderSearch:hover,
 .modernHeaderSearch:focus-within {
   border-color: rgba(255, 255, 255, 0.92);
-  background: linear-gradient(180deg, rgba(55, 84, 158, 0.97), rgba(31, 49, 98, 0.99));
-  box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.22), 0 2px 8px rgba(7, 16, 40, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  background: linear-gradient(
+    180deg,
+    rgba(55, 84, 158, 0.97),
+    rgba(31, 49, 98, 0.99)
+  );
+  box-shadow:
+    0 0 0 2px rgba(243, 246, 255, 0.22),
+    0 2px 8px rgba(7, 16, 40, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
-:global([data-theme='dark']) .modernHeaderSearch:hover,
-:global([data-theme='dark']) .modernHeaderSearch:focus-within {
+:global([data-theme="dark"]) .modernHeaderSearch:hover,
+:global([data-theme="dark"]) .modernHeaderSearch:focus-within {
   border-color: rgba(203, 213, 225, 0.6);
-  background: linear-gradient(180deg, rgba(51, 65, 85, 0.97), rgba(30, 41, 59, 0.99));
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    180deg,
+    rgba(51, 65, 85, 0.97),
+    rgba(30, 41, 59, 0.99)
+  );
+  box-shadow:
+    0 0 0 2px rgba(148, 163, 184, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .modernHeaderSearchIcon {
@@ -240,17 +281,28 @@
 
 .headerSearch :global(.ant-input-affix-wrapper) {
   border: 1px solid rgba(243, 246, 255, 0.3) !important;
-  background: linear-gradient(180deg, rgba(36, 58, 117, 0.9), rgba(27, 42, 85, 0.96)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(36, 58, 117, 0.9),
+    rgba(27, 42, 85, 0.96)
+  ) !important;
   box-shadow: none !important;
   color: #f3f6ff !important;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   border-radius: 999px !important;
 }
 
 .headerSearch :global(.ant-input-affix-wrapper:hover),
 .headerSearch :global(.ant-input-affix-wrapper-focused) {
   border-color: rgba(255, 255, 255, 0.78) !important;
-  background: linear-gradient(180deg, rgba(48, 74, 143, 0.94), rgba(36, 58, 117, 0.98)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(48, 74, 143, 0.94),
+    rgba(36, 58, 117, 0.98)
+  ) !important;
   box-shadow: 0 0 0 2px rgba(243, 246, 255, 0.15) !important;
 }
 
@@ -596,7 +648,7 @@
 }
 
 .navigationSidebarRowSelected::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 4px;
@@ -660,7 +712,6 @@
   border-radius: 10px;
 }
 
-
 /*
  * Ant Design wraps Sider children in .ant-layout-sider-children.
  * If that wrapper isn't height-constrained + flex, nested overflow containers won't scroll.
@@ -715,6 +766,16 @@
   border-radius: 10px;
   overflow: hidden;
   background: linear-gradient(180deg, #fff7e6 0%, #ffffff 40%);
+}
+
+.studioHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff7e6;
 }
 
 .relationshipChooser {
@@ -1166,8 +1227,6 @@
   font-size: 16px;
 }
 
-
-
 .studioShortcutBar {
   display: inline-flex;
   align-items: center;
@@ -1225,7 +1284,6 @@
   text-overflow: ellipsis;
 }
 
-
 .studioCommandMeta {
   font-size: 12px;
 }
@@ -1236,7 +1294,6 @@
   gap: 2px;
   flex-wrap: nowrap;
 }
-
 
 .studioCommandActions :global(.ant-btn) {
   height: 28px;
@@ -1269,12 +1326,6 @@
 .studioSubHeaderLeft {
   min-width: 0;
   display: flex;
-
-.studioPromptRow {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--ide-border);
-  background: var(--ide-bg-panel);
-}
   align-items: center;
   gap: 8px;
   overflow: hidden;
@@ -1298,9 +1349,6 @@
   gap: 10px;
   flex: 0 0 auto;
 }
-
-
-
 
 .studioSubHeaderMeta {
   font-size: 12px;
@@ -1397,33 +1445,35 @@
   min-height: 0;
   border: 1px dashed var(--ide-border);
   border-radius: 10px;
-  background: linear-gradient(0deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%),
-    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%),
-    #f7f7f7;
+  background:
+    linear-gradient(0deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.08) 95%), #f7f7f7;
   background-size: 20px 20px;
   overflow: hidden;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .studioCanvasDropHighlight {
   border-color: #1890ff;
   border-style: solid;
-  box-shadow: inset 0 0 0 2px rgba(24, 144, 255, 0.25),
+  box-shadow:
+    inset 0 0 0 2px rgba(24, 144, 255, 0.25),
     0 0 12px rgba(24, 144, 255, 0.15);
 }
 
 :global([data-theme="dark"]) .studioCanvasDropHighlight {
   border-color: #177ddc;
-  box-shadow: inset 0 0 0 2px rgba(23, 125, 220, 0.3),
+  box-shadow:
+    inset 0 0 0 2px rgba(23, 125, 220, 0.3),
     0 0 12px rgba(23, 125, 220, 0.2);
 }
-
 
 .studioCanvasSurface {
   position: absolute;
   inset: 0;
 }
-
 
 .studioCanvasHint {
   position: absolute;
@@ -1829,7 +1879,6 @@
   color: rgba(0, 0, 0, 0.55);
 }
 
-
 .studioRelationshipPreview {
   display: flex;
   justify-content: space-between;
@@ -2229,7 +2278,11 @@
 }
 
 .explorerTree {
-  --explorer-connector-color: color-mix(in srgb, var(--ide-tree-line) 82%, var(--ide-tree-text) 18%);
+  --explorer-connector-color: color-mix(
+    in srgb,
+    var(--ide-tree-line) 82%,
+    var(--ide-tree-text) 18%
+  );
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -2239,7 +2292,7 @@
   font-size: 12px;
   color: var(--ide-tree-text);
   background: inherit;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
 }
 
 .explorerTreeHeader {
@@ -2267,7 +2320,7 @@
 
 /* Custom tree lines (avoid Ant Design line overlay). */
 .explorerTree :global(.ant-tree-indent-unit)::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: -11px;
@@ -2286,7 +2339,7 @@
 }
 
 .explorerTree :global(.ant-tree-switcher)::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -8px;
   top: 50%;
@@ -2327,7 +2380,7 @@
 
 /* VS Code-like left accent line for the selected row. */
 .explorerTree :global(.ant-tree-treenode-selected)::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 6px;
@@ -2337,7 +2390,8 @@
   background: var(--ide-tree-accent);
 }
 
-.explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
+.explorerTree
+  :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
   background: var(--ide-tree-selected-bg) !important;
 }
 
@@ -2427,10 +2481,15 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  border: 1px solid color-mix(in srgb, var(--ide-tree-line) 70%, var(--ide-tree-text) 30%);
+  border: 1px solid
+    color-mix(in srgb, var(--ide-tree-line) 70%, var(--ide-tree-text) 30%);
   border-radius: 3px;
   color: color-mix(in srgb, var(--ide-tree-text) 88%, #000 12%);
-  background: color-mix(in srgb, var(--ide-bg-sidebar) 74%, var(--ide-tree-line) 26%);
+  background: color-mix(
+    in srgb,
+    var(--ide-bg-sidebar) 74%,
+    var(--ide-tree-line) 26%
+  );
   transform: translateY(0);
 }
 
@@ -2462,7 +2521,8 @@
 }
 
 .explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-1 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-1 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-1 .explorerTreeLabel) {
   color: #2f5f96 !important;
   letter-spacing: 0.25px;
@@ -2471,7 +2531,8 @@
 }
 
 .explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-0 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-0 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-0 .explorerTreeLabel) {
   color: #2e3a46 !important;
   font-size: 13px;
@@ -2479,7 +2540,8 @@
 }
 
 .explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-2 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-2 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-2 .explorerTreeLabel) {
   color: #2e3a46 !important;
   font-size: 12.5px;
@@ -2487,7 +2549,8 @@
 }
 
 .explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-3 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-3 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-3 .explorerTreeLabel) {
   color: #3a4653 !important;
   font-size: 12px;
@@ -2495,7 +2558,8 @@
 }
 
 .explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-4 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-4 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-4 .explorerTreeLabel) {
   color: #4a5568 !important;
   font-size: 12px;
@@ -2503,34 +2567,41 @@
 }
 
 .explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper),
-.explorerTree :global(.explorer-depth-5 > .ant-tree-node-content-wrapper > .ant-tree-title),
+.explorerTree
+  :global(.explorer-depth-5 > .ant-tree-node-content-wrapper > .ant-tree-title),
 .explorerTree :global(.explorer-depth-5 .explorerTreeLabel) {
   color: #6b7785 !important;
   font-size: 12px;
   font-weight: 400;
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-folder .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-folder .ant-tree-iconEle) {
   color: var(--ide-tree-icon-folder);
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-component .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-component .ant-tree-iconEle) {
   color: var(--ide-tree-icon-component);
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-catalogue .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-catalogue .ant-tree-iconEle) {
   color: var(--ide-tree-icon-catalogue);
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-matrix .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-matrix .ant-tree-iconEle) {
   color: var(--ide-tree-icon-matrix);
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-diagram .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-diagram .ant-tree-iconEle) {
   color: var(--ide-tree-icon-diagram);
 }
 
-.explorerTree :global(.ant-tree-treenode.explorer-node-framework .ant-tree-iconEle) {
+.explorerTree
+  :global(.ant-tree-treenode.explorer-node-framework .ant-tree-iconEle) {
   color: var(--ide-tree-icon-framework);
 }
 
@@ -2548,7 +2619,7 @@
 
 .explorerTree :global(.explorer-icon-component-glyph)::before,
 .explorerTree :global(.explorer-icon-component-glyph)::after {
-  content: '';
+  content: "";
   position: absolute;
   border-radius: 999px;
   background: var(--ide-tree-icon-component);
@@ -2559,7 +2630,9 @@
   height: 8px;
   left: 4px;
   top: 4px;
-  box-shadow: -4px 0 0 var(--ide-tree-icon-component), 4px 0 0 var(--ide-tree-icon-component);
+  box-shadow:
+    -4px 0 0 var(--ide-tree-icon-component),
+    4px 0 0 var(--ide-tree-icon-component);
 }
 
 .explorerTree :global(.explorer-icon-matrix-glyph) {
@@ -2567,8 +2640,10 @@
   border-radius: 2px;
   box-sizing: border-box;
   background:
-    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 50% 0 / 1px 100% no-repeat,
-    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix))
+      50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ide-tree-icon-matrix), var(--ide-tree-icon-matrix)) 0
+      50% / 100% 1px no-repeat,
     transparent;
 }
 
@@ -2584,9 +2659,12 @@
 
 .explorerTree :global(.explorer-icon-framework-glyph) {
   background:
-    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 14% / 10px 5px no-repeat,
-    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 45% / 12px 5px no-repeat,
-    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%) 50% 76% / 14px 5px no-repeat;
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%)
+      50% 14% / 10px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%)
+      50% 45% / 12px 5px no-repeat,
+    linear-gradient(135deg, transparent 50%, var(--ide-tree-icon-framework) 50%)
+      50% 76% / 14px 5px no-repeat;
 }
 
 .explorerTree :global(.explorer-icon-metamodel-glyph) {
@@ -2594,9 +2672,21 @@
   border-radius: 2px;
   box-sizing: border-box;
   background:
-    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 4px / 10px 1px no-repeat,
-    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 8px / 10px 1px no-repeat,
-    linear-gradient(var(--ide-tree-icon-metamodel), var(--ide-tree-icon-metamodel)) 50% 12px / 6px 1px no-repeat,
+    linear-gradient(
+        var(--ide-tree-icon-metamodel),
+        var(--ide-tree-icon-metamodel)
+      )
+      50% 4px / 10px 1px no-repeat,
+    linear-gradient(
+        var(--ide-tree-icon-metamodel),
+        var(--ide-tree-icon-metamodel)
+      )
+      50% 8px / 10px 1px no-repeat,
+    linear-gradient(
+        var(--ide-tree-icon-metamodel),
+        var(--ide-tree-icon-metamodel)
+      )
+      50% 12px / 6px 1px no-repeat,
     transparent;
 }
 
@@ -2684,7 +2774,9 @@
   color: #c5c5c5;
 }
 
-:global([data-theme="dark"]) .activitySider :global(.ant-layout-sider-children) {
+:global([data-theme="dark"])
+  .activitySider
+  :global(.ant-layout-sider-children) {
   background: #252526;
 }
 
@@ -2715,27 +2807,39 @@
   border-color: #3c3c3c;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper:hover) {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-node-content-wrapper:hover) {
   background: #2a2d2e !important;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
   background: #094771 !important;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-node-content-wrapper.ant-tree-node-selected:hover) {
   background: #094771 !important;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-treenode-selected)::before {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-treenode-selected)::before {
   background: #3794ff;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-indent-unit)::before {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-indent-unit)::before {
   border-left-color: #3c3c3c;
 }
 
-:global([data-theme="dark"]) .explorerTree :global(.ant-tree-switcher:not(.ant-tree-switcher-noop))::before {
+:global([data-theme="dark"])
+  .explorerTree
+  :global(.ant-tree-switcher:not(.ant-tree-switcher-noop))::before {
   border-top-color: #3c3c3c;
 }
 
@@ -2743,8 +2847,7 @@
 :global([data-theme="dark"]) .studioCanvas {
   background:
     linear-gradient(0deg, transparent 95%, rgba(0, 0, 0, 0.06) 95%),
-    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.06) 95%),
-    #fafafa !important;
+    linear-gradient(90deg, transparent 95%, rgba(0, 0, 0, 0.06) 95%), #fafafa !important;
   background-size: 20px 20px !important;
 }
 
@@ -2758,6 +2861,12 @@
 :global([data-theme="dark"]) .studioShell {
   background: #1e1e1e;
   border-color: #3c3c3c;
+}
+
+/* ── Studio header (command row bar) ── */
+:global([data-theme="dark"]) .studioHeader {
+  background: #252526 !important;
+  border-color: #3c3c3c !important;
 }
 
 /* ── Studio sub-header & view tabs ── */
@@ -2962,7 +3071,9 @@
   border-color: #3c3c3c;
 }
 
-:global([data-theme="dark"]) .studioLayerInlineGroup :global(.ant-checkbox-wrapper) {
+:global([data-theme="dark"])
+  .studioLayerInlineGroup
+  :global(.ant-checkbox-wrapper) {
   color: #9da0a6;
 }
 
@@ -3288,8 +3399,12 @@
   color: #6e7681 !important;
 }
 
-:global([data-theme="dark"]) .headerSearch :global(.ant-input-affix-wrapper:focus),
-:global([data-theme="dark"]) .headerSearch :global(.ant-input-affix-wrapper-focused) {
+:global([data-theme="dark"])
+  .headerSearch
+  :global(.ant-input-affix-wrapper:focus),
+:global([data-theme="dark"])
+  .headerSearch
+  :global(.ant-input-affix-wrapper-focused) {
   border-color: #3794ff !important;
 }
 
@@ -3311,7 +3426,9 @@
   border-bottom: 2px solid #3794ff;
 }
 
-:global([data-theme="dark"]) .studioToolboxTabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+:global([data-theme="dark"])
+  .studioToolboxTabs
+  :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
   color: #ffffff !important;
   font-weight: 500;
 }
@@ -3329,7 +3446,8 @@
   color: #ffffff;
 }
 
-:global([data-theme="dark"]) .studioViewTabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+:global([data-theme="dark"])
+  .studioViewTabs
+  :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
   color: #3794ff !important;
 }
-

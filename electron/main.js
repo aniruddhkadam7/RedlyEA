@@ -386,6 +386,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
+      // Allow file:// protocol to load local assets and inline scripts
+      webSecurity: false,
     },
   });
 
@@ -445,12 +447,29 @@ function createWindow() {
     console.error("[EA] Renderer process terminated:", details);
   });
 
+  // Bypass CSP to allow inline scripts (required for UMI's publicPath injection)
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: http: https:;"],
+      },
+    });
+  });
+
+  // Log renderer console messages for debugging white screen issues
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    const prefix = ['LOG', 'WARN', 'ERROR'][level] || 'LOG';
+    console.log(`[Renderer ${prefix}] ${message}`);
+  });
+
   if (isDev) {
     win.loadURL(devStartUrl);
   } else {
     // In packaged app, load from dist folder relative to app root
     const indexPath = path.join(appBasePath, "dist", "index.html");
     console.log("[EA] Loading production index.html from:", indexPath);
+    console.log("[EA] index.html exists:", fs.existsSync(indexPath));
     win.loadFile(indexPath);
   }
 

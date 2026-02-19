@@ -16,13 +16,18 @@ const isJest =
 // Detect if building for Electron (set ELECTRON_BUILD=1 when running desktop:build)
 const isElectronBuild = process.env.ELECTRON_BUILD === '1';
 
+// In development, always use '/' because UmiJS forbids './' and Electron dev
+// loads from http://localhost anyway. './' is only needed for production builds
+// served via file:// protocol.
+const isDev = process.env.NODE_ENV !== 'production' && UMI_ENV === 'dev';
+
 /**
  * @name 使用公共路径
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
  * @note For Electron file:// protocol, must use './' instead of '/'
  */
-const PUBLIC_PATH: string = isElectronBuild ? './' : '/';
+const PUBLIC_PATH: string = isElectronBuild && !isDev ? './' : '/';
 
 export default defineConfig({
   ...(UMI_ENV === 'dev' ? { mfsu: false } : {}),
@@ -37,12 +42,12 @@ export default defineConfig({
   publicPath: PUBLIC_PATH,
 
   // Required when using relative publicPath for Electron file:// protocol
-  runtimePublicPath: isElectronBuild ? {} : undefined,
+  runtimePublicPath: isElectronBuild && !isDev ? {} : undefined,
 
   // Inject publicPath for Electron file:// protocol before any other scripts
   // Must set both globalThis.publicPath AND window.publicPath because webpack
   // runtime checks: (typeof globalThis!="undefined"?globalThis:window).publicPath||"/"
-  headScripts: isElectronBuild
+  headScripts: isElectronBuild && !isDev
     ? [
         {
           content: `(function(){var p='./';if(typeof globalThis!=='undefined')globalThis.publicPath=p;window.publicPath=p;})();`,
@@ -55,7 +60,7 @@ export default defineConfig({
    * @description Electron file:// protocol requires hash history, not browser history
    * @doc https://umijs.org/docs/api/config#history
    */
-  history: isElectronBuild ? { type: 'hash' } : { type: 'browser' },
+  history: isElectronBuild && !isDev ? { type: 'hash' } : { type: 'browser' },
 
   /**
    * @name 兼容性设置
@@ -197,7 +202,9 @@ export default defineConfig({
   esbuildMinifyIIFE: true,
   utoopack: false,
   requestRecord: {},
-  exportStatic: {},
+  // exportStatic generates per-route HTML files, only useful for browser history
+  // With hash history (Electron), all routing is via index.html#/path
+  exportStatic: isElectronBuild ? false : {},
   define: {
     'process.env.CI': process.env.CI,
   },

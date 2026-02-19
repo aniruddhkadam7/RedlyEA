@@ -2566,11 +2566,11 @@ const IdeMenuBar: React.FC = () => {
     }
 
     // Show checking message
-    const hideId = message.loading("Checking for updates...", 0);
+    const hideLoading = message.loading("Checking for updates...", 0);
 
     try {
       const result = await window.eaDesktop?.updater?.check();
-      if (typeof hideId === "string") message.destroy(hideId);
+      hideLoading();
 
       if (!result?.ok) {
         // Graceful message for dev mode or when updater isn't available
@@ -2608,11 +2608,10 @@ const IdeMenuBar: React.FC = () => {
           okText: "Download",
           cancelText: "Later",
           onOk: async () => {
-            const hideDownloadId = message.loading("Downloading update...", 0);
+            const hideDownloading = message.loading("Downloading update...", 0);
             try {
               const dlResult = await window.eaDesktop?.updater?.download();
-              if (typeof hideDownloadId === "string")
-                message.destroy(hideDownloadId);
+              hideDownloading();
               if (dlResult?.ok) {
                 Modal.confirm({
                   title: "Update Ready",
@@ -2633,10 +2632,7 @@ const IdeMenuBar: React.FC = () => {
                 });
               }
             } catch (dlErr) {
-              if (typeof hideDownloadId === "string")
-                message.destroy(hideDownloadId);
-              if (typeof hideDownloadId === "string")
-                message.destroy(hideDownloadId);
+              hideDownloading();
               Modal.error({
                 title: "Download Failed",
                 content:
@@ -2654,10 +2650,7 @@ const IdeMenuBar: React.FC = () => {
         });
       }
     } catch (err) {
-      if (typeof hideId === "string") message.destroy(hideId);
-      else message.destroy();
-      if (typeof hideId === "string") message.destroy(hideId);
-      else message.destroy();
+      hideLoading();
       Modal.error({
         title: "Update Check Failed",
         content:

@@ -84,8 +84,10 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building Windows executables..." -ForegroundColor Green
-          npx electron-builder --config electron-builder.json --win --publish never
+          npx electron-builder --config electron-builder.json --win --publish always
           Write-Host "electron-builder finished with exit code: $LASTEXITCODE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List build output
         shell: pwsh

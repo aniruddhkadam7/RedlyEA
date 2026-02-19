@@ -1591,13 +1591,6 @@ export function buildExplorerTree(
       node.className = node.className
         ? `${node.className} ${depthClass}`
         : depthClass;
-      if (typeof window !== "undefined") {
-        console.log("[ExplorerDepthBuild]", {
-          depth,
-          key: typeof node.key === "string" ? node.key : String(node.key),
-          className: node.className,
-        });
-      }
       if (node.children) assignDepthClasses(node.children, depth + 1);
     }
   };

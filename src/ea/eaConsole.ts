@@ -1,11 +1,11 @@
-export type EAConsoleLevel = 'info' | 'warning' | 'error' | 'success';
+export type EAConsoleLevel = "info" | "warning" | "error" | "success";
 export type EAConsoleDomain =
-  | 'canvas'
-  | 'relationship'
-  | 'validation'
-  | 'repository'
-  | 'governance'
-  | 'system';
+  | "canvas"
+  | "relationship"
+  | "validation"
+  | "repository"
+  | "governance"
+  | "system";
 
 export type EAConsoleMessage = {
   id: string;
@@ -35,7 +35,7 @@ const notify = () => {
 };
 
 const generateId = () => {
-  if (typeof globalThis.crypto?.randomUUID === 'function')
+  if (typeof globalThis.crypto?.randomUUID === "function")
     return globalThis.crypto.randomUUID();
   return `ea-console-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
@@ -49,7 +49,7 @@ const scheduleCleanup = () => {
   const now = Date.now();
   const nextExpiry = messages
     .map((msg) => msg.expiresAt)
-    .filter((ts): ts is number => typeof ts === 'number')
+    .filter((ts): ts is number => typeof ts === "number")
     .sort((a, b) => a - b)[0];
 
   if (!nextExpiry) return;
@@ -75,7 +75,7 @@ export type EAConsolePushInput = {
   level: EAConsoleLevel;
   domain?: EAConsoleDomain;
   message: string;
-  context?: EAConsoleMessage['context'];
+  context?: EAConsoleMessage["context"];
   ttlMs?: number;
 };
 
@@ -83,12 +83,12 @@ const push = (input: EAConsolePushInput): string => {
   const now = input.timestamp ?? Date.now();
   const ttlMs =
     input.ttlMs ??
-    (input.level === 'success' ? DEFAULT_SUCCESS_TTL_MS : undefined);
+    (input.level === "success" ? DEFAULT_SUCCESS_TTL_MS : undefined);
   const message: EAConsoleInternalMessage = {
     id: input.id ?? generateId(),
     timestamp: now,
     level: input.level,
-    domain: input.domain ?? 'system',
+    domain: input.domain ?? "system",
     message: input.message,
     context: input.context,
     expiresAt: ttlMs ? now + ttlMs : undefined,
@@ -129,9 +129,9 @@ export const eaConsole = {
 };
 
 const normalizeContent = (content: unknown) => {
-  if (typeof content === 'string') return content;
+  if (typeof content === "string") return content;
   if (content instanceof Error) return content.message;
-  if (content == null) return '';
+  if (content == null) return "";
   return String(content);
 };
 
@@ -142,7 +142,7 @@ type MessageArgs =
       key?: string;
       duration?: number;
       domain?: EAConsoleDomain;
-      context?: EAConsoleMessage['context'];
+      context?: EAConsoleMessage["context"];
     };
 
 const pushMessage = (
@@ -151,7 +151,7 @@ const pushMessage = (
   duration?: number,
 ) => {
   const isObj =
-    typeof args === 'object' && args !== null && !Array.isArray(args);
+    typeof args === "object" && args !== null && !Array.isArray(args);
   const content = isObj
     ? normalizeContent((args as any).content)
     : normalizeContent(args);
@@ -161,13 +161,13 @@ const pushMessage = (
     | undefined;
   const context = isObj ? (args as any).context : undefined;
   const rawDuration =
-    typeof duration === 'number'
+    typeof duration === "number"
       ? duration
       : isObj
         ? (args as any).duration
         : undefined;
   const ttlMs =
-    typeof rawDuration === 'number' && rawDuration > 0
+    typeof rawDuration === "number" && rawDuration > 0
       ? rawDuration * 1000
       : undefined;
   return eaConsole.push({
@@ -182,15 +182,21 @@ const pushMessage = (
 
 export const message = {
   info: (args: MessageArgs, duration?: number) =>
-    pushMessage('info', args, duration),
+    pushMessage("info", args, duration),
   success: (args: MessageArgs, duration?: number) =>
-    pushMessage('success', args, duration),
+    pushMessage("success", args, duration),
   warning: (args: MessageArgs, duration?: number) =>
-    pushMessage('warning', args, duration),
+    pushMessage("warning", args, duration),
   error: (args: MessageArgs, duration?: number) =>
-    pushMessage('error', args, duration),
-  loading: (args: MessageArgs, duration?: number) =>
-    pushMessage('info', args, duration),
+    pushMessage("error", args, duration),
+  /**
+   * Show an indefinite loading message and return a hide function (matching
+   * the antd `message.loading` API that callers expect).
+   */
+  loading: (args: MessageArgs, duration?: number): (() => void) => {
+    const id = pushMessage("info", args, duration);
+    return () => remove(id);
+  },
   destroy: (key?: string) => {
     if (key) remove(key);
     else clear();
@@ -203,7 +209,7 @@ type NotificationArgs = {
   key?: string;
   duration?: number;
   domain?: EAConsoleDomain;
-  context?: EAConsoleMessage['context'];
+  context?: EAConsoleMessage["context"];
 };
 
 const pushNotification = (level: EAConsoleLevel, args: NotificationArgs) => {
@@ -211,7 +217,7 @@ const pushNotification = (level: EAConsoleLevel, args: NotificationArgs) => {
   const description = normalizeContent(args.description);
   const combined = description ? `${title} ${description}`.trim() : title;
   const ttlMs =
-    typeof args.duration === 'number' && args.duration > 0
+    typeof args.duration === "number" && args.duration > 0
       ? args.duration * 1000
       : undefined;
   return eaConsole.push({
@@ -225,11 +231,11 @@ const pushNotification = (level: EAConsoleLevel, args: NotificationArgs) => {
 };
 
 export const notification = {
-  open: (args: NotificationArgs) => pushNotification('info', args),
-  info: (args: NotificationArgs) => pushNotification('info', args),
-  success: (args: NotificationArgs) => pushNotification('success', args),
-  warning: (args: NotificationArgs) => pushNotification('warning', args),
-  error: (args: NotificationArgs) => pushNotification('error', args),
+  open: (args: NotificationArgs) => pushNotification("info", args),
+  info: (args: NotificationArgs) => pushNotification("info", args),
+  success: (args: NotificationArgs) => pushNotification("success", args),
+  warning: (args: NotificationArgs) => pushNotification("warning", args),
+  error: (args: NotificationArgs) => pushNotification("error", args),
   destroy: (key?: string) => {
     if (key) remove(key);
     else clear();

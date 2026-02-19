@@ -58,27 +58,27 @@ import type { RepositoryRole } from "@/repository/accessControl";
 import {
   isGapAnalysisAllowedForLifecycleCoverage,
   isRoadmapAllowedForLifecycleCoverage,
-} from '@/repository/lifecycleCoveragePolicy';
-import { generateWorkspaceId } from '@/services/studio';
-import { useAppTheme } from '@/theme/ThemeContext';
-import { getBaselineById } from '../../../backend/baselines/BaselineStore';
-import { getPlateauById } from '../../../backend/roadmap/PlateauStore';
-import { getRoadmapById } from '../../../backend/roadmap/RoadmapStore';
-import { getViewRepository } from '../../../backend/views/ViewRepositoryStore';
-import logoUrl from '../../../logo.png';
-import AnalysisResultTab from './AnalysisResultTab';
-import AnalysisTab, { type AnalysisKind } from './AnalysisTab';
-import ArchitectureAgentPanel from './ArchitectureAgentPanel';
-import BaselineViewerTab from './BaselineViewerTab';
-import type { CatalogKind } from './CatalogTableTab';
-import CreateViewController from './CreateViewController';
-import ObjectTableTab from './ObjectTableTab';
-import PlateauViewerTab from './PlateauViewerTab';
-import RoadmapViewerTab from './RoadmapViewerTab';
-import StudioShell from './StudioShell';
-import ModelLibraryTab from './model-library/ModelLibraryTab';
-import styles from './style.module.less';
-import ViewDefinitionTab from './ViewDefinitionTab';
+} from "@/repository/lifecycleCoveragePolicy";
+import { generateWorkspaceId } from "@/services/studio";
+import { useAppTheme } from "@/theme/ThemeContext";
+import { getBaselineById } from "../../../backend/baselines/BaselineStore";
+import { getPlateauById } from "../../../backend/roadmap/PlateauStore";
+import { getRoadmapById } from "../../../backend/roadmap/RoadmapStore";
+import { getViewRepository } from "../../../backend/views/ViewRepositoryStore";
+import logoUrl from "../../../logo.png";
+import AnalysisResultTab from "./AnalysisResultTab";
+import AnalysisTab, { type AnalysisKind } from "./AnalysisTab";
+import ArchitectureAgentPanel from "./ArchitectureAgentPanel";
+import BaselineViewerTab from "./BaselineViewerTab";
+import type { CatalogKind } from "./CatalogTableTab";
+import CreateViewController from "./CreateViewController";
+import ObjectTableTab from "./ObjectTableTab";
+import PlateauViewerTab from "./PlateauViewerTab";
+import RoadmapViewerTab from "./RoadmapViewerTab";
+import StudioShell from "./StudioShell";
+import ModelLibraryTab from "./model-library/ModelLibraryTab";
+import styles from "./style.module.less";
+import ViewDefinitionTab from "./ViewDefinitionTab";
 
 type ActivityKey =
   | "catalog"
@@ -205,7 +205,7 @@ type OpenWorkspaceTabArgs =
       roadmapId: string;
     }
   | {
-      type: 'model-library';
+      type: "model-library";
     };
 
 type IdeShellApi = {
@@ -1348,19 +1348,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         setActiveKey(key);
         return;
       }
-
-      if (args.type === 'model-library') {
-        const key = 'model-library';
-        const label = 'Model Library';
-        const content = <ModelLibraryTab />;
-
-        setTabs((prev) => {
-          if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
-        });
-        setActiveKey(key);
-        return;
-      }
     },
     [metadata?.architectureScope, metadata?.lifecycleCoverage],
   );
@@ -2220,7 +2207,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 lineHeight: "var(--ide-topbar-height)",
                 paddingInline: 0,
                 paddingBlock: 0,
-                background: token.colorBgElevated,
                 borderBottom: "none",
                 display: "flex",
                 alignItems: "center",
@@ -2237,7 +2223,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 lineHeight: "var(--ide-topbar-height)",
                 paddingInline: 0,
                 paddingBlock: 0,
-                background: token.colorBgElevated,
                 borderBottom: "none",
                 display: "flex",
                 alignItems: "center",

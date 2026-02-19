@@ -48,6 +48,7 @@ import {
   useEaRepository,
 } from "@/ea/EaRepositoryContext";
 import { message } from "@/ea/eaConsole";
+import { EaProjectProvider } from "@/ea/EaProjectContext";
 import ProjectGate from "@/ea/ProjectGate";
 import { IdeSelectionProvider } from "@/ide/IdeSelectionContext";
 import type { EaRepository } from "@/pages/dependency-view/utils/eaRepository";
@@ -1443,9 +1444,12 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
     // 增加一个 loading 的状态
     childrenRender: (children) => {
       // if (initialState?.loading) return <PageLoading />;
+      // Use hash for route detection (Electron file:// uses hash routing)
+      // window.location.pathname is the file path in Electron, not the route
+      const hash = typeof window !== "undefined" ? window.location?.hash || "" : "";
       const pathname =
         typeof window !== "undefined" ? window.location?.pathname || "" : "";
-      if (pathname.startsWith("/studio")) {
+      if (pathname.startsWith("/studio") || hash.startsWith("#/studio")) {
         return children;
       }
       return (
