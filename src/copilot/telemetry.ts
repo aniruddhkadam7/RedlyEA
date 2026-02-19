@@ -18,7 +18,10 @@ export type CopilotTelemetryPayload =
       enabled: boolean;
     }
   | {
-      type: 'copilot_opened' | 'copilot_closed' | 'copilot_command_palette_opened';
+      type:
+        | 'copilot_opened'
+        | 'copilot_closed'
+        | 'copilot_command_palette_opened';
       [key: string]: unknown;
     };
 
@@ -30,6 +33,9 @@ export type CopilotTelemetryPayload =
  * - No tracking is enabled
  * - This is a no-op placeholder for future observability
  */
-export function trackCopilotEvent(_event: CopilotTelemetryEvent, _payload?: CopilotTelemetryPayload | Record<string, unknown>) {
+export function trackCopilotEvent(
+  _event: CopilotTelemetryEvent,
+  _payload?: CopilotTelemetryPayload | Record<string, unknown>,
+) {
   // Intentionally disabled.
 }

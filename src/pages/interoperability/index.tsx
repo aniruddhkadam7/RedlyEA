@@ -1,8 +1,6 @@
-import React from 'react';
+import { ProCard } from '@ant-design/pro-components';
 
 import { useSearchParams } from '@umijs/max';
-
-import { ProCard } from '@ant-design/pro-components';
 import {
   Alert,
   Button,
@@ -22,29 +20,38 @@ import {
   Upload,
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
+import React from 'react';
 import * as XLSX from 'xlsx';
-
-import { CSV_IMPORT_SPECS, type CsvSchemaSpec } from '../../../backend/interoperability/csv/CsvImportSpecification';
-
-import ProjectGate from '@/ea/ProjectGate';
 import { useEaRepository } from '@/ea/EaRepositoryContext';
-
+import { message } from '@/ea/eaConsole';
+import ProjectGate from '@/ea/ProjectGate';
+import {
+  executeCsvImport,
+  exportCsv,
+  validateCsvImport,
+} from '@/services/ea/interoperability';
 import type {
   CsvImportSourceEntity,
   CsvRowError,
 } from '../../../backend/interoperability';
+import {
+  CSV_IMPORT_SPECS,
+  type CsvSchemaSpec,
+} from '../../../backend/interoperability/csv/CsvImportSpecification';
 import type { ExportScope } from '../../../backend/interoperability/ExportScope';
-
-import { executeCsvImport, exportCsv, validateCsvImport } from '@/services/ea/interoperability';
-import { message } from '@/ea/eaConsole';
 
 type SourceType = 'CSV' | 'ArchiMate' | 'ToolSpecific';
 
-const SOURCE_TYPES: { value: SourceType; label: string; disabled?: boolean }[] = [
-  { value: 'CSV', label: 'CSV (Strict)' },
-  { value: 'ArchiMate', label: 'ArchiMate (Coming soon)', disabled: true },
-  { value: 'ToolSpecific', label: 'Tool-Specific (Coming soon)', disabled: true },
-];
+const SOURCE_TYPES: { value: SourceType; label: string; disabled?: boolean }[] =
+  [
+    { value: 'CSV', label: 'CSV (Strict)' },
+    { value: 'ArchiMate', label: 'ArchiMate (Coming soon)', disabled: true },
+    {
+      value: 'ToolSpecific',
+      label: 'Tool-Specific (Coming soon)',
+      disabled: true,
+    },
+  ];
 
 const CSV_ENTITIES: { value: CsvImportSourceEntity; label: string }[] = [
   { value: 'Capabilities', label: 'Capabilities' },
@@ -55,7 +62,13 @@ const CSV_ENTITIES: { value: CsvImportSourceEntity; label: string }[] = [
   { value: 'Relationships', label: 'Relationships' },
 ];
 
-const ELEMENT_TYPES = ['Capability', 'BusinessProcess', 'Application', 'Technology', 'Programme'] as const;
+const ELEMENT_TYPES = [
+  'Capability',
+  'BusinessProcess',
+  'Application',
+  'Technology',
+  'Programme',
+] as const;
 const RELATIONSHIP_TYPES = [
   'DECOMPOSES_TO',
   'COMPOSED_OF',
@@ -85,7 +98,8 @@ const downloadTextFile = (fileName: string, text: string) => {
   URL.revokeObjectURL(url);
 };
 
-const isNonNullable = <T,>(v: T | null | undefined): v is T => v !== null && v !== undefined;
+const isNonNullable = <T,>(v: T | null | undefined): v is T =>
+  v !== null && v !== undefined;
 
 const CsvRowErrorsTable: React.FC<{ errors: CsvRowError[] }> = ({ errors }) => {
   return (
@@ -109,23 +123,29 @@ const ImportWizard: React.FC = () => {
   const [step, setStep] = React.useState(0);
 
   const [sourceType, setSourceType] = React.useState<SourceType>('CSV');
-  const [csvEntity, setCsvEntity] = React.useState<CsvImportSourceEntity | null>(null);
+  const [csvEntity, setCsvEntity] =
+    React.useState<CsvImportSourceEntity | null>(null);
 
   const [fileList, setFileList] = React.useState<UploadFile[]>([]);
   const [fileText, setFileText] = React.useState<string>('');
-  const [rowsForImport, setRowsForImport] = React.useState<Array<Record<string, unknown>>>([]);
+  const [rowsForImport, setRowsForImport] = React.useState<
+    Array<Record<string, unknown>>
+  >([]);
   const [detectedHeaders, setDetectedHeaders] = React.useState<string[]>([]);
-  const [previewRows, setPreviewRows] = React.useState<Array<Record<string, unknown>>>([]);
-  const [columnMapping, setColumnMapping] = React.useState<Record<string, string | null>>({});
+  const [previewRows, setPreviewRows] = React.useState<
+    Array<Record<string, unknown>>
+  >([]);
+  const [columnMapping, setColumnMapping] = React.useState<
+    Record<string, string | null>
+  >({});
 
-  const [validationErrors, setValidationErrors] = React.useState<CsvRowError[] | null>(null);
-  const [validationOkSummary, setValidationOkSummary] = React.useState<
-    | {
-        importedElementsCount: number;
-        importedRelationshipsCount: number;
-      }
-    | null
+  const [validationErrors, setValidationErrors] = React.useState<
+    CsvRowError[] | null
   >(null);
+  const [validationOkSummary, setValidationOkSummary] = React.useState<{
+    importedElementsCount: number;
+    importedRelationshipsCount: number;
+  } | null>(null);
 
   const [validating, setValidating] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
@@ -137,10 +157,16 @@ const ImportWizard: React.FC = () => {
   }, [csvEntity]);
 
   React.useEffect(() => {
-    const requested = (searchParams.get('csvEntity') ?? searchParams.get('import') ?? '').trim();
+    const requested = (
+      searchParams.get('csvEntity') ??
+      searchParams.get('import') ??
+      ''
+    ).trim();
     if (!requested) return;
 
-    const match = CSV_ENTITIES.find((e) => e.value.toLowerCase() === requested.toLowerCase());
+    const match = CSV_ENTITIES.find(
+      (e) => e.value.toLowerCase() === requested.toLowerCase(),
+    );
     if (!match) return;
 
     setSourceType('CSV');
@@ -163,7 +189,8 @@ const ImportWizard: React.FC = () => {
     setAcknowledged(false);
   }, []);
 
-  const canProceedUpload = sourceType === 'CSV' && Boolean(csvEntity) && fileText.trim().length > 0;
+  const canProceedUpload =
+    sourceType === 'CSV' && Boolean(csvEntity) && fileText.trim().length > 0;
   const missingRequiredMappings = React.useMemo(() => {
     const required = schema?.requiredHeaders ?? [];
     return required.filter((col) => !columnMapping[col]);
@@ -176,7 +203,9 @@ const ImportWizard: React.FC = () => {
     const required = spec?.requiredHeaders ?? [];
     const missingMappings = required.filter((col) => !columnMapping[col]);
     if (missingMappings.length > 0) {
-      message.error(`Map required columns first: ${missingMappings.join(', ')}`);
+      message.error(
+        `Map required columns first: ${missingMappings.join(', ')}`,
+      );
       return;
     }
 
@@ -188,7 +217,7 @@ const ImportWizard: React.FC = () => {
         const out: Record<string, unknown> = {};
         for (const h of headers) {
           const sourceCol = columnMapping[h];
-          out[h] = sourceCol ? (row as any)[sourceCol] ?? '' : '';
+          out[h] = sourceCol ? ((row as any)[sourceCol] ?? '') : '';
         }
         return out;
       });
@@ -222,7 +251,16 @@ const ImportWizard: React.FC = () => {
     } finally {
       setValidating(false);
     }
-  }, [columnMapping, csvEntity, fileList, fileText, previewRows, rowsForImport, schema, sourceType]);
+  }, [
+    columnMapping,
+    csvEntity,
+    fileList,
+    fileText,
+    previewRows,
+    rowsForImport,
+    schema,
+    sourceType,
+  ]);
 
   const confirmImport = React.useCallback(async () => {
     if (sourceType !== 'CSV' || !csvEntity) return;
@@ -231,7 +269,9 @@ const ImportWizard: React.FC = () => {
     const required = spec?.requiredHeaders ?? [];
     const missingMappings = required.filter((col) => !columnMapping[col]);
     if (missingMappings.length > 0) {
-      message.error(`Map required columns first: ${missingMappings.join(', ')}`);
+      message.error(
+        `Map required columns first: ${missingMappings.join(', ')}`,
+      );
       return;
     }
 
@@ -243,7 +283,7 @@ const ImportWizard: React.FC = () => {
         const out: Record<string, unknown> = {};
         for (const h of headers) {
           const sourceCol = columnMapping[h];
-          out[h] = sourceCol ? (row as any)[sourceCol] ?? '' : '';
+          out[h] = sourceCol ? ((row as any)[sourceCol] ?? '') : '';
         }
         return out;
       });
@@ -284,7 +324,17 @@ const ImportWizard: React.FC = () => {
     } finally {
       setImporting(false);
     }
-  }, [columnMapping, csvEntity, fileList, fileText, previewRows, reset, rowsForImport, schema, sourceType]);
+  }, [
+    columnMapping,
+    csvEntity,
+    fileList,
+    fileText,
+    previewRows,
+    reset,
+    rowsForImport,
+    schema,
+    sourceType,
+  ]);
 
   const steps = [
     {
@@ -326,7 +376,8 @@ const ImportWizard: React.FC = () => {
                 style={{ maxWidth: 420 }}
               />
               <Typography.Text type="secondary">
-                IDs must be explicit. Mandatory headers are enforced. Invalid rows are rejected.
+                IDs must be explicit. Mandatory headers are enforced. Invalid
+                rows are rejected.
               </Typography.Text>
             </Space>
           )}
@@ -377,9 +428,18 @@ const ImportWizard: React.FC = () => {
                             return;
                           }
                           const sheet = workbook.Sheets[sheetName];
-                          resolve(XLSX.utils.sheet_to_csv(sheet, { FS: ',', RS: '\n' }));
+                          resolve(
+                            XLSX.utils.sheet_to_csv(sheet, {
+                              FS: ',',
+                              RS: '\n',
+                            }),
+                          );
                         } catch (e) {
-                          reject(e instanceof Error ? e : new Error('Failed to parse Excel file.'));
+                          reject(
+                            e instanceof Error
+                              ? e
+                              : new Error('Failed to parse Excel file.'),
+                          );
                         }
                       };
                       reader.readAsArrayBuffer(f as File);
@@ -397,8 +457,13 @@ const ImportWizard: React.FC = () => {
                 if (!sheetName) throw new Error('Parsed file has no sheets.');
                 const sheet = workbook.Sheets[sheetName];
 
-                const matrix = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, { header: 1, defval: '' });
-                const headerRow = (matrix[0] ?? []).map((v) => String(v).trim());
+                const matrix = XLSX.utils.sheet_to_json<(string | number)[]>(
+                  sheet,
+                  { header: 1, defval: '' },
+                );
+                const headerRow = (matrix[0] ?? []).map((v) =>
+                  String(v).trim(),
+                );
                 const rows = (matrix.slice(1) ?? []).map((r) => {
                   const obj: Record<string, unknown> = {};
                   headerRow.forEach((h, idx) => {
@@ -414,13 +479,17 @@ const ImportWizard: React.FC = () => {
                 if (schema) {
                   const autoMap: Record<string, string | null> = {};
                   for (const col of schema.columns.map((c) => c.name)) {
-                    const hit = headerRow.find((h) => h.toLowerCase() === col.toLowerCase());
+                    const hit = headerRow.find(
+                      (h) => h.toLowerCase() === col.toLowerCase(),
+                    );
                     autoMap[col] = hit ?? null;
                   }
                   setColumnMapping((prev) => ({ ...autoMap, ...prev }));
                 }
               } catch (err) {
-                message.error(err instanceof Error ? err.message : 'Failed to read file.');
+                message.error(
+                  err instanceof Error ? err.message : 'Failed to read file.',
+                );
                 setFileText('');
                 setDetectedHeaders([]);
                 setRowsForImport([]);
@@ -434,8 +503,12 @@ const ImportWizard: React.FC = () => {
               setAcknowledged(false);
             }}
           >
-            <p style={{ margin: 0, fontWeight: 600 }}>Drop CSV/XLSX here, or click to select</p>
-            <p style={{ margin: 0, color: 'rgba(0,0,0,0.45)' }}>Strict headers. Explicit IDs. No auto-fix.</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>
+              Drop CSV/XLSX here, or click to select
+            </p>
+            <p style={{ margin: 0, color: 'rgba(0,0,0,0.45)' }}>
+              Strict headers. Explicit IDs. No auto-fix.
+            </p>
           </Upload.Dragger>
 
           <Space direction="vertical" size={4} style={{ width: '100%' }}>
@@ -446,7 +519,11 @@ const ImportWizard: React.FC = () => {
                 pagination={{ pageSize: 5 }}
                 scroll={{ x: true }}
                 dataSource={previewRows.map((r, idx) => ({ key: idx, ...r }))}
-                columns={detectedHeaders.map((h) => ({ title: h || '(blank)', dataIndex: h || `col${h}`, key: h || `col${h}` }))}
+                columns={detectedHeaders.map((h) => ({
+                  title: h || '(blank)',
+                  dataIndex: h || `col${h}`,
+                  key: h || `col${h}`,
+                }))}
               />
             ) : (
               <Input.TextArea
@@ -457,7 +534,9 @@ const ImportWizard: React.FC = () => {
               />
             )}
             <Typography.Text type="secondary">
-              {previewRows.length > 0 ? 'Showing first 20 rows.' : 'Preview is truncated to 2000 characters.'}
+              {previewRows.length > 0
+                ? 'Showing first 20 rows.'
+                : 'Preview is truncated to 2000 characters.'}
             </Typography.Text>
           </Space>
 
@@ -470,18 +549,34 @@ const ImportWizard: React.FC = () => {
                 dataSource={schema.columns.map((c) => ({ ...c, key: c.name }))}
                 columns={[
                   { title: 'Attribute', dataIndex: 'name', key: 'name' },
-                  { title: 'Required', dataIndex: 'requiredHeader', key: 'required', render: (v) => (v ? 'Yes' : 'No') },
+                  {
+                    title: 'Required',
+                    dataIndex: 'requiredHeader',
+                    key: 'required',
+                    render: (v) => (v ? 'Yes' : 'No'),
+                  },
                   {
                     title: 'Source column',
                     key: 'source',
-                    render: (_: any, record: { name: string; requiredHeader: boolean }) => (
+                    render: (
+                      _: any,
+                      record: { name: string; requiredHeader: boolean },
+                    ) => (
                       <Select
                         showSearch
                         allowClear
                         placeholder="Select column"
                         value={columnMapping[record.name] ?? undefined}
-                        options={detectedHeaders.map((h) => ({ value: h, label: h || '(blank)' }))}
-                        onChange={(v) => setColumnMapping((prev) => ({ ...prev, [record.name]: v ?? null }))}
+                        options={detectedHeaders.map((h) => ({
+                          value: h,
+                          label: h || '(blank)',
+                        }))}
+                        onChange={(v) =>
+                          setColumnMapping((prev) => ({
+                            ...prev,
+                            [record.name]: v ?? null,
+                          }))
+                        }
                         style={{ minWidth: 220 }}
                       />
                     ),
@@ -522,7 +617,8 @@ const ImportWizard: React.FC = () => {
               <Button
                 size="small"
                 onClick={() => {
-                  if (!validationErrors || validationErrors.length === 0) return;
+                  if (!validationErrors || validationErrors.length === 0)
+                    return;
                   const rows = validationErrors.map((e) => ({
                     line: e.line,
                     code: e.code,
@@ -530,8 +626,13 @@ const ImportWizard: React.FC = () => {
                     message: e.message,
                     value: e.value ?? '',
                   }));
-                  const sheet = XLSX.utils.json_to_sheet(rows, { header: ['line', 'code', 'column', 'message', 'value'] });
-                  const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ',', RS: '\n' });
+                  const sheet = XLSX.utils.json_to_sheet(rows, {
+                    header: ['line', 'code', 'column', 'message', 'value'],
+                  });
+                  const csv = XLSX.utils.sheet_to_csv(sheet, {
+                    FS: ',',
+                    RS: '\n',
+                  });
                   downloadTextFile('import-errors.csv', csv);
                 }}
               >
@@ -568,13 +669,22 @@ const ImportWizard: React.FC = () => {
           <ProCard bordered>
             <Space direction="vertical" size={6}>
               <Typography.Text strong>Import summary</Typography.Text>
-              <Typography.Text type="secondary">Source: {sourceType}</Typography.Text>
-              <Typography.Text type="secondary">Entity: {csvEntity ?? '—'}</Typography.Text>
-              <Typography.Text type="secondary">File: {fileList[0]?.name ?? '—'}</Typography.Text>
+              <Typography.Text type="secondary">
+                Source: {sourceType}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                Entity: {csvEntity ?? '—'}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                File: {fileList[0]?.name ?? '—'}
+              </Typography.Text>
             </Space>
           </ProCard>
 
-          <Checkbox checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)}>
+          <Checkbox
+            checked={acknowledged}
+            onChange={(e) => setAcknowledged(e.target.checked)}
+          >
             I understand this will change the repository.
           </Checkbox>
 
@@ -595,7 +705,9 @@ const ImportWizard: React.FC = () => {
               });
             }}
             disabled={
-              !acknowledged || validationErrors === null || (validationErrors?.length ?? 0) > 0
+              !acknowledged ||
+              validationErrors === null ||
+              (validationErrors?.length ?? 0) > 0
             }
             loading={importing}
           >
@@ -620,7 +732,10 @@ const ImportWizard: React.FC = () => {
         </Space>
 
         <Space>
-          <Button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+          <Button
+            disabled={step === 0}
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+          >
             Back
           </Button>
 
@@ -638,7 +753,10 @@ const ImportWizard: React.FC = () => {
             <Button
               type="primary"
               onClick={() => setStep(2)}
-              disabled={!canProceedUpload || (schema ? missingRequiredMappings.length > 0 : false)}
+              disabled={
+                !canProceedUpload ||
+                (schema ? missingRequiredMappings.length > 0 : false)
+              }
             >
               Next
             </Button>
@@ -648,7 +766,11 @@ const ImportWizard: React.FC = () => {
             <Space>
               <Button
                 onClick={runValidation}
-                disabled={sourceType !== 'CSV' || !csvEntity || fileText.trim().length === 0}
+                disabled={
+                  sourceType !== 'CSV' ||
+                  !csvEntity ||
+                  fileText.trim().length === 0
+                }
                 loading={validating}
               >
                 Validate
@@ -656,7 +778,10 @@ const ImportWizard: React.FC = () => {
               <Button
                 type="primary"
                 onClick={() => setStep(3)}
-                disabled={validationErrors === null || (validationErrors?.length ?? 0) > 0}
+                disabled={
+                  validationErrors === null ||
+                  (validationErrors?.length ?? 0) > 0
+                }
               >
                 Next
               </Button>
@@ -666,7 +791,9 @@ const ImportWizard: React.FC = () => {
           {step === 3 ? (
             <Button
               type="primary"
-              onClick={() => message.info('Click “Confirm and Import” to apply changes.')}
+              onClick={() =>
+                message.info('Click “Confirm and Import” to apply changes.')
+              }
             >
               Done
             </Button>
@@ -681,26 +808,29 @@ const ExportWizard: React.FC = () => {
   const { metadata } = useEaRepository();
   const [step, setStep] = React.useState(0);
 
-  const [exportType, setExportType] = React.useState<ExportScope['exportType'] | null>(null);
-  const [includedElementTypes, setIncludedElementTypes] = React.useState<string[]>([]);
-  const [includedRelationshipTypes, setIncludedRelationshipTypes] = React.useState<string[]>([]);
+  const [exportType, setExportType] = React.useState<
+    ExportScope['exportType'] | null
+  >(null);
+  const [includedElementTypes, setIncludedElementTypes] = React.useState<
+    string[]
+  >([]);
+  const [includedRelationshipTypes, setIncludedRelationshipTypes] =
+    React.useState<string[]>([]);
   const [includeViews, setIncludeViews] = React.useState(false);
-  const [includeGovernanceArtifacts, setIncludeGovernanceArtifacts] = React.useState(false);
+  const [includeGovernanceArtifacts, setIncludeGovernanceArtifacts] =
+    React.useState(false);
 
   const [format, setFormat] = React.useState<'CSV' | 'ComingSoon'>('CSV');
 
   type ExportFile = { fileName: string; csvText: string };
   type ExportFiles = Partial<Record<CsvImportSourceEntity, ExportFile>>;
 
-  const [exportResult, setExportResult] = React.useState<
-    | {
-        files: ExportFiles;
-        warnings: string[];
-        exportedElementsCount: number;
-        exportedRelationshipsCount: number;
-      }
-    | null
-  >(null);
+  const [exportResult, setExportResult] = React.useState<{
+    files: ExportFiles;
+    warnings: string[];
+    exportedElementsCount: number;
+    exportedRelationshipsCount: number;
+  } | null>(null);
 
   const safeSlug = React.useCallback(
     (value: string) =>
@@ -736,7 +866,13 @@ const ExportWizard: React.FC = () => {
       includeViews,
       includeGovernanceArtifacts,
     };
-  }, [exportType, includeGovernanceArtifacts, includeViews, includedElementTypes, includedRelationshipTypes]);
+  }, [
+    exportType,
+    includeGovernanceArtifacts,
+    includeViews,
+    includedElementTypes,
+    includedRelationshipTypes,
+  ]);
 
   const buildExportMeta = React.useCallback(
     () => ({
@@ -753,7 +889,8 @@ const ExportWizard: React.FC = () => {
     const errors: string[] = [];
     if (!exportType) errors.push('Select exportType.');
     // No defaults assumed: user must explicitly pick at least one element type to export repository contents meaningfully.
-    if (includedElementTypes.length === 0) errors.push('Select at least one element type.');
+    if (includedElementTypes.length === 0)
+      errors.push('Select at least one element type.');
     return errors;
   }, [exportType, includedElementTypes.length]);
 
@@ -815,8 +952,16 @@ const ExportWizard: React.FC = () => {
                 onChange={(v) => setExportType(v)}
                 options={[
                   { value: 'Repository', label: 'Repository' },
-                  { value: 'View', label: 'View (not CSV-ready)', disabled: true },
-                  { value: 'Analysis', label: 'Analysis (not CSV-ready)', disabled: true },
+                  {
+                    value: 'View',
+                    label: 'View (not CSV-ready)',
+                    disabled: true,
+                  },
+                  {
+                    value: 'Analysis',
+                    label: 'Analysis (not CSV-ready)',
+                    disabled: true,
+                  },
                   { value: 'FullProject', label: 'Full Repository' },
                 ]}
               />
@@ -838,7 +983,10 @@ const ExportWizard: React.FC = () => {
                 placeholder="Select relationship types"
                 value={includedRelationshipTypes}
                 onChange={(v) => setIncludedRelationshipTypes(v)}
-                options={RELATIONSHIP_TYPES.map((t) => ({ value: t, label: t }))}
+                options={RELATIONSHIP_TYPES.map((t) => ({
+                  value: t,
+                  label: t,
+                }))}
               />
             </Form.Item>
 
@@ -851,8 +999,13 @@ const ExportWizard: React.FC = () => {
 
             <Form.Item>
               <Space>
-                <Switch checked={includeGovernanceArtifacts} onChange={setIncludeGovernanceArtifacts} />
-                <Typography.Text>Include governance artifacts (rules, ADRs)</Typography.Text>
+                <Switch
+                  checked={includeGovernanceArtifacts}
+                  onChange={setIncludeGovernanceArtifacts}
+                />
+                <Typography.Text>
+                  Include governance artifacts (rules, ADRs)
+                </Typography.Text>
               </Space>
             </Form.Item>
           </Form>
@@ -878,7 +1031,11 @@ const ExportWizard: React.FC = () => {
               style={{ maxWidth: 420 }}
               options={[
                 { value: 'CSV', label: 'CSV (Import-compatible)' },
-                { value: 'ComingSoon', label: 'Other formats (Coming soon)', disabled: true },
+                {
+                  value: 'ComingSoon',
+                  label: 'Other formats (Coming soon)',
+                  disabled: true,
+                },
               ]}
             />
           </Space>
@@ -896,7 +1053,12 @@ const ExportWizard: React.FC = () => {
             description="Generate the export to preview files and verify scope."
           />
 
-          <Button type="primary" onClick={generateExport} disabled={!scope} loading={exporting}>
+          <Button
+            type="primary"
+            onClick={generateExport}
+            disabled={!scope}
+            loading={exporting}
+          >
             Generate Export
           </Button>
 
@@ -936,18 +1098,29 @@ const ExportWizard: React.FC = () => {
                 <Space direction="vertical" size={6}>
                   <Typography.Text strong>Summary</Typography.Text>
                   <Typography.Text type="secondary">
-                    Elements: {exportResult.exportedElementsCount} | Relationships: {exportResult.exportedRelationshipsCount}
+                    Elements: {exportResult.exportedElementsCount} |
+                    Relationships: {exportResult.exportedRelationshipsCount}
                   </Typography.Text>
 
                   <Divider style={{ margin: '8px 0' }} />
 
                   <Typography.Text strong>Files</Typography.Text>
-                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                    {(Object.entries(exportResult.files) as Array<
-                      [CsvImportSourceEntity, ExportFiles[CsvImportSourceEntity]]
-                    >)
+                  <Space
+                    direction="vertical"
+                    size={8}
+                    style={{ width: '100%' }}
+                  >
+                    {(
+                      Object.entries(exportResult.files) as Array<
+                        [
+                          CsvImportSourceEntity,
+                          ExportFiles[CsvImportSourceEntity],
+                        ]
+                      >
+                    )
                       .filter(
-                        (entry): entry is [CsvImportSourceEntity, ExportFile] => isNonNullable(entry[1]),
+                        (entry): entry is [CsvImportSourceEntity, ExportFile] =>
+                          isNonNullable(entry[1]),
                       )
                       .map(([entity, file]) => {
                         const lineCount = file.csvText.trim().length
@@ -955,16 +1128,25 @@ const ExportWizard: React.FC = () => {
                           : 0;
                         return (
                           <ProCard key={entity} size="small" bordered>
-                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                            <Space
+                              direction="vertical"
+                              size={4}
+                              style={{ width: '100%' }}
+                            >
                               <Typography.Text strong>
-                                {file.fileName} <Typography.Text type="secondary">({lineCount} rows)</Typography.Text>
+                                {file.fileName}{' '}
+                                <Typography.Text type="secondary">
+                                  ({lineCount} rows)
+                                </Typography.Text>
                               </Typography.Text>
                               <Input.TextArea
                                 value={file.csvText.slice(0, 2000)}
                                 autoSize={{ minRows: 3, maxRows: 8 }}
                                 readOnly
                               />
-                              <Typography.Text type="secondary">Preview is truncated to 2000 characters.</Typography.Text>
+                              <Typography.Text type="secondary">
+                                Preview is truncated to 2000 characters.
+                              </Typography.Text>
                             </Space>
                           </ProCard>
                         );
@@ -997,19 +1179,34 @@ const ExportWizard: React.FC = () => {
             />
           ) : (
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              {(Object.entries(exportResult.files) as Array<
-                [CsvImportSourceEntity, ExportFiles[CsvImportSourceEntity]]
-              >)
-                .filter((entry): entry is [CsvImportSourceEntity, ExportFile] => isNonNullable(entry[1]))
+              {(
+                Object.entries(exportResult.files) as Array<
+                  [CsvImportSourceEntity, ExportFiles[CsvImportSourceEntity]]
+                >
+              )
+                .filter((entry): entry is [CsvImportSourceEntity, ExportFile] =>
+                  isNonNullable(entry[1]),
+                )
                 .map(([entity, file]) => {
                   return (
-                    <Flex key={entity} align="center" justify="space-between" gap={12} wrap>
+                    <Flex
+                      key={entity}
+                      align="center"
+                      justify="space-between"
+                      gap={12}
+                      wrap
+                    >
                       <Typography.Text>{file.fileName}</Typography.Text>
                       <Button
                         onClick={() => {
-                          const repo = metadata?.repositoryName ? safeSlug(metadata.repositoryName) : '';
+                          const repo = metadata?.repositoryName
+                            ? safeSlug(metadata.repositoryName)
+                            : '';
                           const prefix = repo ? `${repo}-` : '';
-                          downloadTextFile(`${prefix}${file.fileName}`, file.csvText);
+                          downloadTextFile(
+                            `${prefix}${file.fileName}`,
+                            file.csvText,
+                          );
                         }}
                       >
                         Download
@@ -1024,9 +1221,14 @@ const ExportWizard: React.FC = () => {
                 <Typography.Text>export-metadata.json</Typography.Text>
                 <Button
                   onClick={() => {
-                    const repo = metadata?.repositoryName ? safeSlug(metadata.repositoryName) : '';
+                    const repo = metadata?.repositoryName
+                      ? safeSlug(metadata.repositoryName)
+                      : '';
                     const prefix = repo ? `${repo}-` : '';
-                    downloadTextFile(`${prefix}export-metadata.json`, JSON.stringify(buildExportMeta(), null, 2));
+                    downloadTextFile(
+                      `${prefix}export-metadata.json`,
+                      JSON.stringify(buildExportMeta(), null, 2),
+                    );
                   }}
                 >
                   Download
@@ -1035,7 +1237,8 @@ const ExportWizard: React.FC = () => {
 
               <Divider style={{ margin: '8px 0' }} />
               <Typography.Text type="secondary">
-                Tip: re-import these CSVs using the Import Wizard to validate round-trip safety.
+                Tip: re-import these CSVs using the Import Wizard to validate
+                round-trip safety.
               </Typography.Text>
             </Space>
           )}
@@ -1055,7 +1258,10 @@ const ExportWizard: React.FC = () => {
         <Button onClick={reset}>Reset</Button>
 
         <Space>
-          <Button disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+          <Button
+            disabled={step === 0}
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+          >
             Back
           </Button>
           <Button

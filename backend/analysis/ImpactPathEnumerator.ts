@@ -1,8 +1,15 @@
-import type { ImpactAnalysisRequest, ImpactAnalysisDirection } from './ImpactAnalysisRequest';
-import type { ImpactPath, DependencyStrength, ImpactCriticality } from './ImpactPath';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
 import type { GraphAbstractionLayer } from '../graph/GraphAbstractionLayer';
 import { getGraphAbstractionLayer } from '../graph/GraphAbstractionLayerStore';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import type {
+  ImpactAnalysisDirection,
+  ImpactAnalysisRequest,
+} from './ImpactAnalysisRequest';
+import type {
+  DependencyStrength,
+  ImpactCriticality,
+  ImpactPath,
+} from './ImpactPath';
 
 type Step = {
   nextElementId: string;
@@ -40,7 +47,11 @@ const fnv1aHex = (input: string): string => {
   return (hash >>> 0).toString(16).padStart(8, '0');
 };
 
-const stablePathId = (requestId: string, orderedElementIds: readonly string[], orderedRelationshipIds: readonly string[]) => {
+const stablePathId = (
+  requestId: string,
+  orderedElementIds: readonly string[],
+  orderedRelationshipIds: readonly string[],
+) => {
   const basis = `${requestId}|${orderedElementIds.join('>')}|${orderedRelationshipIds.join('>')}`;
   return `path_${fnv1aHex(basis)}`;
 };
@@ -51,14 +62,19 @@ const relationshipSortKey = (r: BaseArchitectureRelationship) =>
 const stepSortKey = (s: Step) =>
   `${(s.relationship.relationshipType ?? '').trim()}|${normalizeId(s.nextElementId)}|${normalizeId(s.relationshipId)}`;
 
-const dependencyStrengthFor = (r: BaseArchitectureRelationship): DependencyStrength => {
+const dependencyStrengthFor = (
+  r: BaseArchitectureRelationship,
+): DependencyStrength => {
   // Only some relationship types carry dependencyStrength.
-  const v = (r as unknown as { dependencyStrength?: unknown }).dependencyStrength;
+  const v = (r as unknown as { dependencyStrength?: unknown })
+    .dependencyStrength;
   if (v === 'Hard' || v === 'Soft') return v;
   return 'Unknown';
 };
 
-const weakestStrengthOnPath = (relationships: readonly BaseArchitectureRelationship[]): DependencyStrength => {
+const weakestStrengthOnPath = (
+  relationships: readonly BaseArchitectureRelationship[],
+): DependencyStrength => {
   // Weakest = most constraining: Hard > Soft > Unknown.
   let hasHard = false;
   let hasSoft = false;
@@ -92,14 +108,18 @@ export class ImpactPathEnumerator {
     this.graph = graph;
   }
 
-  async enumerateAllPaths(request: ImpactAnalysisRequest): Promise<ImpactPath[]> {
+  async enumerateAllPaths(
+    request: ImpactAnalysisRequest,
+  ): Promise<ImpactPath[]> {
     const rootId = normalizeId(request.rootElementId);
     if (!rootId) return [];
 
     const maxDepth = request.maxDepth;
     if (typeof maxDepth !== 'number' || maxDepth <= 0) return [];
 
-    const allowedRelationshipTypes = new Set(normalizeList(request.includedRelationshipTypes));
+    const allowedRelationshipTypes = new Set(
+      normalizeList(request.includedRelationshipTypes),
+    );
     if (allowedRelationshipTypes.size === 0) return [];
 
     const relationshipById = new Map<string, BaseArchitectureRelationship>();
@@ -116,9 +136,13 @@ export class ImpactPathEnumerator {
 
       if (includesDownstream(request.direction)) {
         const outgoing = (await this.graph.getOutgoingEdges(key))
-          .filter((r) => allowedRelationshipTypes.has((r.relationshipType ?? '').trim()))
+          .filter((r) =>
+            allowedRelationshipTypes.has((r.relationshipType ?? '').trim()),
+          )
           .slice()
-          .sort((a, b) => compareStrings(relationshipSortKey(a), relationshipSortKey(b)));
+          .sort((a, b) =>
+            compareStrings(relationshipSortKey(a), relationshipSortKey(b)),
+          );
 
         for (const r of outgoing) {
           const relationshipId = normalizeId(r.id);
@@ -131,9 +155,13 @@ export class ImpactPathEnumerator {
 
       if (includesUpstream(request.direction)) {
         const incoming = (await this.graph.getIncomingEdges(key))
-          .filter((r) => allowedRelationshipTypes.has((r.relationshipType ?? '').trim()))
+          .filter((r) =>
+            allowedRelationshipTypes.has((r.relationshipType ?? '').trim()),
+          )
           .slice()
-          .sort((a, b) => compareStrings(relationshipSortKey(a), relationshipSortKey(b)));
+          .sort((a, b) =>
+            compareStrings(relationshipSortKey(a), relationshipSortKey(b)),
+          );
 
         for (const r of incoming) {
           const relationshipId = normalizeId(r.id);
@@ -169,7 +197,11 @@ export class ImpactPathEnumerator {
       const maxCriticalityOnPath: ImpactCriticality = 'Unknown';
 
       results.push({
-        pathId: stablePathId(request.requestId, orderedElementIds, orderedRelationshipIds),
+        pathId: stablePathId(
+          request.requestId,
+          orderedElementIds,
+          orderedRelationshipIds,
+        ),
         orderedElementIds: orderedElementIds.slice(),
         orderedRelationshipIds: orderedRelationshipIds.slice(),
         pathLength: orderedRelationshipIds.length,
@@ -206,10 +238,14 @@ export class ImpactPathEnumerator {
     await dfs(rootId, 0);
 
     // Deterministic output order even if future refactors change traversal.
-    results.sort((a, b) =>
-      a.pathLength - b.pathLength ||
-      compareStrings(a.orderedElementIds.join('>'), b.orderedElementIds.join('>')) ||
-      compareStrings(a.pathId, b.pathId),
+    results.sort(
+      (a, b) =>
+        a.pathLength - b.pathLength ||
+        compareStrings(
+          a.orderedElementIds.join('>'),
+          b.orderedElementIds.join('>'),
+        ) ||
+        compareStrings(a.pathId, b.pathId),
     );
 
     return results;

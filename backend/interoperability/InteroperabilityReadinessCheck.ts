@@ -1,22 +1,29 @@
-import type { Project } from '../project/project';
-import { projectStore } from '../project/ProjectStore';
 import { getAdrRepository } from '../adr/AdrRepositoryStore';
 import type { ArchitectureDecisionRecord } from '../adr/ArchitectureDecisionRecord';
+import { projectStore } from '../project/ProjectStore';
+import type { Project } from '../project/project';
 
 import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
 import type { RelationshipRepository } from '../repository/RelationshipRepository';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-import { getRepository } from '../repository/RepositoryStore';
 import { getRelationshipRepository } from '../repository/RelationshipRepositoryStore';
-
-import type { ExportScope } from './ExportScope';
-import type { CsvColumnName, CsvFieldSpec, CsvFieldType, CsvImportSourceEntity, CsvSchemaSpec } from './csv/CsvImportSpecification';
+import { getRepository } from '../repository/RepositoryStore';
+import type {
+  CsvColumnName,
+  CsvFieldSpec,
+  CsvFieldType,
+  CsvImportSourceEntity,
+  CsvSchemaSpec,
+} from './csv/CsvImportSpecification';
 import { CSV_IMPORT_SPECS } from './csv/CsvImportSpecification';
+import type { ExportScope } from './ExportScope';
 
 export type ReadinessIssueSeverity = 'Blocking' | 'Warning';
 
-export type ReadinessIssueCategory = 'MandatoryFields' | 'UnsupportedRelationships' | 'GovernanceCompleteness';
+export type ReadinessIssueCategory =
+  | 'MandatoryFields'
+  | 'UnsupportedRelationships'
+  | 'GovernanceCompleteness';
 
 export type ReadinessIssue = {
   severity: ReadinessIssueSeverity;
@@ -94,7 +101,9 @@ const isBlankCell = (value: unknown): boolean => {
   return false;
 };
 
-const toEntity = (elementType: string): Exclude<CsvImportSourceEntity, 'Relationships'> | null => {
+const toEntity = (
+  elementType: string,
+): Exclude<CsvImportSourceEntity, 'Relationships'> | null => {
   switch ((elementType ?? '').trim()) {
     case 'Capability':
       return 'Capabilities';
@@ -111,7 +120,9 @@ const toEntity = (elementType: string): Exclude<CsvImportSourceEntity, 'Relation
   }
 };
 
-const impliedElementTypeForEntity = (entity: Exclude<CsvImportSourceEntity, 'Relationships'>): string => {
+const impliedElementTypeForEntity = (
+  entity: Exclude<CsvImportSourceEntity, 'Relationships'>,
+): string => {
   switch (entity) {
     case 'Capabilities':
       return 'Capability';
@@ -130,7 +141,11 @@ const fieldTypeOk = (field: CsvFieldSpec, value: unknown): boolean => {
   const t: CsvFieldType = field.type;
 
   // Optional types: blank is OK.
-  if (t === 'optional-string' || t === 'optional-iso8601' || t === 'optional-number') {
+  if (
+    t === 'optional-string' ||
+    t === 'optional-iso8601' ||
+    t === 'optional-number'
+  ) {
     if (isBlankCell(value)) return true;
   }
 
@@ -173,13 +188,23 @@ const fieldTypeOk = (field: CsvFieldSpec, value: unknown): boolean => {
   if (t === 'boolean') {
     if (typeof value === 'boolean') return true;
     const s = normalize(value).toLowerCase();
-    return s === 'true' || s === 'false' || s === '1' || s === '0' || s === 'yes' || s === 'no';
+    return (
+      s === 'true' ||
+      s === 'false' ||
+      s === '1' ||
+      s === '0' ||
+      s === 'yes' ||
+      s === 'no'
+    );
   }
 
   return true;
 };
 
-const requiredRelationshipFieldsByType: Record<string, readonly CsvColumnName[]> = {
+const requiredRelationshipFieldsByType: Record<
+  string,
+  readonly CsvColumnName[]
+> = {
   DECOMPOSES_TO: [],
   COMPOSED_OF: [],
   SERVED_BY: ['automationLevel'],
@@ -208,12 +233,16 @@ const computeScore = (blockingCount: number, warningCount: number): number => {
   return Math.max(0, Math.min(100, Math.trunc(raw)));
 };
 
-const resolveProject = (options?: InteroperabilityReadinessCheckOptions): Project | null =>
-  options?.project ?? projectStore.getProject();
+const resolveProject = (
+  options?: InteroperabilityReadinessCheckOptions,
+): Project | null => options?.project ?? projectStore.getProject();
 
-const resolveRepositories = (options?: InteroperabilityReadinessCheckOptions) => ({
+const resolveRepositories = (
+  options?: InteroperabilityReadinessCheckOptions,
+) => ({
   repository: options?.repository ?? getRepository(),
-  relationshipRepository: options?.relationshipRepository ?? getRelationshipRepository(),
+  relationshipRepository:
+    options?.relationshipRepository ?? getRelationshipRepository(),
 });
 
 const listAdrsSafe = (): ArchitectureDecisionRecord[] => {
@@ -249,8 +278,12 @@ export function runInteroperabilityReadinessCheck(
   }
 
   const scope = input.scope ?? null;
-  const includedElementTypes = scope ? coerceList(scope.includedElementTypes) : [];
-  const includedRelationshipTypes = scope ? coerceList(scope.includedRelationshipTypes) : [];
+  const includedElementTypes = scope
+    ? coerceList(scope.includedElementTypes)
+    : [];
+  const includedRelationshipTypes = scope
+    ? coerceList(scope.includedRelationshipTypes)
+    : [];
 
   // Collect elements in scope.
   const allElements: BaseArchitectureElement[] = [
@@ -263,12 +296,20 @@ export function runInteroperabilityReadinessCheck(
 
   const elements: BaseArchitectureElement[] = [];
   for (const e of allElements) {
-    if (includedElementTypes.length > 0 && !includedElementTypes.includes(e.elementType)) continue;
+    if (
+      includedElementTypes.length > 0 &&
+      !includedElementTypes.includes(e.elementType)
+    )
+      continue;
     elements.push(e);
   }
 
   // Element mandatory fields (schema-based).
-  const addMandatoryFieldIssues = (entity: string, element: BaseArchitectureElement, schema: CsvSchemaSpec) => {
+  const addMandatoryFieldIssues = (
+    entity: string,
+    element: BaseArchitectureElement,
+    schema: CsvSchemaSpec,
+  ) => {
     for (const col of schema.columns) {
       if (!col.requiredCell) continue;
 
@@ -304,7 +345,11 @@ export function runInteroperabilityReadinessCheck(
     // Governance advisory: stale reviews.
     const reviewCycleMonths = Number((element as any).reviewCycleMonths);
     const lastReviewedAt = normalize((element as any).lastReviewedAt);
-    if (Number.isFinite(reviewCycleMonths) && reviewCycleMonths > 0 && lastReviewedAt) {
+    if (
+      Number.isFinite(reviewCycleMonths) &&
+      reviewCycleMonths > 0 &&
+      lastReviewedAt
+    ) {
       const lastMs = Date.parse(lastReviewedAt);
       const nowMs = Date.parse(nowIso);
       if (!Number.isNaN(lastMs) && !Number.isNaN(nowMs)) {
@@ -357,12 +402,18 @@ export function runInteroperabilityReadinessCheck(
   // Relationships.
   const relationshipsAll = relationshipRepository.getAllRelationships();
   const relationships = relationshipsAll.filter((r) =>
-    includedRelationshipTypes.length > 0 ? includedRelationshipTypes.includes(r.relationshipType) : true,
+    includedRelationshipTypes.length > 0
+      ? includedRelationshipTypes.includes(r.relationshipType)
+      : true,
   );
 
   const relationshipSchema = CSV_IMPORT_SPECS.Relationships;
-  const relationshipTypeField = relationshipSchema.columns.find((c) => c.name === 'relationshipType') ?? null;
-  const allowedRelationshipTypes = ((relationshipTypeField?.enumValues ?? []) as readonly string[]).slice();
+  const relationshipTypeField =
+    relationshipSchema.columns.find((c) => c.name === 'relationshipType') ??
+    null;
+  const allowedRelationshipTypes = (
+    (relationshipTypeField?.enumValues ?? []) as readonly string[]
+  ).slice();
 
   const elementById = new Map<string, BaseArchitectureElement>();
   for (const e of allElements) elementById.set(e.id, e);
@@ -377,7 +428,10 @@ export function runInteroperabilityReadinessCheck(
   for (const r of relationships) {
     // Unsupported relationship types.
     const rt = normalize(r.relationshipType);
-    if (allowedRelationshipTypes.length > 0 && !allowedRelationshipTypes.includes(rt)) {
+    if (
+      allowedRelationshipTypes.length > 0 &&
+      !allowedRelationshipTypes.includes(rt)
+    ) {
       issues.push({
         severity: 'Blocking',
         category: 'UnsupportedRelationships',
@@ -468,7 +522,10 @@ export function runInteroperabilityReadinessCheck(
         entityId: r.id,
       });
     } else {
-      if (normalize(r.sourceElementType) && normalize(r.sourceElementType) !== src.elementType) {
+      if (
+        normalize(r.sourceElementType) &&
+        normalize(r.sourceElementType) !== src.elementType
+      ) {
         issues.push({
           severity: 'Blocking',
           category: 'UnsupportedRelationships',
@@ -480,7 +537,10 @@ export function runInteroperabilityReadinessCheck(
           field: 'sourceElementType',
         });
       }
-      if (normalize(r.targetElementType) && normalize(r.targetElementType) !== tgt.elementType) {
+      if (
+        normalize(r.targetElementType) &&
+        normalize(r.targetElementType) !== tgt.elementType
+      ) {
         issues.push({
           severity: 'Blocking',
           category: 'UnsupportedRelationships',
@@ -496,7 +556,10 @@ export function runInteroperabilityReadinessCheck(
 
     // Scope endpoints (exportability).
     if (inScopeElementIds) {
-      if (!inScopeElementIds.has(r.sourceElementId) || !inScopeElementIds.has(r.targetElementId)) {
+      if (
+        !inScopeElementIds.has(r.sourceElementId) ||
+        !inScopeElementIds.has(r.targetElementId)
+      ) {
         issues.push({
           severity: 'Blocking',
           category: 'UnsupportedRelationships',
@@ -555,7 +618,10 @@ export function runInteroperabilityReadinessCheck(
   const blockingIssues = issues.filter((i) => i.severity === 'Blocking');
   const advisoryWarnings = issues.filter((i) => i.severity === 'Warning');
 
-  const readinessScore = computeScore(blockingIssues.length, advisoryWarnings.length);
+  const readinessScore = computeScore(
+    blockingIssues.length,
+    advisoryWarnings.length,
+  );
 
   return {
     evaluatedAt,

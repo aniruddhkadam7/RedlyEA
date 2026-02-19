@@ -32,13 +32,6 @@
  * correct position when triggered.
  */
 
-import React from 'react';
-import { createPortal } from 'react-dom';
-
-import type { MenuItem } from './contextMenuEngine';
-import { adjustMenuPosition } from './contextMenuEngine';
-import { useContextMenu } from './ContextMenuProvider';
-
 // ---------------------------------------------------------------------------
 // Icons — lightweight lookup from string name → Ant Design icon
 // We import the small set referenced by the registry.
@@ -83,6 +76,11 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { useContextMenu } from './ContextMenuProvider';
+import type { MenuItem } from './contextMenuEngine';
+import { adjustMenuPosition } from './contextMenuEngine';
 
 const ICON_MAP: Record<string, React.FC<{ style?: React.CSSProperties }>> = {
   ApiOutlined,
@@ -148,10 +146,12 @@ const MENU_STYLES: Record<string, React.CSSProperties> = {
     maxWidth: 320,
     backgroundColor: '#fff',
     borderRadius: 8,
-    boxShadow: '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+    boxShadow:
+      '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
     padding: '4px 0',
     userSelect: 'none',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: 13,
     lineHeight: '22px',
     outline: 'none',
@@ -203,7 +203,8 @@ const MENU_STYLES: Record<string, React.CSSProperties> = {
     minWidth: 160,
     backgroundColor: '#fff',
     borderRadius: 8,
-    boxShadow: '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+    boxShadow:
+      '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
     padding: '4px 0',
   },
 };
@@ -218,7 +219,9 @@ const MenuItemRow: React.FC<{
 }> = ({ item, onAction }) => {
   const [hovered, setHovered] = React.useState(false);
   const [submenuOpen, setSubmenuOpen] = React.useState(false);
-  const submenuTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submenuTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   if (item.divider) {
     return <div style={MENU_STYLES.divider} />;
@@ -229,7 +232,11 @@ const MenuItemRow: React.FC<{
   const baseStyle = {
     ...MENU_STYLES.item,
     ...(item.disabled ? MENU_STYLES.itemDisabled : {}),
-    ...(hovered && !item.disabled ? (isDanger ? MENU_STYLES.itemDangerHover : MENU_STYLES.itemHover) : {}),
+    ...(hovered && !item.disabled
+      ? isDanger
+        ? MENU_STYLES.itemDangerHover
+        : MENU_STYLES.itemHover
+      : {}),
     ...(isDanger ? MENU_STYLES.itemDanger : {}),
   };
 
@@ -267,18 +274,20 @@ const MenuItemRow: React.FC<{
         tabIndex={item.disabled ? -1 : 0}
         style={baseStyle}
         onClick={handleClick}
-        onKeyDown={e => {
+        onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') handleClick(e as any);
         }}
       >
         {resolveIcon(item.icon)}
         <span>{item.label}</span>
-        {item.shortcut && <span style={MENU_STYLES.shortcut}>{item.shortcut}</span>}
+        {item.shortcut && (
+          <span style={MENU_STYLES.shortcut}>{item.shortcut}</span>
+        )}
         {hasChildren && <span style={MENU_STYLES.submenuArrow}>▸</span>}
       </div>
       {hasChildren && submenuOpen && (
         <div style={MENU_STYLES.submenu}>
-          {item.children!.map(child => (
+          {item.children?.map((child) => (
             <MenuItemRow key={child.key} item={child} onAction={onAction} />
           ))}
         </div>
@@ -299,19 +308,32 @@ const GlobalContextMenu: React.FC = () => {
   React.useEffect(() => {
     if (!state) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { close(); e.preventDefault(); e.stopPropagation(); }
+      if (e.key === 'Escape') {
+        close();
+        e.preventDefault();
+        e.stopPropagation();
+      }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [state, close]);
 
   // §9 — Adjust position after render (measure actual menu size)
-  const [adjustedPos, setAdjustedPos] = React.useState<{ x: number; y: number } | null>(null);
+  const [adjustedPos, setAdjustedPos] = React.useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   React.useEffect(() => {
-    if (!state) { setAdjustedPos(null); return; }
+    if (!state) {
+      setAdjustedPos(null);
+      return;
+    }
     // Initial position from engine
-    const pos = adjustMenuPosition({ x: state.position.x, y: state.position.y });
+    const pos = adjustMenuPosition({
+      x: state.position.x,
+      y: state.position.y,
+    });
     setAdjustedPos(pos);
 
     // Re-adjust after first paint with actual dimensions
@@ -343,7 +365,10 @@ const GlobalContextMenu: React.FC = () => {
       <div
         style={MENU_STYLES.overlay}
         onClick={close}
-        onContextMenu={e => { e.preventDefault(); close(); }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          close();
+        }}
       />
       {/* Menu */}
       <div
@@ -355,7 +380,7 @@ const GlobalContextMenu: React.FC = () => {
           left: pos.x,
           top: pos.y,
         }}
-        onContextMenu={e => e.preventDefault()}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {state.items.map((item: MenuItem) => (
           <MenuItemRow key={item.key} item={item} onAction={onAction} />

@@ -42,11 +42,16 @@ const increment = (obj: Record<string, number>, key: string) => {
   obj[key] = (obj[key] ?? 0) + 1;
 };
 
-const makeFindingId = (checkId: IntegrityAuditCheckId, subjectId: string) => `${checkId}:${subjectId}`;
+const makeFindingId = (checkId: IntegrityAuditCheckId, subjectId: string) =>
+  `${checkId}:${subjectId}`;
 
-const normalizeId = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown): string =>
+  typeof value === 'string' ? value.trim() : '';
 
-const getElement = (repo: ArchitectureRepository, id: string): BaseArchitectureElement | null => repo.getElementById(id);
+const getElement = (
+  repo: ArchitectureRepository,
+  id: string,
+): BaseArchitectureElement | null => repo.getElementById(id);
 
 /**
  * Repository integrity audit (passive).
@@ -64,7 +69,8 @@ export function auditRepositoryIntegrity(
 
   const findings: IntegrityAuditFinding[] = [];
 
-  const allRelationships: BaseArchitectureRelationship[] = relationships.getAllRelationships();
+  const allRelationships: BaseArchitectureRelationship[] =
+    relationships.getAllRelationships();
 
   // 1) Relationships referencing non-existent elements
   for (const rel of allRelationships) {
@@ -76,7 +82,10 @@ export function auditRepositoryIntegrity(
 
     if (!source) {
       findings.push({
-        id: makeFindingId('RELATIONSHIP_DANGLING_REFERENCE', `${rel.id}:source`),
+        id: makeFindingId(
+          'RELATIONSHIP_DANGLING_REFERENCE',
+          `${rel.id}:source`,
+        ),
         checkId: 'RELATIONSHIP_DANGLING_REFERENCE',
         severity: 'Error',
         message: `Relationship references non-existent source element ("${sourceId || '<missing>'}").`,
@@ -94,7 +103,10 @@ export function auditRepositoryIntegrity(
 
     if (!target) {
       findings.push({
-        id: makeFindingId('RELATIONSHIP_DANGLING_REFERENCE', `${rel.id}:target`),
+        id: makeFindingId(
+          'RELATIONSHIP_DANGLING_REFERENCE',
+          `${rel.id}:target`,
+        ),
         checkId: 'RELATIONSHIP_DANGLING_REFERENCE',
         severity: 'Error',
         message: `Relationship references non-existent target element ("${targetId || '<missing>'}").`,
@@ -131,7 +143,9 @@ export function auditRepositoryIntegrity(
       id: makeFindingId('PROCESS_MULTIPLE_CAPABILITY_PARENTS', processId),
       checkId: 'PROCESS_MULTIPLE_CAPABILITY_PARENTS',
       severity: 'Error',
-      message: `BusinessProcess "${processId}" is decomposed under multiple Capabilities: ${Array.from(capabilityIds)
+      message: `BusinessProcess "${processId}" is decomposed under multiple Capabilities: ${Array.from(
+        capabilityIds,
+      )
         .sort()
         .map((id) => `"${id}"`)
         .join(', ')}.`,
@@ -145,16 +159,17 @@ export function auditRepositoryIntegrity(
   // 3) Application dependencies with conflicting strength
   const strengthsByPair = new Map<string, Set<string>>();
 
-  const appDeps = ([] as any[])
-    .concat(relationships.getRelationshipsByType('INTEGRATES_WITH'))
-    ;
+  const appDeps = ([] as any[]).concat(
+    relationships.getRelationshipsByType('INTEGRATES_WITH'),
+  );
 
   for (const rel of appDeps) {
     const from = normalizeId(rel.sourceElementId);
     const to = normalizeId(rel.targetElementId);
     if (!from || !to) continue;
 
-    const strengthRaw = (rel as unknown as { dependencyStrength?: unknown }).dependencyStrength;
+    const strengthRaw = (rel as unknown as { dependencyStrength?: unknown })
+      .dependencyStrength;
     const strength = typeof strengthRaw === 'string' ? strengthRaw.trim() : '';
     if (!strength) continue;
 
@@ -171,7 +186,9 @@ export function auditRepositoryIntegrity(
       id: makeFindingId('APPLICATION_DEPENDENCY_CONFLICTING_STRENGTH', pair),
       checkId: 'APPLICATION_DEPENDENCY_CONFLICTING_STRENGTH',
       severity: 'Warning',
-      message: `Application dependency "${pair}" has conflicting dependencyStrength values: ${Array.from(strengths)
+      message: `Application dependency "${pair}" has conflicting dependencyStrength values: ${Array.from(
+        strengths,
+      )
         .sort()
         .map((s) => `"${s}"`)
         .join(', ')}.`,
@@ -183,7 +200,11 @@ export function auditRepositoryIntegrity(
     });
   }
 
-  const bySeverity: Record<IntegrityAuditSeverity, number> = { Info: 0, Warning: 0, Error: 0 };
+  const bySeverity: Record<IntegrityAuditSeverity, number> = {
+    Info: 0,
+    Warning: 0,
+    Error: 0,
+  };
   const byCheckId: Partial<Record<IntegrityAuditCheckId, number>> = {};
 
   for (const finding of findings) {

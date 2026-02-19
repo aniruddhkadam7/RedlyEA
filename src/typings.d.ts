@@ -1,20 +1,48 @@
-declare module 'slash2';
-declare module '*.css';
-declare module '*.less';
-declare module '*.scss';
-declare module '*.sass';
-declare module '*.svg';
-declare module '*.png';
-declare module '*.jpg';
-declare module '*.jpeg';
-declare module '*.gif';
-declare module '*.bmp';
-declare module '*.tiff';
-declare module '*.webm';
-declare module 'omit.js';
-declare module 'numeral';
-declare module 'mockjs';
-declare module 'react-fittext';
+declare module "slash2";
+declare module "*.module.less" {
+  const content: Record<string, string>;
+  export default content;
+}
+declare module "*.css";
+declare module "*.less";
+declare module "*.scss";
+declare module "*.sass";
+declare module "*.svg" {
+  const content: string;
+  export default content;
+}
+declare module "*.png" {
+  const content: string;
+  export default content;
+}
+declare module "*.jpg" {
+  const content: string;
+  export default content;
+}
+declare module "*.jpeg" {
+  const content: string;
+  export default content;
+}
+declare module "*.gif" {
+  const content: string;
+  export default content;
+}
+declare module "*.bmp" {
+  const content: string;
+  export default content;
+}
+declare module "*.tiff" {
+  const content: string;
+  export default content;
+}
+declare module "*.webm" {
+  const content: string;
+  export default content;
+}
+declare module "omit.js";
+declare module "numeral";
+declare module "mockjs";
+declare module "react-fittext";
 
 declare global {
   interface Window {
@@ -122,18 +150,78 @@ declare global {
         symbolColor: string;
         height?: number;
       }) => Promise<{ ok: true } | { ok: false; error: string }>;
-      closeDevTools: () => Promise<
+      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      // Manual update check
+      checkForUpdates: () => Promise<
+      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      // Manual update check
+      checkForUpdates: () => Promise<
         { ok: true } | { ok: false; error: string }
       >;
+      // Updater API
+      updater: {
+        check: () => Promise<
+          | { ok: true; updateInfo?: { version: string; releaseDate?: string } }
+          | { ok: false; error: string }
+        >;
+        download: () => Promise<{ ok: true } | { ok: false; error: string }>;
+        install: () => { ok: true } | { ok: false; error: string };
+        getVersion: () => Promise<{ version: string }>;
+        onStatus: (
+          handler: (data: {
+            status:
+              | "checking"
+              | "available"
+              | "not-available"
+              | "downloading"
+              | "downloaded"
+              | "error";
+            version?: string;
+            percent?: number;
+            bytesPerSecond?: number;
+            transferred?: number;
+            total?: number;
+            message?: string;
+          }) => void,
+        ) => void;
+        offStatus: (handler: (data: unknown) => void) => void;
+      };
+      // Updater API
+      updater: {
+        check: () => Promise<
+          | { ok: true; updateInfo?: { version: string; releaseDate?: string } }
+          | { ok: false; error: string }
+        >;
+        download: () => Promise<{ ok: true } | { ok: false; error: string }>;
+        install: () => { ok: true } | { ok: false; error: string };
+        getVersion: () => Promise<{ version: string }>;
+        onStatus: (
+          handler: (data: {
+            status:
+              | "checking"
+              | "available"
+              | "not-available"
+              | "downloading"
+              | "downloaded"
+              | "error";
+            version?: string;
+            percent?: number;
+            bytesPerSecond?: number;
+            transferred?: number;
+            total?: number;
+            message?: string;
+          }) => void,
+        ) => void;
+        offStatus: (handler: (data: unknown) => void) => void;
+      };
     };
     debugAPI?: {
       toggleDevTools: () => Promise<
         { ok: true } | { ok: false; error: string }
       >;
       openDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
-      closeDevTools: () => Promise<
-        { ok: true } | { ok: false; error: string }
-      >;
+      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
+      closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
     };
   }
 }

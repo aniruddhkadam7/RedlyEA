@@ -44,16 +44,27 @@ export function createGlobalActionHandler(
 
       case 'goto':
         if (ctx.nodeId) {
-          dispatchIdeCommand({ type: 'view.showActivity', activity: 'explorer' });
+          dispatchIdeCommand({
+            type: 'view.showActivity',
+            activity: 'explorer',
+          });
         }
         break;
 
       case 'zoom-in':
-        window.dispatchEvent(new CustomEvent('ea:studio.canvas.zoom', { detail: { direction: 'in' } }));
+        window.dispatchEvent(
+          new CustomEvent('ea:studio.canvas.zoom', {
+            detail: { direction: 'in' },
+          }),
+        );
         break;
 
       case 'zoom-out':
-        window.dispatchEvent(new CustomEvent('ea:studio.canvas.zoom', { detail: { direction: 'out' } }));
+        window.dispatchEvent(
+          new CustomEvent('ea:studio.canvas.zoom', {
+            detail: { direction: 'out' },
+          }),
+        );
         break;
 
       case 'auto-layout':
@@ -62,13 +73,20 @@ export function createGlobalActionHandler(
 
       case 'close-tab':
         if (ctx.viewId) {
-          dispatchIdeCommand({ type: 'workspace.closeMatchingTabs', prefix: `studio:view:${ctx.viewId}` });
+          dispatchIdeCommand({
+            type: 'workspace.closeMatchingTabs',
+            prefix: `studio:view:${ctx.viewId}`,
+          });
         }
         break;
 
       case 'close-other-tabs':
         // Signal to tab manager
-        window.dispatchEvent(new CustomEvent('ea:tabs.closeOthers', { detail: { keepViewId: ctx.viewId } }));
+        window.dispatchEvent(
+          new CustomEvent('ea:tabs.closeOthers', {
+            detail: { keepViewId: ctx.viewId },
+          }),
+        );
         break;
 
       case 'close-all-tabs':
@@ -77,7 +95,9 @@ export function createGlobalActionHandler(
 
       default:
         if (process.env.NODE_ENV === 'development') {
-          console.warn(`[ContextMenu] Unhandled action: "${key}" for source: ${ctx.source}`);
+          console.warn(
+            `[ContextMenu] Unhandled action: "${key}" for source: ${ctx.source}`,
+          );
         }
         break;
     }

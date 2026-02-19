@@ -164,7 +164,9 @@ export class EaRepository {
   static import(input: {
     objects?: Iterable<EaObject>;
     relationships?: Iterable<EaRelationship>;
-  }): { ok: true; repo: EaRepository } | { ok: false; error: string; errors: string[] } {
+  }):
+    | { ok: true; repo: EaRepository }
+    | { ok: false; error: string; errors: string[] } {
     const next = new EaRepository();
     const errors: string[] = [];
 
@@ -232,16 +234,19 @@ export class EaRepository {
     });
   }
 
-  private normalizeRelationshipRecord(input: EaRelationship): {
-    ok: true;
-    relationship: EaPersistedRelationship;
-  } | {
-    ok: false;
-    error: string;
-  } {
+  private normalizeRelationshipRecord(input: EaRelationship):
+    | {
+        ok: true;
+        relationship: EaPersistedRelationship;
+      }
+    | {
+        ok: false;
+        error: string;
+      } {
     const fromId = String(input?.fromId ?? input?.sourceId ?? '').trim();
     const toId = String(input?.toId ?? input?.targetId ?? '').trim();
-    const relationshipId = String(input?.id ?? '').trim() || makeRelationshipId();
+    const relationshipId =
+      String(input?.id ?? '').trim() || makeRelationshipId();
 
     if (!relationshipId) {
       return { ok: false, error: 'Relationship id is required.' };
@@ -359,19 +364,25 @@ export class EaRepository {
   private indexRelationship(rel: EaPersistedRelationship): void {
     this.relationshipsById.set(rel.id, rel);
 
-    const typeSet = this.relationshipIdsByType.get(rel.type) ?? new Set<string>();
+    const typeSet =
+      this.relationshipIdsByType.get(rel.type) ?? new Set<string>();
     typeSet.add(rel.id);
     this.relationshipIdsByType.set(rel.type, typeSet);
 
-    const sourceSet = this.relationshipIdsBySource.get(rel.fromId) ?? new Set<string>();
+    const sourceSet =
+      this.relationshipIdsBySource.get(rel.fromId) ?? new Set<string>();
     sourceSet.add(rel.id);
     this.relationshipIdsBySource.set(rel.fromId, sourceSet);
 
-    const targetSet = this.relationshipIdsByTarget.get(rel.toId) ?? new Set<string>();
+    const targetSet =
+      this.relationshipIdsByTarget.get(rel.toId) ?? new Set<string>();
     targetSet.add(rel.id);
     this.relationshipIdsByTarget.set(rel.toId, targetSet);
 
-    this.relationshipIdByKey.set(toRelationshipKey(rel.type, rel.fromId, rel.toId), rel.id);
+    this.relationshipIdByKey.set(
+      toRelationshipKey(rel.type, rel.fromId, rel.toId),
+      rel.id,
+    );
   }
 
   private unindexRelationship(rel: EaPersistedRelationship): void {
@@ -417,9 +428,13 @@ export class EaRepository {
         continue;
       }
 
-      const duplicateId = this.relationshipsById.has(normalized.relationship.id);
+      const duplicateId = this.relationshipsById.has(
+        normalized.relationship.id,
+      );
       if (duplicateId) {
-        errors.push(`Duplicate relationship id "${normalized.relationship.id}".`);
+        errors.push(
+          `Duplicate relationship id "${normalized.relationship.id}".`,
+        );
         continue;
       }
 
@@ -741,7 +756,11 @@ export class EaRepository {
     if (!normalized.ok) return normalized;
 
     const updated = normalized.relationship;
-    const nextKey = toRelationshipKey(updated.type, updated.fromId, updated.toId);
+    const nextKey = toRelationshipKey(
+      updated.type,
+      updated.fromId,
+      updated.toId,
+    );
     const existingIdForKey = this.relationshipIdByKey.get(nextKey);
     if (existingIdForKey && existingIdForKey !== key) {
       return {

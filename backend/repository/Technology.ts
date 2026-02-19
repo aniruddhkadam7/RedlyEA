@@ -2,7 +2,11 @@ import type { BaseArchitectureElement } from './BaseArchitectureElement';
 
 export type TechnologyType = 'Infrastructure' | 'Platform' | 'Service';
 
-export type TechnologyCategory = 'Compute' | 'Storage' | 'Network' | 'Middleware';
+export type TechnologyCategory =
+  | 'Compute'
+  | 'Storage'
+  | 'Network'
+  | 'Middleware';
 
 export type RiskLevel = 'High' | 'Medium' | 'Low';
 

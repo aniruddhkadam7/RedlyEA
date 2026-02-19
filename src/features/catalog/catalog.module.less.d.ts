@@ -1,0 +1,26 @@
+declare const styles: {
+  registryPage: string;
+  registryHeader: string;
+  registryTitle: string;
+  registryToolbar: string;
+  filterButtonActive: string;
+  filterPanelOpen: string;
+  filterPanelClosed: string;
+  filterPanelInner: string;
+  searchInput: string;
+  registryBody: string;
+  registryBodyFull: string;
+  registryGrid: string;
+  registryInspector: string;
+  inspectorHeader: string;
+  inspectorBody: string;
+  detailGrid: string;
+  inspectorList: string;
+  inspectorRow: string;
+  columnMenu: string;
+  columnToggle: string;
+  catalogTableWrap: string;
+  catalogTable: string;
+  readonly [key: string]: string;
+};
+export default styles;

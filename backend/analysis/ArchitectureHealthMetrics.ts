@@ -36,7 +36,8 @@ export type ArchitectureHealthMetricsInput = Omit<
   stableTrendDelta?: number;
 };
 
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
 
 const toNonNegativeInteger = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
@@ -64,7 +65,9 @@ export function normalizeArchitectureHealthMetricCounts(input: {
     elementsWithWarnings: toNonNegativeInteger(input.elementsWithWarnings),
     orphanedElementsCount: toNonNegativeInteger(input.orphanedElementsCount),
     lifecycleRiskCount: toNonNegativeInteger(input.lifecycleRiskCount),
-    technologyObsolescenceCount: toNonNegativeInteger(input.technologyObsolescenceCount),
+    technologyObsolescenceCount: toNonNegativeInteger(
+      input.technologyObsolescenceCount,
+    ),
   };
 }
 
@@ -103,7 +106,13 @@ export function computeOverallHealthScore(input: {
   const lifecyclePenalty = 20 * lifecycleRiskRate;
   const techPenalty = 25 * techObsoleteRate;
 
-  const score = 100 - (errorPenalty + warningPenalty + orphanPenalty + lifecyclePenalty + techPenalty);
+  const score =
+    100 -
+    (errorPenalty +
+      warningPenalty +
+      orphanPenalty +
+      lifecyclePenalty +
+      techPenalty);
   return Math.round(clamp(score, 0, 100));
 }
 
@@ -116,11 +125,23 @@ export function deriveHealthTrend(args: {
   stableTrendDelta?: number;
 }): HealthTrend {
   const stableDelta = toNonNegativeInteger(args.stableTrendDelta ?? 2);
-  const current = clamp(toNonNegativeInteger(args.currentOverallHealthScore), 0, 100);
+  const current = clamp(
+    toNonNegativeInteger(args.currentOverallHealthScore),
+    0,
+    100,
+  );
 
-  if (args.previousOverallHealthScore === undefined || args.previousOverallHealthScore === null) return 'Stable';
+  if (
+    args.previousOverallHealthScore === undefined ||
+    args.previousOverallHealthScore === null
+  )
+    return 'Stable';
 
-  const previous = clamp(toNonNegativeInteger(args.previousOverallHealthScore), 0, 100);
+  const previous = clamp(
+    toNonNegativeInteger(args.previousOverallHealthScore),
+    0,
+    100,
+  );
   const delta = current - previous;
 
   if (delta >= stableDelta) return 'Improving';
@@ -131,7 +152,9 @@ export function deriveHealthTrend(args: {
 /**
  * Convenience helper that computes all derived fields.
  */
-export function deriveArchitectureHealthMetrics(input: ArchitectureHealthMetricsInput): ArchitectureHealthMetrics {
+export function deriveArchitectureHealthMetrics(
+  input: ArchitectureHealthMetricsInput,
+): ArchitectureHealthMetrics {
   const normalized = normalizeArchitectureHealthMetricCounts(input);
   const overallHealthScore = computeOverallHealthScore(normalized);
   const healthTrend = deriveHealthTrend({

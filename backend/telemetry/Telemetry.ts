@@ -1,8 +1,10 @@
-import { telemetryStore, type TelemetryEvent } from './TelemetryStore';
+import { type TelemetryEvent, telemetryStore } from './TelemetryStore';
 
 const envFlag = (name: string): string => {
   try {
-    const p = (globalThis as unknown as { process?: { env?: Record<string, unknown> } }).process;
+    const p = (
+      globalThis as unknown as { process?: { env?: Record<string, unknown> } }
+    ).process;
     return String(p?.env?.[name] ?? '').trim();
   } catch {
     return '';

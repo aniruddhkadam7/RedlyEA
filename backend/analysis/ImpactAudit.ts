@@ -1,4 +1,7 @@
-import type { ImpactAnalysisDirection, ImpactAnalysisIntent } from './ImpactAnalysisRequest';
+import type {
+  ImpactAnalysisDirection,
+  ImpactAnalysisIntent,
+} from './ImpactAnalysisRequest';
 
 export type ImpactAnalysisParameters = {
   rootElementId: string;

@@ -1,12 +1,42 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.yourcompany.redlyai",
+  "appId": "com.redlyai.desktop",
   "productName": "RedlyAI",
   "directories": {
     "output": "release",
     "buildResources": "build"
   },
-  "files": ["dist/**/*", "electron/**/*", "!node_modules/.cache"],
+  "publish": {
+    "provider": "github",
+    "owner": "manish-lal12",
+    "repo": "EA-CI-CD"
+  },
+  "files": [
+    {
+      "from": ".",
+      "to": ".",
+      "filter": [
+        "dist/**/*",
+        "electron/**/*",
+        "public/favicon.ico",
+        "node_modules/**/*",
+        "package.json"
+      ]
+    }
+  ],
+  "extraFiles": [
+    {
+      "from": "dist",
+      "to": "dist",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "electron",
+      "to": "electron",
+      "filter": ["**/*"]
+    }
+  ],
+  "asarUnpack": ["electron/**/*"],
   "extraMetadata": {
     "main": "electron/main.js"
   },
@@ -20,16 +50,35 @@
       "role": "Editor"
     }
   ],
-  "icon": "build/icons/app",
+  "icon": "build/icons/icon",
   "win": {
-    "target": ["nsis", "portable"],
-    "icon": "build/icons/app.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icons/icon.ico",
+    "certificateFile": null,
+    "certificatePassword": null,
+    "signingHashAlgorithms": ["sha256"],
     "fileAssociations": [
       {
         "ext": "eapkg",
         "name": "EA Repository Package",
         "description": "Enterprise Architecture Repository",
         "icon": "build/icons/eapkg-icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "redly",
+        "name": "Redly Repository File",
+        "description": "Redly Repository File",
+        "icon": "build/icons/icon.ico",
         "role": "Editor"
       }
     ]
@@ -40,11 +89,16 @@
     "perMachine": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "RedlyAI Architecture Studio"
-  },
+    "shortcutName": "RedlyAI Architecture Studio",
+    "artifactName": "${productName}-${version}-Setup.${ext}",
+    "installerIcon": "build/icons/icon.ico",
+    "uninstallerIcon": "build/icons/icon.ico",
+    "installerHeader": "build/icons/icon.ico",
+    "installerSidebar": "build/icons/icon.ico"
+  }
   "mac": {
     "target": ["dmg", "zip"],
-    "icon": "build/icons/app.icns",
+    "icon": "build/icons/icon.icns",
     "category": "public.app-category.developer-tools",
     "fileAssociations": [
       {
@@ -58,7 +112,7 @@
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "build/icons/app.png",
+    "icon": "build/icons/icon.png",
     "category": "Development",
     "fileAssociations": [
       {

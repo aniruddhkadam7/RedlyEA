@@ -50,11 +50,15 @@ export function createAnalysisResult<TData>(args: {
   return record;
 }
 
-export function getAnalysisResult<TData = unknown>(id: string): AnalysisResultRecord<TData> | undefined {
+export function getAnalysisResult<TData = unknown>(
+  id: string,
+): AnalysisResultRecord<TData> | undefined {
   return store.byId.get(id) as AnalysisResultRecord<TData> | undefined;
 }
 
-export function listAnalysisResults(kind?: AnalysisKind): AnalysisResultRecord[] {
+export function listAnalysisResults(
+  kind?: AnalysisKind,
+): AnalysisResultRecord[] {
   const results: AnalysisResultRecord[] = [];
   for (const id of store.order) {
     const rec = store.byId.get(id);

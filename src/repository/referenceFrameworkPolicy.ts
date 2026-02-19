@@ -123,7 +123,9 @@ export function getFrameworkRelationshipPolicy(
   return DEFAULT_RELATIONSHIP_POLICY;
 }
 
-export function getFrameworkObjectPolicy(referenceFramework: ReferenceFramework | null | undefined): FrameworkObjectPolicy {
+export function getFrameworkObjectPolicy(
+  referenceFramework: ReferenceFramework | null | undefined,
+): FrameworkObjectPolicy {
   if (referenceFramework === 'TOGAF') {
     return { allowedObjectTypes: TOGAF_OBJECT_TYPES };
   }
@@ -139,7 +141,9 @@ export function getFrameworkLifecyclePolicy(
   return DEFAULT_LIFECYCLE_POLICY;
 }
 
-export function getFrameworkPhasePolicy(referenceFramework: ReferenceFramework | null | undefined): FrameworkPhasePolicy {
+export function getFrameworkPhasePolicy(
+  referenceFramework: ReferenceFramework | null | undefined,
+): FrameworkPhasePolicy {
   if (referenceFramework === 'TOGAF') {
     return { allowedAdmPhases: TOGAF_ADM_PHASES };
   }

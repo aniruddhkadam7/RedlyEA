@@ -20,12 +20,10 @@
 import {
   CheckOutlined,
   CloseOutlined,
-  EditOutlined,
-  FileTextOutlined,
   SearchOutlined,
-} from '@ant-design/icons';
-import { useModel } from '@umijs/max';
-import type { MenuProps } from 'antd';
+} from "@ant-design/icons";
+import { useModel } from "@umijs/max";
+import type { MenuProps } from "antd";
 import {
   Alert,
   Button,
@@ -38,90 +36,89 @@ import {
   Select,
   Space,
   Tag,
-  Tooltip,
   Tree,
   Typography,
-} from 'antd';
-import type { DataNode, TreeProps } from 'antd/es/tree';
-import React from 'react';
+} from "antd";
+import type { DataNode, TreeProps } from "antd/es/tree";
+import React from "react";
 
 import {
   setRoadmapDragPayload,
   setViewDragPayload,
-} from '@/diagram-studio/drag-drop/DragDropConstants';
+} from "@/diagram-studio/drag-drop/DragDropConstants";
 import {
   type CanvasState,
   exportRedlyFile,
   importRedlyFile,
   RedlyViewStore,
   serializeView,
-} from '@/diagram-studio/redly-format';
-import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
-import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
-import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
-import { message } from '@/ea/eaConsole';
-import { useSeedSampleData } from '@/ea/useSeedSampleData';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { dispatchIdeCommand } from '@/ide/ideCommands';
+} from "@/diagram-studio/redly-format";
+import { ViewLayoutStore } from "@/diagram-studio/view-runtime/ViewLayoutStore";
+import { ViewStore } from "@/diagram-studio/view-runtime/ViewStore";
+import type { ViewInstance } from "@/diagram-studio/viewpoints/ViewInstance";
+import { ViewpointRegistry } from "@/diagram-studio/viewpoints/ViewpointRegistry";
+import { useEaRepository } from "@/ea/EaRepositoryContext";
+import { message } from "@/ea/eaConsole";
+import { useSeedSampleData } from "@/ea/useSeedSampleData";
+import { useIdeSelection } from "@/ide/IdeSelectionContext";
+import { dispatchIdeCommand } from "@/ide/ideCommands";
 import type {
   ObjectType,
   RelationshipType,
-} from '@/pages/dependency-view/utils/eaMetaModel';
+} from "@/pages/dependency-view/utils/eaMetaModel";
 import {
   isValidRelationshipType,
   OBJECT_TYPE_DEFINITIONS,
   RELATIONSHIP_TYPE_DEFINITIONS,
-} from '@/pages/dependency-view/utils/eaMetaModel';
+} from "@/pages/dependency-view/utils/eaMetaModel";
 import {
   hasRepositoryPermission,
   type RepositoryRole,
-} from '@/repository/accessControl';
+} from "@/repository/accessControl";
 import {
   isCustomFrameworkModelingEnabled,
   isObjectTypeEnabledForFramework,
-} from '@/repository/customFrameworkConfig';
-import { isObjectTypeAllowedForReferenceFramework } from '@/repository/referenceFrameworkPolicy';
+} from "@/repository/customFrameworkConfig";
+import { isObjectTypeAllowedForReferenceFramework } from "@/repository/referenceFrameworkPolicy";
 
-import type { Baseline } from '../../../../backend/baselines/Baseline';
+import type { Baseline } from "../../../../backend/baselines/Baseline";
 import {
   createBaseline,
   getBaselineById,
   listBaselines,
-} from '../../../../backend/baselines/BaselineStore';
-import { listPlateaus } from '../../../../backend/roadmap/PlateauStore';
-import { listRoadmaps } from '../../../../backend/roadmap/RoadmapStore';
+} from "../../../../backend/baselines/BaselineStore";
+import { listPlateaus } from "../../../../backend/roadmap/PlateauStore";
+import { listRoadmaps } from "../../../../backend/roadmap/RoadmapStore";
 
-import { useIdeShell } from '../index';
+import { useIdeShell } from "../index";
 // @ts-expect-error — .less module handled by bundler
-import styles from '../style.module.less';
+import styles from "../style.module.less";
 
-import { auditObjectMutation } from './explorerAuditLog';
+import { auditObjectMutation } from "./explorerAuditLog";
 import {
   buildContextMenu,
   classifyNodeKey,
   type ExplorerMenuAction,
-} from './explorerContextMenu';
+} from "./explorerContextMenu";
 import {
   bridgeLegacyEvents,
   emitExplorerEvent,
   onExplorerEvent,
-} from './explorerEventBus';
+} from "./explorerEventBus";
 import {
   EXPLORER_KEYS,
   getDefaultExpandedKeys,
   resolveArchitectureName,
-} from './explorerNodeRegistry';
+} from "./explorerNodeRegistry";
 import {
   assertCanPerform,
   canPerform,
   type ExplorerAction,
-} from './explorerPermissions';
+} from "./explorerPermissions";
 import {
   buildExplorerTree,
   type ExplorerTreeInput,
-} from './explorerTreeBuilder';
+} from "./explorerTreeBuilder";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -131,10 +128,10 @@ const isSoftDeleted = (
   attributes: Record<string, unknown> | null | undefined,
 ) => {
   if ((attributes as any)?._deleted === true) return true;
-  const modelingState = String((attributes as any)?.modelingState ?? '')
+  const modelingState = String((attributes as any)?.modelingState ?? "")
     .trim()
     .toUpperCase();
-  return modelingState === 'DRAFT';
+  return modelingState === "DRAFT";
 };
 
 const nameForObject = (obj: {
@@ -142,7 +139,7 @@ const nameForObject = (obj: {
   attributes?: Record<string, unknown>;
 }) => {
   const raw = (obj.attributes as any)?.name;
-  const name = typeof raw === 'string' ? raw.trim() : '';
+  const name = typeof raw === "string" ? raw.trim() : "";
   return name || obj.id;
 };
 
@@ -153,9 +150,9 @@ const frameworksForObject = (
   if (!attrs) return [];
   const rawList = Array.isArray(attrs.frameworks) ? attrs.frameworks : [];
   const rawSingle =
-    typeof attrs.framework === 'string' ? [attrs.framework] : [];
+    typeof attrs.framework === "string" ? [attrs.framework] : [];
   const rawRef =
-    typeof attrs.referenceFramework === 'string'
+    typeof attrs.referenceFramework === "string"
       ? [attrs.referenceFramework]
       : [];
   const combined = [...rawList, ...rawSingle, ...rawRef]
@@ -166,41 +163,41 @@ const frameworksForObject = (
 
 const titleForObjectType = (type: ObjectType): string =>
   type
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
 
 const defaultIdPrefixForType = (type: ObjectType) => {
   const map: Partial<Record<ObjectType, string>> = {
-    Enterprise: 'ent-',
-    Application: 'app-',
-    ApplicationService: 'appsvc-',
-    Interface: 'iface-',
-    Node: 'node-',
-    Compute: 'compute-',
-    Runtime: 'runtime-',
-    Database: 'db-',
-    Storage: 'storage-',
-    API: 'api-',
-    MessageBroker: 'mb-',
-    IntegrationPlatform: 'int-',
-    CloudService: 'cloud-',
-    Technology: 'tech-',
-    Programme: 'prog-',
-    Project: 'proj-',
-    Capability: 'cap-',
-    BusinessService: 'bizsvc-',
-    BusinessProcess: 'proc-',
-    Department: 'dept-',
-    Principle: 'principle-',
-    Requirement: 'req-',
-    Standard: 'std-',
+    Enterprise: "ent-",
+    Application: "app-",
+    ApplicationService: "appsvc-",
+    Interface: "iface-",
+    Node: "node-",
+    Compute: "compute-",
+    Runtime: "runtime-",
+    Database: "db-",
+    Storage: "storage-",
+    API: "api-",
+    MessageBroker: "mb-",
+    IntegrationPlatform: "int-",
+    CloudService: "cloud-",
+    Technology: "tech-",
+    Programme: "prog-",
+    Project: "proj-",
+    Capability: "cap-",
+    BusinessService: "bizsvc-",
+    BusinessProcess: "proc-",
+    Department: "dept-",
+    Principle: "principle-",
+    Requirement: "req-",
+    Standard: "std-",
   };
   return map[type] ?? `${String(type).toLowerCase()}-`;
 };
 
 const generateUUID = (): string => {
   try {
-    if (typeof globalThis.crypto?.randomUUID === 'function')
+    if (typeof globalThis.crypto?.randomUUID === "function")
       return globalThis.crypto.randomUUID();
   } catch {}
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
@@ -222,23 +219,23 @@ const lifecycleOptionsForFramework = (
   referenceFramework: string | null | undefined,
   lifecycleCoverage: string | null | undefined,
 ): string[] => {
-  if (referenceFramework === 'TOGAF') {
-    if (lifecycleCoverage === 'To-Be') return ['Target'];
-    if (lifecycleCoverage === 'As-Is') return ['Baseline'];
-    return ['Baseline', 'Target'];
+  if (referenceFramework === "TOGAF") {
+    if (lifecycleCoverage === "To-Be") return ["Target"];
+    if (lifecycleCoverage === "As-Is") return ["Baseline"];
+    return ["Baseline", "Target"];
   }
-  if (lifecycleCoverage === 'To-Be') return ['To-Be'];
-  if (lifecycleCoverage === 'As-Is') return ['As-Is'];
-  return ['As-Is', 'To-Be'];
+  if (lifecycleCoverage === "To-Be") return ["To-Be"];
+  if (lifecycleCoverage === "As-Is") return ["As-Is"];
+  return ["As-Is", "To-Be"];
 };
 
 const defaultLifecycleStateForFramework = (
   referenceFramework: string | null | undefined,
   lifecycleCoverage: string | null | undefined,
 ): string => {
-  if (referenceFramework === 'TOGAF')
-    return lifecycleCoverage === 'To-Be' ? 'Target' : 'Baseline';
-  return lifecycleCoverage === 'To-Be' ? 'To-Be' : 'As-Is';
+  if (referenceFramework === "TOGAF")
+    return lifecycleCoverage === "To-Be" ? "Target" : "Baseline";
+  return lifecycleCoverage === "To-Be" ? "To-Be" : "As-Is";
 };
 
 // ---------------------------------------------------------------------------
@@ -246,12 +243,12 @@ const defaultLifecycleStateForFramework = (
 // ---------------------------------------------------------------------------
 
 const ExplorerTree: React.FC = () => {
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { selection, setSelection, setSelectedElement } = useIdeSelection();
   const { openRouteTab, openWorkspaceTab, openPropertiesPanel } = useIdeShell();
   const { eaRepository, trySetEaRepository, metadata, initializationState } =
     useEaRepository();
-  const userRole: RepositoryRole = 'Owner';
+  const userRole: RepositoryRole = "Owner";
 
   // --- State ---
   const [refreshToken, setRefreshToken] = React.useState(0);
@@ -264,13 +261,13 @@ const ExplorerTree: React.FC = () => {
     name: string;
   } | null>(null);
   const [selectedRelationshipType, setSelectedRelationshipType] =
-    React.useState<RelationshipType | ''>('');
-  const [selectedTargetId, setSelectedTargetId] = React.useState<string>('');
+    React.useState<RelationshipType | "">("");
+  const [selectedTargetId, setSelectedTargetId] = React.useState<string>("");
   const [createElementModalOpen, setCreateElementModalOpen] =
     React.useState(false);
   const [createElementModalStep, setCreateElementModalStep] = React.useState<
-    'SELECT_TYPE' | 'FORM'
-  >('SELECT_TYPE');
+    "SELECT_TYPE" | "FORM"
+  >("SELECT_TYPE");
   const [createElementModalAllowedTypes, setCreateElementModalAllowedTypes] =
     React.useState<readonly ObjectType[] | undefined>(undefined);
   const [createElementModalCategory, setCreateElementModalCategory] =
@@ -279,12 +276,12 @@ const ExplorerTree: React.FC = () => {
     name: string;
     lifecycleState: string;
     description: string;
-    type: ObjectType | '';
+    type: ObjectType | "";
   }>({
-    name: '',
-    lifecycleState: '',
-    description: '',
-    type: '',
+    name: "",
+    lifecycleState: "",
+    description: "",
+    type: "",
   });
   const [baselinePreview, setBaselinePreview] = React.useState<Baseline | null>(
     null,
@@ -296,19 +293,19 @@ const ExplorerTree: React.FC = () => {
     name: string;
     type: ObjectType;
   } | null>(null);
-  const [addToViewViewId, setAddToViewViewId] = React.useState<string>('');
+  const [addToViewViewId, setAddToViewViewId] = React.useState<string>("");
 
   // §5 Inline rename state
   const [renamingKey, setRenamingKey] = React.useState<string | null>(null);
-  const [renameValue, setRenameValue] = React.useState<string>('');
+  const [renameValue, setRenameValue] = React.useState<string>("");
   const renameInputRef = React.useRef<any>(null);
 
   // §9 Search state
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   // §4 Multi-select for drag
-  const [checkedKeys, setCheckedKeys] = React.useState<React.Key[]>([]);
+  const [checkedKeys, _setCheckedKeys] = React.useState<React.Key[]>([]);
 
   // §8 Change type modal state
   const [changeTypeModalOpen, setChangeTypeModalOpen] = React.useState(false);
@@ -318,8 +315,8 @@ const ExplorerTree: React.FC = () => {
     name: string;
   } | null>(null);
   const [changeTypeNewType, setChangeTypeNewType] = React.useState<
-    ObjectType | ''
-  >('');
+    ObjectType | ""
+  >("");
 
   // §11 Audit trail modal
   const [auditTrailObjectId, setAuditTrailObjectId] = React.useState<
@@ -329,20 +326,20 @@ const ExplorerTree: React.FC = () => {
   const actor =
     initialState?.currentUser?.name ||
     initialState?.currentUser?.userid ||
-    'ui';
+    "ui";
 
   const savedViews = React.useMemo(
-    () => ViewStore.list().filter((v) => v.status === 'SAVED'),
+    () => ViewStore.list().filter((v) => v.status === "SAVED"),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [viewsRefreshToken],
   );
 
   const customFrameworkActive =
-    (metadata?.enabledFrameworks?.includes('Custom') ?? false) ||
-    metadata?.referenceFramework === 'Custom';
+    (metadata?.enabledFrameworks?.includes("Custom") ?? false) ||
+    metadata?.referenceFramework === "Custom";
   const customModelingEnabled = customFrameworkActive
     ? isCustomFrameworkModelingEnabled(
-        'Custom',
+        "Custom",
         metadata?.frameworkConfig ?? undefined,
       )
     : true;
@@ -352,7 +349,7 @@ const ExplorerTree: React.FC = () => {
   const [seedBannerDismissed, setSeedBannerDismissed] = React.useState<boolean>(
     () => {
       try {
-        return localStorage.getItem('ea.seed.banner.dismissed') === 'true';
+        return localStorage.getItem("ea.seed.banner.dismissed") === "true";
       } catch {
         return false;
       }
@@ -361,7 +358,7 @@ const ExplorerTree: React.FC = () => {
   const dismissSeedBanner = React.useCallback(() => {
     setSeedBannerDismissed(true);
     try {
-      localStorage.setItem('ea.seed.banner.dismissed', 'true');
+      localStorage.setItem("ea.seed.banner.dismissed", "true");
     } catch {}
   }, []);
 
@@ -372,11 +369,11 @@ const ExplorerTree: React.FC = () => {
     metadata?.organizationName,
   );
   const workspaceName =
-    (metadata?.repositoryName ?? 'Workspace').trim() || 'Workspace';
+    (metadata?.repositoryName ?? "Workspace").trim() || "Workspace";
 
   const [expandedKeys, setExpandedKeys] = React.useState<React.Key[]>(() => {
     try {
-      const raw = localStorage.getItem('ea.explorer.expandedKeys.v2');
+      const raw = localStorage.getItem("ea.explorer.expandedKeys.v2");
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -391,7 +388,7 @@ const ExplorerTree: React.FC = () => {
   React.useEffect(() => {
     try {
       localStorage.setItem(
-        'ea.explorer.expandedKeys.v2',
+        "ea.explorer.expandedKeys.v2",
         JSON.stringify(expandedKeys),
       );
     } catch {}
@@ -403,17 +400,17 @@ const ExplorerTree: React.FC = () => {
     const unsubscribe = onExplorerEvent((event) => {
       // Partial tree refresh on events — only bump refresh token
       switch (event.type) {
-        case 'OBJECT_CREATED':
-        case 'OBJECT_UPDATED':
-        case 'OBJECT_DELETED':
-        case 'OBJECT_MOVED':
-        case 'OBJECT_RENAMED':
-        case 'TYPE_CHANGED':
-        case 'RELATIONSHIP_CREATED':
-        case 'BASELINE_CREATED':
+        case "OBJECT_CREATED":
+        case "OBJECT_UPDATED":
+        case "OBJECT_DELETED":
+        case "OBJECT_MOVED":
+        case "OBJECT_RENAMED":
+        case "TYPE_CHANGED":
+        case "RELATIONSHIP_CREATED":
+        case "BASELINE_CREATED":
           setRefreshToken((x) => x + 1);
           break;
-        case 'VIEW_UPDATED':
+        case "VIEW_UPDATED":
           setViewsRefreshToken((x) => x + 1);
           setRefreshToken((x) => x + 1);
           break;
@@ -427,24 +424,24 @@ const ExplorerTree: React.FC = () => {
 
   React.useEffect(() => {
     const handler = () => setViewsRefreshToken((v) => v + 1);
-    window.addEventListener('ea:viewsChanged', handler);
-    return () => window.removeEventListener('ea:viewsChanged', handler);
+    window.addEventListener("ea:viewsChanged", handler);
+    return () => window.removeEventListener("ea:viewsChanged", handler);
   }, []);
 
   React.useEffect(() => {
     const handler = () => setRefreshToken((x) => x + 1);
-    window.addEventListener('ea:repositoryChanged', handler);
-    window.addEventListener('ea:viewsChanged', handler);
+    window.addEventListener("ea:repositoryChanged", handler);
+    window.addEventListener("ea:viewsChanged", handler);
     return () => {
-      window.removeEventListener('ea:repositoryChanged', handler);
-      window.removeEventListener('ea:viewsChanged', handler);
+      window.removeEventListener("ea:repositoryChanged", handler);
+      window.removeEventListener("ea:viewsChanged", handler);
     };
   }, []);
 
   React.useEffect(() => {
     if (!addToViewModalOpen) return;
     if (savedViews.length === 0) {
-      setAddToViewViewId('');
+      setAddToViewViewId("");
       return;
     }
     if (!savedViews.some((v) => v.id === addToViewViewId))
@@ -483,7 +480,7 @@ const ExplorerTree: React.FC = () => {
       return {
         filteredTreeData: treeData,
         matchedKeys: new Set<string>(),
-        highlightTerm: '',
+        highlightTerm: "",
       };
 
     const matched = new Set<string>();
@@ -492,10 +489,10 @@ const ExplorerTree: React.FC = () => {
     // Walk tree and find matches
     const collectMatches = (nodes: DataNode[], ancestors: string[]) => {
       for (const node of nodes) {
-        const key = typeof node.key === 'string' ? node.key : '';
-        const titleText = typeof node.title === 'string' ? node.title : '';
+        const key = typeof node.key === "string" ? node.key : "";
+        const titleText = typeof node.title === "string" ? node.title : "";
         const data = (node as any)?.data;
-        const nameText = data?.elementId ? '' : ''; // already in title
+        const nameText = data?.elementId ? "" : ""; // already in title
         const searchTarget = titleText.toLowerCase();
 
         if (searchTarget.includes(term)) {
@@ -530,9 +527,9 @@ const ExplorerTree: React.FC = () => {
   }, [searchQuery, treeData]);
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const treeNodes = Array.from(
-      document.querySelectorAll<HTMLElement>('.ant-tree-treenode'),
+      document.querySelectorAll<HTMLElement>(".ant-tree-treenode"),
     );
     const nodesWithDepth = treeNodes.filter((node) =>
       /explorer-depth-\d+/.test(node.className),
@@ -542,14 +539,14 @@ const ExplorerTree: React.FC = () => {
     );
     if (nodesWithDepth.length === 0) {
       console.warn(
-        '[ExplorerDepthDOM] No explorer-depth-* classes found on .ant-tree-treenode elements',
+        "[ExplorerDepthDOM] No explorer-depth-* classes found on .ant-tree-treenode elements",
       );
     }
     for (const node of nodesWithDepth) {
       const depthMatch = node.className.match(/explorer-depth-(\d+)/);
-      console.log('[ExplorerDepthDOM]', {
+      console.log("[ExplorerDepthDOM]", {
         depth: depthMatch ? Number(depthMatch[1]) : null,
-        key: node.getAttribute('data-node-key') ?? '',
+        key: node.getAttribute("data-node-key") ?? "",
         className: node.className,
       });
     }
@@ -557,26 +554,26 @@ const ExplorerTree: React.FC = () => {
   }, [filteredTreeData, expandedKeys]);
 
   // --- Selected keys ---
-  const normalizeElementKey = React.useCallback((rawKey: string) => {
+  const _normalizeElementKey = React.useCallback((rawKey: string) => {
     const trimmed = rawKey
-      .replace('element:', '')
-      .replace('explorer:element:', '')
+      .replace("element:", "")
+      .replace("explorer:element:", "")
       .trim();
-    const suffixIndex = trimmed.indexOf(':');
+    const suffixIndex = trimmed.indexOf(":");
     return suffixIndex === -1 ? trimmed : trimmed.slice(0, suffixIndex);
   }, []);
 
   const selectedKeysFromContext = React.useMemo(() => {
     const key = selection?.keys?.[0];
     if (!key) return [] as React.Key[];
-    if (typeof key === 'string') {
-      if (key.startsWith('explorer:element:')) {
-        const id = key.replace('explorer:element:', '');
+    if (typeof key === "string") {
+      if (key.startsWith("explorer:element:")) {
+        const id = key.replace("explorer:element:", "");
         const mapped = elementKeyIndex.get(id);
         return [mapped ?? EXPLORER_KEYS.element(id)];
       }
-      if (key.startsWith('element:')) {
-        const id = key.replace('element:', '');
+      if (key.startsWith("element:")) {
+        const id = key.replace("element:", "");
         const mapped = elementKeyIndex.get(id);
         return [mapped ?? key];
       }
@@ -593,7 +590,7 @@ const ExplorerTree: React.FC = () => {
     >();
     const walk = (nodes: DataNode[], parent: string | null) => {
       nodes.forEach((node) => {
-        if (typeof node.key === 'string') {
+        if (typeof node.key === "string") {
           map.set(node.key, {
             parent,
             hasChildren: Boolean(node.children?.length),
@@ -617,7 +614,7 @@ const ExplorerTree: React.FC = () => {
 
   const activePathAncestors = React.useMemo(() => {
     const selected = selectedKeysFromContext[0];
-    if (typeof selected !== 'string') return new Set<string>();
+    if (typeof selected !== "string") return new Set<string>();
     const ancestors = new Set<string>();
     let cursor: string | null = selected;
     while (cursor) {
@@ -630,10 +627,10 @@ const ExplorerTree: React.FC = () => {
   }, [parentByKey, selectedKeysFromContext]);
 
   const toggleExpandedKey = React.useCallback(
-    (key: string, force?: 'expand' | 'collapse') => {
+    (key: string, force?: "expand" | "collapse") => {
       setExpandedKeys((prev) => {
         const next = new Set(prev);
-        const shouldExpand = force ? force === 'expand' : !next.has(key);
+        const shouldExpand = force ? force === "expand" : !next.has(key);
         if (shouldExpand) next.add(key);
         else next.delete(key);
         return Array.from(next);
@@ -673,9 +670,9 @@ const ExplorerTree: React.FC = () => {
     const filtered = types.filter((t) => {
       if (enabledFrameworks.length === 0) return true;
       return enabledFrameworks.some((f) => {
-        if (f === 'Custom')
+        if (f === "Custom")
           return isObjectTypeEnabledForFramework(
-            'Custom',
+            "Custom",
             metadata?.frameworkConfig ?? undefined,
             t,
           );
@@ -695,9 +692,9 @@ const ExplorerTree: React.FC = () => {
       description: string;
       lifecycleState: string;
     }): boolean => {
-      if (!guardAction('createElement')) return false;
+      if (!guardAction("createElement")) return false;
       if (!eaRepository) {
-        message.warning('No repository loaded.');
+        message.warning("No repository loaded.");
         return false;
       }
 
@@ -739,7 +736,11 @@ const ExplorerTree: React.FC = () => {
         lastModifiedBy: actor,
         lifecycleState: payload.lifecycleState,
       };
-      const res = next.addObject({ id: elementId, type: payload.type, attributes });
+      const res = next.addObject({
+        id: elementId,
+        type: payload.type,
+        attributes,
+      });
       if (!res.ok) {
         message.error(res.error);
         return false;
@@ -747,13 +748,13 @@ const ExplorerTree: React.FC = () => {
 
       const applied = trySetEaRepository(next);
       if (!applied.ok) {
-        message.error('Failed to apply repository changes.');
+        message.error("Failed to apply repository changes.");
         return false;
       }
 
       auditObjectMutation({
         userId: actor,
-        actionType: 'CREATE',
+        actionType: "CREATE",
         objectId: elementId,
         objectType: payload.type,
         before: null,
@@ -761,7 +762,7 @@ const ExplorerTree: React.FC = () => {
       });
 
       emitExplorerEvent({
-        type: 'OBJECT_CREATED',
+        type: "OBJECT_CREATED",
         objectId: elementId,
         objectType: payload.type,
         timestamp: createdAt,
@@ -770,14 +771,18 @@ const ExplorerTree: React.FC = () => {
 
       setRefreshToken((x) => x + 1);
       setSelection({
-        kind: 'repository',
+        kind: "repository",
         keys: [EXPLORER_KEYS.element(elementId)],
       });
-      setSelectedElement({ id: elementId, type: payload.type, source: 'Explorer' });
+      setSelectedElement({
+        id: elementId,
+        type: payload.type,
+        source: "Explorer",
+      });
       openPropertiesPanel({
         elementId,
         elementType: payload.type,
-        dock: 'right',
+        dock: "right",
         readOnly: false,
       });
       message.success(`${titleForObjectType(payload.type)} created.`);
@@ -995,20 +1000,20 @@ const ExplorerTree: React.FC = () => {
 
       if (args.resolvedType) {
         setCreateElementFormState({
-          name: '',
-          lifecycleState: '',
-          description: '',
+          name: "",
+          lifecycleState: "",
+          description: "",
           type: args.resolvedType,
         });
-        setCreateElementModalStep('FORM');
+        setCreateElementModalStep("FORM");
       } else {
         setCreateElementFormState({
-          name: '',
-          lifecycleState: '',
-          description: '',
-          type: '',
+          name: "",
+          lifecycleState: "",
+          description: "",
+          type: "",
         });
-        setCreateElementModalStep('SELECT_TYPE');
+        setCreateElementModalStep("SELECT_TYPE");
       }
       setCreateElementModalOpen(true);
     },
@@ -1017,24 +1022,24 @@ const ExplorerTree: React.FC = () => {
 
   const closeCreateElementModal = React.useCallback(() => {
     setCreateElementModalOpen(false);
-    setCreateElementModalStep('SELECT_TYPE');
+    setCreateElementModalStep("SELECT_TYPE");
     setCreateElementModalAllowedTypes(undefined);
     setCreateElementModalCategory(undefined);
     setCreateElementFormState({
-      name: '',
-      lifecycleState: '',
-      description: '',
-      type: '',
+      name: "",
+      lifecycleState: "",
+      description: "",
+      type: "",
     });
   }, []);
 
   const handleCreateElementModalOk = React.useCallback(() => {
-    if (createElementModalStep === 'SELECT_TYPE') {
+    if (createElementModalStep === "SELECT_TYPE") {
       if (!createElementFormState.type) {
-        message.error('Select an element type.');
+        message.error("Select an element type.");
         return Promise.reject();
       }
-      setCreateElementModalStep('FORM');
+      setCreateElementModalStep("FORM");
       return Promise.reject();
     }
 
@@ -1044,15 +1049,15 @@ const ExplorerTree: React.FC = () => {
     const finalDescription = createElementFormState.description.trim();
 
     if (!finalType) {
-      message.error('Element type is required.');
+      message.error("Element type is required.");
       return Promise.reject();
     }
     if (!finalName) {
-      message.error('Name is required.');
+      message.error("Name is required.");
       return Promise.reject();
     }
     if (!finalLifecycle) {
-      message.error('Lifecycle state is required.');
+      message.error("Lifecycle state is required.");
       return Promise.reject();
     }
 
@@ -1074,7 +1079,10 @@ const ExplorerTree: React.FC = () => {
   ]);
 
   const scopedCreateTypeOptions = React.useMemo(() => {
-    if (!createElementModalAllowedTypes || createElementModalAllowedTypes.length === 0) {
+    if (
+      !createElementModalAllowedTypes ||
+      createElementModalAllowedTypes.length === 0
+    ) {
       return creatableTypeOptions;
     }
     return creatableTypeOptions.filter((option) =>
@@ -1105,7 +1113,7 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const deleteObject = React.useCallback(
     (id: string) => {
-      if (!guardAction('deleteElement')) return;
+      if (!guardAction("deleteElement")) return;
       if (!eaRepository) return;
       const obj = eaRepository.objects.get(id);
       if (!obj) return;
@@ -1120,16 +1128,16 @@ const ExplorerTree: React.FC = () => {
       let removeRelationships = false;
 
       Modal.confirm({
-        title: 'Delete element?',
+        title: "Delete element?",
         content: (
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: "grid", gap: 8 }}>
             <Typography.Text>
               Deletes &quot;{nameForObject(obj)}&quot; from the repository.
             </Typography.Text>
             {impacted.length > 0 && (
               <Typography.Text type="warning">
                 ⚠ This element has {impacted.length} relationship
-                {impacted.length > 1 ? 's' : ''}.
+                {impacted.length > 1 ? "s" : ""}.
               </Typography.Text>
             )}
             <Checkbox
@@ -1141,7 +1149,7 @@ const ExplorerTree: React.FC = () => {
             </Checkbox>
           </div>
         ),
-        okText: 'Delete',
+        okText: "Delete",
         okButtonProps: { danger: true },
         onOk: () => {
           const next = eaRepository.clone();
@@ -1152,7 +1160,7 @@ const ExplorerTree: React.FC = () => {
           const res = next.updateObjectAttributes(
             id,
             { _deleted: true },
-            'merge',
+            "merge",
           );
           if (!res.ok) {
             message.error(res.error);
@@ -1164,7 +1172,7 @@ const ExplorerTree: React.FC = () => {
           // §11 Audit
           auditObjectMutation({
             userId: actor,
-            actionType: 'DELETE',
+            actionType: "DELETE",
             objectId: id,
             objectType: obj.type,
             before: beforeState,
@@ -1173,7 +1181,7 @@ const ExplorerTree: React.FC = () => {
 
           // §13 Event (remove node from tree without full reload)
           emitExplorerEvent({
-            type: 'OBJECT_DELETED',
+            type: "OBJECT_DELETED",
             objectId: id,
             objectType: obj.type,
             timestamp: new Date().toISOString(),
@@ -1181,7 +1189,7 @@ const ExplorerTree: React.FC = () => {
           });
 
           setRefreshToken((x) => x + 1);
-          message.success('Element deleted.');
+          message.success("Element deleted.");
         },
       });
     },
@@ -1193,7 +1201,7 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const duplicateObject = React.useCallback(
     (id: string) => {
-      if (!guardAction('duplicateElement')) return;
+      if (!guardAction("duplicateElement")) return;
       if (!eaRepository) return;
       const src = eaRepository.objects.get(id);
       if (!src) return;
@@ -1219,7 +1227,7 @@ const ExplorerTree: React.FC = () => {
 
       auditObjectMutation({
         userId: actor,
-        actionType: 'DUPLICATE',
+        actionType: "DUPLICATE",
         objectId: newId,
         objectType: src.type,
         before: null,
@@ -1227,7 +1235,7 @@ const ExplorerTree: React.FC = () => {
         metadata: { sourceId: id },
       });
       emitExplorerEvent({
-        type: 'OBJECT_CREATED',
+        type: "OBJECT_CREATED",
         objectId: newId,
         objectType: src.type,
         timestamp: createdAt,
@@ -1236,10 +1244,10 @@ const ExplorerTree: React.FC = () => {
 
       setRefreshToken((x) => x + 1);
       setSelection({
-        kind: 'repository',
+        kind: "repository",
         keys: [EXPLORER_KEYS.element(newId)],
       });
-      message.success('Element duplicated.');
+      message.success("Element duplicated.");
     },
     [actor, eaRepository, guardAction, setSelection, trySetEaRepository],
   );
@@ -1249,7 +1257,7 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const startRename = React.useCallback(
     (elementId: string, currentName: string) => {
-      if (!guardAction('renameElement')) return;
+      if (!guardAction("renameElement")) return;
       setRenamingKey(elementId);
       setRenameValue(currentName);
       // Focus the input after render
@@ -1265,7 +1273,7 @@ const ExplorerTree: React.FC = () => {
     }
     const newName = renameValue.trim();
     if (!newName) {
-      message.error('Name cannot be empty.');
+      message.error("Name cannot be empty.");
       return;
     }
     const obj = eaRepository.objects.get(renamingKey);
@@ -1302,7 +1310,7 @@ const ExplorerTree: React.FC = () => {
         lastModifiedAt: new Date().toISOString(),
         lastModifiedBy: actor,
       },
-      'merge',
+      "merge",
     );
     if (!res.ok) {
       message.error(res.error);
@@ -1318,7 +1326,7 @@ const ExplorerTree: React.FC = () => {
     // §11 Audit
     auditObjectMutation({
       userId: actor,
-      actionType: 'RENAME',
+      actionType: "RENAME",
       objectId: renamingKey,
       objectType: obj.type,
       before: beforeState,
@@ -1327,7 +1335,7 @@ const ExplorerTree: React.FC = () => {
 
     // §13 Event
     emitExplorerEvent({
-      type: 'OBJECT_RENAMED',
+      type: "OBJECT_RENAMED",
       objectId: renamingKey,
       objectType: obj.type,
       previousName,
@@ -1338,12 +1346,12 @@ const ExplorerTree: React.FC = () => {
 
     setRenamingKey(null);
     setRefreshToken((x) => x + 1);
-    message.success('Element renamed.');
+    message.success("Element renamed.");
   }, [actor, eaRepository, renamingKey, renameValue, trySetEaRepository]);
 
   const cancelRename = React.useCallback(() => {
     setRenamingKey(null);
-    setRenameValue('');
+    setRenameValue("");
   }, []);
 
   // =========================================================================
@@ -1351,13 +1359,13 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const openChangeTypeModal = React.useCallback(
     (elementId: string, elementType: string, elementName: string) => {
-      if (!guardAction('changeType')) return;
+      if (!guardAction("changeType")) return;
       setChangeTypeTarget({
         id: elementId,
         type: elementType as ObjectType,
         name: elementName,
       });
-      setChangeTypeNewType('');
+      setChangeTypeNewType("");
       setChangeTypeModalOpen(true);
     },
     [guardAction],
@@ -1388,7 +1396,7 @@ const ExplorerTree: React.FC = () => {
           lastModifiedAt: new Date().toISOString(),
           lastModifiedBy: actor,
         },
-        'merge',
+        "merge",
       );
       if (!updateRes.ok) {
         message.error(updateRes.error);
@@ -1405,7 +1413,7 @@ const ExplorerTree: React.FC = () => {
 
     auditObjectMutation({
       userId: actor,
-      actionType: 'CHANGE_TYPE',
+      actionType: "CHANGE_TYPE",
       objectId: changeTypeTarget.id,
       objectType: changeTypeNewType,
       before: beforeState,
@@ -1416,7 +1424,7 @@ const ExplorerTree: React.FC = () => {
       },
     });
     emitExplorerEvent({
-      type: 'TYPE_CHANGED',
+      type: "TYPE_CHANGED",
       objectId: changeTypeTarget.id,
       previousType: changeTypeTarget.type,
       newType: changeTypeNewType,
@@ -1430,7 +1438,7 @@ const ExplorerTree: React.FC = () => {
     openPropertiesPanel({
       elementId: changeTypeTarget.id,
       elementType: changeTypeNewType,
-      dock: 'right',
+      dock: "right",
       readOnly: false,
     });
     message.success(
@@ -1450,16 +1458,16 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const deleteView = React.useCallback(
     (viewId: string) => {
-      if (!guardAction('deleteView')) return;
+      if (!guardAction("deleteView")) return;
       Modal.confirm({
-        title: 'Delete view?',
-        content: 'Only the view definition is removed.',
-        okText: 'Delete',
+        title: "Delete view?",
+        content: "Only the view definition is removed.",
+        okText: "Delete",
         okButtonProps: { danger: true },
         onOk: () => {
           const removed = ViewStore.remove(viewId);
           if (!removed) {
-            message.error('Failed to delete view.');
+            message.error("Failed to delete view.");
             return;
           }
           // Clean up .Redly file and layout data
@@ -1467,23 +1475,23 @@ const ExplorerTree: React.FC = () => {
           ViewLayoutStore.remove(viewId);
           auditObjectMutation({
             userId: actor,
-            actionType: 'DELETE_VIEW',
+            actionType: "DELETE_VIEW",
             objectId: viewId,
             before: { viewId },
             after: null,
           });
           dispatchIdeCommand({
-            type: 'workspace.closeMatchingTabs',
+            type: "workspace.closeMatchingTabs",
             prefix: `studio:view:${viewId}`,
           });
           emitExplorerEvent({
-            type: 'VIEW_UPDATED',
+            type: "VIEW_UPDATED",
             viewId,
             timestamp: new Date().toISOString(),
             actor,
           });
           setRefreshToken((x) => x + 1);
-          message.success('View deleted.');
+          message.success("View deleted.");
         },
       });
     },
@@ -1492,16 +1500,16 @@ const ExplorerTree: React.FC = () => {
 
   const renameView = React.useCallback(
     (viewId: string) => {
-      if (!guardAction('renameView')) return;
+      if (!guardAction("renameView")) return;
       const view = ViewStore.get(viewId);
       if (!view) {
-        message.error('View not found.');
+        message.error("View not found.");
         return;
       }
       let nextName = view.name;
       Modal.confirm({
-        title: 'Rename view',
-        okText: 'Rename',
+        title: "Rename view",
+        okText: "Rename",
         content: (
           <Input
             defaultValue={view.name}
@@ -1512,31 +1520,31 @@ const ExplorerTree: React.FC = () => {
           />
         ),
         onOk: async () => {
-          const name = (nextName ?? '').trim();
+          const name = (nextName ?? "").trim();
           if (!name) {
-            message.error('Name is required.');
-            throw new Error('Name required');
+            message.error("Name is required.");
+            throw new Error("Name required");
           }
           const before = { name: view.name };
           ViewStore.update(view.id, (c) => ({ ...c, name }));
           auditObjectMutation({
             userId: actor,
-            actionType: 'RENAME_VIEW',
+            actionType: "RENAME_VIEW",
             objectId: viewId,
             before,
             after: { name },
           });
           try {
-            window.dispatchEvent(new Event('ea:viewsChanged'));
+            window.dispatchEvent(new Event("ea:viewsChanged"));
           } catch {}
           emitExplorerEvent({
-            type: 'VIEW_UPDATED',
+            type: "VIEW_UPDATED",
             viewId,
             timestamp: new Date().toISOString(),
             actor,
           });
           setViewsRefreshToken((x) => x + 1);
-          message.success('View renamed.');
+          message.success("View renamed.");
         },
       });
     },
@@ -1545,10 +1553,10 @@ const ExplorerTree: React.FC = () => {
 
   const duplicateView = React.useCallback(
     (viewId: string) => {
-      if (!guardAction('duplicateView')) return;
+      if (!guardAction("duplicateView")) return;
       const view = ViewStore.get(viewId);
       if (!view) {
-        message.error('View not found.');
+        message.error("View not found.");
         return;
       }
       const now = new Date().toISOString();
@@ -1559,44 +1567,44 @@ const ExplorerTree: React.FC = () => {
         name: `${view.name} Copy`,
         createdAt: now,
         createdBy: actor,
-        status: 'DRAFT',
+        status: "DRAFT",
       };
       ViewStore.save(copy);
       auditObjectMutation({
         userId: actor,
-        actionType: 'DUPLICATE_VIEW',
+        actionType: "DUPLICATE_VIEW",
         objectId: newId,
         before: null,
         after: { sourceViewId: viewId, name: copy.name },
       });
       try {
-        window.dispatchEvent(new Event('ea:viewsChanged'));
+        window.dispatchEvent(new Event("ea:viewsChanged"));
       } catch {}
       emitExplorerEvent({
-        type: 'VIEW_UPDATED',
+        type: "VIEW_UPDATED",
         viewId: newId,
         timestamp: now,
         actor,
       });
       setViewsRefreshToken((x) => x + 1);
       openRouteTab(`/views/${newId}`);
-      message.success('View duplicated.');
+      message.success("View duplicated.");
     },
     [actor, guardAction, openRouteTab],
   );
 
   const exportView = React.useCallback(
-    (viewId: string, format: 'png' | 'json') => {
+    (viewId: string, format: "png" | "json") => {
       auditObjectMutation({
         userId: actor,
-        actionType: 'EXPORT_VIEW',
+        actionType: "EXPORT_VIEW",
         objectId: viewId,
         before: null,
         after: { format },
       });
       try {
         window.dispatchEvent(
-          new CustomEvent('ea:studio.view.export', {
+          new CustomEvent("ea:studio.view.export", {
             detail: { viewId, format },
           }),
         );
@@ -1612,7 +1620,7 @@ const ExplorerTree: React.FC = () => {
     (viewId: string) => {
       const view = ViewStore.get(viewId);
       if (!view) {
-        message.error('View not found.');
+        message.error("View not found.");
         return;
       }
       // Try to use existing .Redly file if available
@@ -1636,11 +1644,11 @@ const ExplorerTree: React.FC = () => {
         ? [...view.visibleRelationshipIds]
         : [];
 
-      const nodes: CanvasState['nodes'] = visibleElementIds.map(
+      const nodes: CanvasState["nodes"] = visibleElementIds.map(
         (id: string) => ({
           id,
           label: id,
-          elementType: 'Application' as any,
+          elementType: "Application" as any,
           x: positions[id]?.x ?? 0,
           y: positions[id]?.y ?? 0,
         }),
@@ -1648,8 +1656,8 @@ const ExplorerTree: React.FC = () => {
       freeShapes.forEach((s: any) => {
         nodes.push({
           id: s.id,
-          label: s.label ?? '',
-          elementType: 'Application' as any,
+          label: s.label ?? "",
+          elementType: "Application" as any,
           x: s.x ?? 0,
           y: s.y ?? 0,
           width: s.width,
@@ -1659,20 +1667,20 @@ const ExplorerTree: React.FC = () => {
         });
       });
 
-      const edges: CanvasState['edges'] = visibleRelationshipIds.map(
+      const edges: CanvasState["edges"] = visibleRelationshipIds.map(
         (id: string) => ({
           id,
-          source: '',
-          target: '',
-          relationshipType: 'INTEGRATES_WITH' as any,
+          source: "",
+          target: "",
+          relationshipType: "INTEGRATES_WITH" as any,
         }),
       );
       freeConnectors.forEach((c: any) => {
         edges.push({
           id: c.id,
-          source: c.source ?? '',
-          target: c.target ?? '',
-          relationshipType: 'INTEGRATES_WITH' as any,
+          source: c.source ?? "",
+          target: c.target ?? "",
+          relationshipType: "INTEGRATES_WITH" as any,
           freeConnector: true,
           freeConnectorKind: c.kind,
         });
@@ -1690,17 +1698,17 @@ const ExplorerTree: React.FC = () => {
   // .Redly Import: Import a .Redly file from Explorer context.
   // ---------------------------------------------------------------------------
   const handleImportRedlyInExplorer = React.useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.Redly,.redly';
-    input.style.display = 'none';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".Redly,.redly";
+    input.style.display = "none";
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
       try {
         const result = await importRedlyFile(file);
         if (!result.ok) {
-          message.error(`Import failed: ${result.errors.join(', ')}`);
+          message.error(`Import failed: ${result.errors.join(", ")}`);
           return;
         }
         const { view, positions } = result.data;
@@ -1709,26 +1717,26 @@ const ExplorerTree: React.FC = () => {
         RedlyViewStore.save(view.id, result.data.redlyFile);
         auditObjectMutation({
           userId: actor,
-          actionType: 'IMPORT_VIEW',
+          actionType: "IMPORT_VIEW",
           objectId: view.id,
           before: null,
-          after: { name: view.name, format: '.Redly' },
+          after: { name: view.name, format: ".Redly" },
         });
         try {
-          window.dispatchEvent(new Event('ea:viewsChanged'));
+          window.dispatchEvent(new Event("ea:viewsChanged"));
         } catch {
           // Best-effort only.
         }
         setRefreshToken((x) => x + 1);
         // Open the imported view in Studio
         window.dispatchEvent(
-          new CustomEvent('ea:studio.view.open', {
-            detail: { viewId: view.id, openMode: 'new' },
+          new CustomEvent("ea:studio.view.open", {
+            detail: { viewId: view.id, openMode: "new" },
           }),
         );
         message.success(`Imported "${view.name}" successfully.`);
       } catch (err: any) {
-        message.error(`Import failed: ${err?.message ?? 'Unknown error'}`);
+        message.error(`Import failed: ${err?.message ?? "Unknown error"}`);
       } finally {
         document.body.removeChild(input);
       }
@@ -1739,14 +1747,14 @@ const ExplorerTree: React.FC = () => {
 
   // --- Baseline CRUD ---
   const openCreateBaselineModal = React.useCallback(() => {
-    if (!guardAction('createBaseline')) return;
+    if (!guardAction("createBaseline")) return;
     let name = `Baseline ${new Date().toISOString()}`;
-    let description = '';
+    let description = "";
     Modal.confirm({
-      title: 'Create Baseline',
-      okText: 'Create',
+      title: "Create Baseline",
+      okText: "Create",
       content: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <div style={{ marginBottom: 4, fontWeight: 500 }}>Name</div>
             <Input
@@ -1770,36 +1778,36 @@ const ExplorerTree: React.FC = () => {
         </div>
       ),
       onOk: async () => {
-        const finalName = (name ?? '').trim();
+        const finalName = (name ?? "").trim();
         if (!finalName) {
-          message.error('Baseline name is required.');
-          throw new Error('Name required');
+          message.error("Baseline name is required.");
+          throw new Error("Name required");
         }
         try {
           const baseline = createBaseline({
             name: finalName,
-            description: (description ?? '').trim() || undefined,
+            description: (description ?? "").trim() || undefined,
             createdBy: actor,
           });
           auditObjectMutation({
             userId: actor,
-            actionType: 'CREATE_BASELINE',
+            actionType: "CREATE_BASELINE",
             objectId: baseline.id,
             before: null,
             after: { name: finalName },
           });
           emitExplorerEvent({
-            type: 'BASELINE_CREATED',
+            type: "BASELINE_CREATED",
             baselineId: baseline.id,
             timestamp: new Date().toISOString(),
             actor,
           });
           setRefreshToken((x) => x + 1);
-          openWorkspaceTab({ type: 'baseline', baselineId: baseline.id });
-          message.success('Baseline created.');
+          openWorkspaceTab({ type: "baseline", baselineId: baseline.id });
+          message.success("Baseline created.");
         } catch (err) {
           message.error(
-            err instanceof Error ? err.message : 'Unable to create baseline.',
+            err instanceof Error ? err.message : "Unable to create baseline.",
           );
           throw err;
         }
@@ -1815,7 +1823,7 @@ const ExplorerTree: React.FC = () => {
     }
     const view = addToViewViewId ? ViewStore.get(addToViewViewId) : null;
     if (!view) {
-      message.error('Select a view to add to.');
+      message.error("Select a view to add to.");
       return;
     }
     const viewpoint = ViewpointRegistry.get(view.viewpointId);
@@ -1824,26 +1832,26 @@ const ExplorerTree: React.FC = () => {
         viewpoint.allowedElementTypes.map((t) => t.toLowerCase()),
       );
       if (!allowed.has(addToViewTarget.type.toLowerCase())) {
-        message.warning('Element type is not allowed by the view viewpoint.');
+        message.warning("Element type is not allowed by the view viewpoint.");
         return;
       }
     }
     const existingIds =
-      view.scope.kind === 'ManualSelection' ? [...view.scope.elementIds] : [];
+      view.scope.kind === "ManualSelection" ? [...view.scope.elementIds] : [];
     const nextIds = Array.from(new Set([...existingIds, addToViewTarget.id]));
     ViewStore.save({
       ...view,
-      scope: { kind: 'ManualSelection', elementIds: nextIds },
+      scope: { kind: "ManualSelection", elementIds: nextIds },
     });
     auditObjectMutation({
       userId: actor,
-      actionType: 'ADD_TO_VIEW',
+      actionType: "ADD_TO_VIEW",
       objectId: addToViewTarget.id,
       before: null,
       after: { viewId: view.id, elementId: addToViewTarget.id },
     });
     emitExplorerEvent({
-      type: 'VIEW_UPDATED',
+      type: "VIEW_UPDATED",
       viewId: view.id,
       timestamp: new Date().toISOString(),
       actor,
@@ -1872,7 +1880,7 @@ const ExplorerTree: React.FC = () => {
         })
         .map((o) => {
           const displayName =
-            typeof o.attributes?.name === 'string' && o.attributes.name.trim()
+            typeof o.attributes?.name === "string" && o.attributes.name.trim()
               ? String(o.attributes.name)
               : o.id;
           return {
@@ -1908,13 +1916,13 @@ const ExplorerTree: React.FC = () => {
     next.relationships.push(relObj);
     const applied = trySetEaRepository(next);
     if (!applied.ok) {
-      message.error('Failed to create relationship.');
+      message.error("Failed to create relationship.");
       return;
     }
 
     auditObjectMutation({
       userId: actor,
-      actionType: 'CREATE_RELATIONSHIP',
+      actionType: "CREATE_RELATIONSHIP",
       objectId: relId,
       before: null,
       after: {
@@ -1924,7 +1932,7 @@ const ExplorerTree: React.FC = () => {
       },
     });
     emitExplorerEvent({
-      type: 'RELATIONSHIP_CREATED',
+      type: "RELATIONSHIP_CREATED",
       relationshipId: relId,
       fromId: relationshipSource.id,
       toId: selectedTargetId,
@@ -1935,7 +1943,7 @@ const ExplorerTree: React.FC = () => {
 
     setRefreshToken((x) => x + 1);
     setRelationshipModalOpen(false);
-    message.success('Relationship created.');
+    message.success("Relationship created.");
   }, [
     actor,
     eaRepository,
@@ -1951,58 +1959,61 @@ const ExplorerTree: React.FC = () => {
   const handleMenuAction = React.useCallback(
     (action: ExplorerMenuAction) => {
       switch (action.type) {
-        case 'refresh':
+        case "refresh":
           setRefreshToken((x) => x + 1);
           break;
-        case 'open-properties':
+        case "open-properties":
           openPropertiesPanel({
             elementId: action.elementId,
             elementType: action.elementType,
-            dock: 'right',
+            dock: "right",
             readOnly: true,
           });
           break;
-        case 'impact-analysis':
+        case "impact-analysis":
           openWorkspaceTab({
-            type: 'impact-element',
+            type: "impact-element",
             elementId: action.elementId,
             elementName: action.elementName,
             elementType: action.elementType,
           });
           break;
-        case 'view-dependencies':
+        case "view-dependencies":
           openWorkspaceTab({
-            type: 'impact-element',
+            type: "impact-element",
             elementId: action.elementId,
             elementName: action.elementName,
             elementType: action.elementType,
           });
           break;
-        case 'compare-baseline':
+        case "compare-baseline":
           // Open baselines view for comparison
-          openRouteTab('/workspace');
-          message.info('Baseline comparison view opening…');
+          openRouteTab("/workspace");
+          message.info("Baseline comparison view opening…");
           break;
-        case 'audit-trail':
+        case "audit-trail":
           setAuditTrailObjectId(action.objectId);
           break;
-        case 'create-element': {
+        case "create-element": {
           const creatableTypes = new Set(
             creatableTypeOptions.map((option) => String(option.value)),
           );
           const resolvedType =
-            typeof action.resolvedType === 'string' &&
+            typeof action.resolvedType === "string" &&
             creatableTypes.has(action.resolvedType)
               ? (action.resolvedType as ObjectType)
               : undefined;
           const contextTypes = (action.allowedTypes ?? []).filter(
             (type): type is ObjectType =>
-              typeof type === 'string' && creatableTypes.has(type),
+              typeof type === "string" && creatableTypes.has(type),
           );
 
-          if ((action.allowedTypes?.length ?? 0) > 0 && contextTypes.length === 0) {
+          if (
+            (action.allowedTypes?.length ?? 0) > 0 &&
+            contextTypes.length === 0
+          ) {
             message.error(
-              'No creatable element types are available for this container in the current framework.',
+              "No creatable element types are available for this container in the current framework.",
             );
             break;
           }
@@ -2018,28 +2029,28 @@ const ExplorerTree: React.FC = () => {
           break;
         }
         // §5 Rename element — start inline rename
-        case 'rename-element':
+        case "rename-element":
           startRename(action.elementId, action.elementName);
           break;
-        case 'duplicate-element':
+        case "duplicate-element":
           duplicateObject(action.elementId);
           break;
-        case 'delete-element':
+        case "delete-element":
           deleteObject(action.elementId);
           break;
         // §8 Change type
-        case 'change-type':
+        case "change-type":
           openChangeTypeModal(
             action.elementId,
             action.elementType,
             action.elementName,
           );
           break;
-        case 'move-to':
+        case "move-to":
           // Move is semantic in this tree structure (architecture scoped)
-          message.info('Move To… — select a target folder.');
+          message.info("Move To… — select a target folder.");
           break;
-        case 'add-to-view': {
+        case "add-to-view": {
           const obj = eaRepository?.objects.get(action.elementId);
           if (obj) {
             setAddToViewTarget({
@@ -2051,7 +2062,7 @@ const ExplorerTree: React.FC = () => {
           }
           break;
         }
-        case 'create-relationship': {
+        case "create-relationship": {
           setRelationshipSource({
             id: action.sourceId,
             type: action.sourceType as ObjectType,
@@ -2061,92 +2072,92 @@ const ExplorerTree: React.FC = () => {
           break;
         }
         // Diagram actions
-        case 'open-view':
+        case "open-view":
           openRouteTab(`/views/${action.viewId}`);
           break;
-        case 'open-view-studio':
+        case "open-view-studio":
           window.dispatchEvent(
-            new CustomEvent('ea:studio.view.open', {
+            new CustomEvent("ea:studio.view.open", {
               detail: { viewId: action.viewId, openMode: action.openMode },
             }),
           );
           break;
-        case 'export-view':
+        case "export-view":
           exportView(action.viewId, action.format);
           break;
-        case 'export-view-redly':
+        case "export-view-redly":
           handleExportViewRedly(action.viewId);
           break;
-        case 'import-redly':
+        case "import-redly":
           handleImportRedlyInExplorer();
           break;
-        case 'rename-view':
+        case "rename-view":
           renameView(action.viewId);
           break;
-        case 'duplicate-view':
+        case "duplicate-view":
           duplicateView(action.viewId);
           break;
-        case 'delete-view':
+        case "delete-view":
           deleteView(action.viewId);
           break;
-        case 'view-properties':
+        case "view-properties":
           openRouteTab(`/views/${action.viewId}`);
           break;
         // Baselines
-        case 'open-baseline':
-          openWorkspaceTab({ type: 'baseline', baselineId: action.baselineId });
+        case "open-baseline":
+          openWorkspaceTab({ type: "baseline", baselineId: action.baselineId });
           break;
-        case 'preview-baseline': {
+        case "preview-baseline": {
           const baseline = getBaselineById(action.baselineId);
           if (!baseline) {
-            message.error('Baseline not found.');
+            message.error("Baseline not found.");
             break;
           }
           setBaselinePreview(baseline);
           setBaselinePreviewOpen(true);
           break;
         }
-        case 'create-baseline':
+        case "create-baseline":
           openCreateBaselineModal();
           break;
-        case 'open-roadmap':
-          openWorkspaceTab({ type: 'roadmap', roadmapId: action.roadmapId });
+        case "open-roadmap":
+          openWorkspaceTab({ type: "roadmap", roadmapId: action.roadmapId });
           break;
-        case 'open-plateau':
-          openWorkspaceTab({ type: 'plateau', plateauId: action.plateauId });
+        case "open-plateau":
+          openWorkspaceTab({ type: "plateau", plateauId: action.plateauId });
           break;
-        case 'open-catalog':
+        case "open-catalog":
           openWorkspaceTab({
-            type: 'catalog',
+            type: "catalog",
             catalog:
-              action.catalogKey as import('../CatalogTableTab').CatalogKind,
+              action.catalogKey as import("../CatalogTableTab").CatalogKind,
           });
           break;
-        case 'open-matrix':
-          openRouteTab('/workspace');
+        case "open-matrix":
+          openRouteTab("/workspace");
           break;
-        case 'open-report':
-          openRouteTab('/workspace');
+        case "open-report":
+          openRouteTab("/workspace");
           break;
-        case 'open-setting':
-          openRouteTab('/workspace');
+        case "open-setting":
+          openRouteTab("/workspace");
           break;
         // Folder actions
-        case 'folder-properties':
-          message.info('Folder properties panel.');
+        case "folder-properties":
+          message.info("Folder properties panel.");
           break;
-        case 'import':
-          message.info('Import wizard not yet implemented.');
+        case "import":
+          message.info("Import wizard not yet implemented.");
           break;
-        case 'paste':
-          message.info('Paste not yet implemented.');
+        case "paste":
+          message.info("Paste not yet implemented.");
           break;
-        case 'sort':
-          message.info(`Sorting ${action.direction === 'asc' ? 'A→Z' : 'Z→A'}`);
+        case "sort":
+          message.info(`Sorting ${action.direction === "asc" ? "A→Z" : "Z→A"}`);
           break;
-        case 'initialize-enterprise':
+        case "initialize-enterprise":
           break;
-        case 'noop':
+        case "noop":
           break;
       }
     },
@@ -2177,7 +2188,7 @@ const ExplorerTree: React.FC = () => {
       const nodeData = meta?.data;
       return buildContextMenu(key, nodeData, handleMenuAction, {
         objectsById: eaRepository?.objects as any,
-        canEdit: hasRepositoryPermission(userRole, 'editElement'),
+        canEdit: hasRepositoryPermission(userRole, "editElement"),
         role: userRole,
       });
     },
@@ -2208,39 +2219,39 @@ const ExplorerTree: React.FC = () => {
       const kind = classifyNodeKey(key, meta?.data);
 
       switch (kind) {
-        case 'element': {
+        case "element": {
           // §1 element: Emit OBJECT_SELECTED, load full details in inspector, highlight in canvas
-          const elementId = data?.elementId ?? key.replace('element:', '');
-          const elementType = data?.elementType ?? 'Unknown';
+          const elementId = data?.elementId ?? key.replace("element:", "");
+          const elementType = data?.elementType ?? "Unknown";
           emitExplorerEvent({
-            type: 'OBJECT_SELECTED',
+            type: "OBJECT_SELECTED",
             objectId: elementId,
             objectType: elementType,
-            source: 'Explorer',
+            source: "Explorer",
           });
           openPropertiesPanel({
             elementId,
             elementType,
-            dock: 'right',
+            dock: "right",
             readOnly: true,
           });
           break;
         }
-        case 'diagram': {
+        case "diagram": {
           // §1 diagram: Load diagram metadata in inspector — do NOT open yet
           // Just highlight, metadata loads via selection context
           break;
         }
-        case 'folder': {
+        case "folder": {
           // §1 folder: Highlight, load summary in inspector — do NOT auto-open, do NOT fetch children
           break;
         }
-        case 'catalog': {
+        case "catalog": {
           if (data?.catalogKey) {
             openWorkspaceTab({
-              type: 'catalog',
+              type: "catalog",
               catalog:
-                data.catalogKey as import('../CatalogTableTab').CatalogKind,
+                data.catalogKey as import("../CatalogTableTab").CatalogKind,
             });
           }
           break;
@@ -2264,18 +2275,18 @@ const ExplorerTree: React.FC = () => {
       const kind = classifyNodeKey(key, meta?.data);
 
       switch (kind) {
-        case 'folder': {
+        case "folder": {
           // §2 folder: Toggle expand/collapse
           toggleExpandedKey(key);
           break;
         }
-        case 'element': {
+        case "element": {
           // §2 element: Open default diagram containing element, or auto-generate temp graph view
-          const elementId = data?.elementId ?? key.replace('element:', '');
-          const elementType = data?.elementType ?? 'Unknown';
+          const elementId = data?.elementId ?? key.replace("element:", "");
+          const elementType = data?.elementType ?? "Unknown";
           // Find first saved view that contains this element
           const containingView = savedViews.find((v) => {
-            if (v.scope.kind !== 'ManualSelection') return false;
+            if (v.scope.kind !== "ManualSelection") return false;
             return v.scope.elementIds.includes(elementId);
           });
           if (containingView) {
@@ -2283,7 +2294,7 @@ const ExplorerTree: React.FC = () => {
             // Center canvas on element after a short delay
             setTimeout(() => {
               window.dispatchEvent(
-                new CustomEvent('ea:studio.view.centerOn', {
+                new CustomEvent("ea:studio.view.centerOn", {
                   detail: { elementId },
                 }),
               );
@@ -2291,7 +2302,7 @@ const ExplorerTree: React.FC = () => {
           } else {
             // Auto-generate temporary graph view
             openWorkspaceTab({
-              type: 'impact-element',
+              type: "impact-element",
               elementId,
               elementName: nameForObject({
                 id: elementId,
@@ -2302,20 +2313,20 @@ const ExplorerTree: React.FC = () => {
           }
           break;
         }
-        case 'diagram': {
+        case "diagram": {
           // §2 diagram: Open diagram in canvas, load layout
-          const viewId = data?.viewId ?? key.replace('view:', '');
+          const viewId = data?.viewId ?? key.replace("view:", "");
           openRouteTab(`/views/${viewId}`);
           break;
         }
         default: {
           // Baseline/roadmap etc: open
-          if (key.startsWith('baseline:')) {
-            const baselineId = key.replace('baseline:', '');
-            openWorkspaceTab({ type: 'baseline', baselineId });
-          } else if (key.startsWith('roadmap:') && data) {
+          if (key.startsWith("baseline:")) {
+            const baselineId = key.replace("baseline:", "");
+            openWorkspaceTab({ type: "baseline", baselineId });
+          } else if (key.startsWith("roadmap:") && data) {
             openWorkspaceTab({
-              type: 'roadmap',
+              type: "roadmap",
               roadmapId: (data as any).roadmapId,
             });
           } else if (meta?.hasChildren) {
@@ -2339,43 +2350,43 @@ const ExplorerTree: React.FC = () => {
   const handleTreeKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const selected = selectedKeysFromContext[0];
-      if (typeof selected !== 'string') return;
+      if (typeof selected !== "string") return;
 
-      if (event.key === 'ArrowRight') {
+      if (event.key === "ArrowRight") {
         const meta = nodeMetaByKey.get(selected);
         if (meta?.hasChildren && !expandedKeys.includes(selected)) {
-          toggleExpandedKey(selected, 'expand');
+          toggleExpandedKey(selected, "expand");
           event.preventDefault();
         }
       }
-      if (event.key === 'ArrowLeft') {
+      if (event.key === "ArrowLeft") {
         if (expandedKeys.includes(selected)) {
-          toggleExpandedKey(selected, 'collapse');
+          toggleExpandedKey(selected, "collapse");
           event.preventDefault();
         } else {
           const parent = parentByKey.get(selected);
           if (parent) {
-            setSelection({ kind: 'repository', keys: [parent] });
+            setSelection({ kind: "repository", keys: [parent] });
             event.preventDefault();
           }
         }
       }
-      if (event.key === 'Enter') {
+      if (event.key === "Enter") {
         handleDoubleClick(selected);
         event.preventDefault();
       }
-      if (event.key === 'Delete') {
+      if (event.key === "Delete") {
         // §7 Delete shortcut
-        if (selected.startsWith('element:')) {
-          const id = selected.replace('element:', '');
+        if (selected.startsWith("element:")) {
+          const id = selected.replace("element:", "");
           deleteObject(id);
           event.preventDefault();
         }
       }
-      if (event.key === 'F2') {
+      if (event.key === "F2") {
         // §5 Rename shortcut
-        if (selected.startsWith('element:')) {
-          const id = selected.replace('element:', '');
+        if (selected.startsWith("element:")) {
+          const id = selected.replace("element:", "");
           const obj = eaRepository?.objects.get(id);
           if (obj) {
             startRename(id, nameForObject(obj));
@@ -2384,7 +2395,7 @@ const ExplorerTree: React.FC = () => {
         }
       }
       // §9 Search shortcut: Ctrl+F
-      if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+      if ((event.ctrlKey || event.metaKey) && event.key === "f") {
         setSearchVisible((v) => !v);
         event.preventDefault();
       }
@@ -2412,7 +2423,7 @@ const ExplorerTree: React.FC = () => {
       event.stopPropagation();
 
       // §4: Validate user has MOVE permission
-      if (data.elementId && !canPerform(userRole, 'moveElement')) {
+      if (data.elementId && !canPerform(userRole, "moveElement")) {
         event.preventDefault();
         return;
       }
@@ -2428,26 +2439,26 @@ const ExplorerTree: React.FC = () => {
       if (!data.elementId || !data.elementType) return;
 
       // Set multiple data types for element drag
-      event.dataTransfer.setData('application/x-ea-element-id', data.elementId);
+      event.dataTransfer.setData("application/x-ea-element-id", data.elementId);
       event.dataTransfer.setData(
-        'application/x-ea-element-type',
+        "application/x-ea-element-type",
         data.elementType,
       );
-      event.dataTransfer.setData('text/plain', data.elementId);
-      event.dataTransfer.effectAllowed = 'copyMove';
-      event.dataTransfer.dropEffect = 'copy';
+      event.dataTransfer.setData("text/plain", data.elementId);
+      event.dataTransfer.effectAllowed = "copyMove";
+      event.dataTransfer.dropEffect = "copy";
 
       // §4 Multi-select: if dragging from a checked set, include all
       if (checkedKeys.length > 1 && checkedKeys.includes(key)) {
         const elementIds = checkedKeys
           .map((k) =>
-            typeof k === 'string' && k.startsWith('element:')
-              ? k.replace('element:', '')
+            typeof k === "string" && k.startsWith("element:")
+              ? k.replace("element:", "")
               : null,
           )
           .filter(Boolean);
         event.dataTransfer.setData(
-          'application/x-ea-element-ids',
+          "application/x-ea-element-ids",
           JSON.stringify(elementIds),
         );
       }
@@ -2456,24 +2467,24 @@ const ExplorerTree: React.FC = () => {
   );
 
   // §4: Drop onto tree folder (move element)
-  const handleTreeDrop: TreeProps['onDrop'] = React.useCallback(
+  const handleTreeDrop: TreeProps["onDrop"] = React.useCallback(
     (info: any) => {
       if (!eaRepository) return;
       const dragKey =
-        typeof info.dragNode?.key === 'string' ? info.dragNode.key : '';
-      const dropKey = typeof info.node?.key === 'string' ? info.node.key : '';
+        typeof info.dragNode?.key === "string" ? info.dragNode.key : "";
+      const dropKey = typeof info.node?.key === "string" ? info.node.key : "";
       if (!dragKey || !dropKey) return;
 
       // Only handle element → folder drops within the tree
-      if (!dragKey.startsWith('element:')) return;
-      const dragId = dragKey.replace('element:', '');
+      if (!dragKey.startsWith("element:")) return;
+      const dragId = dragKey.replace("element:", "");
       const obj = eaRepository.objects.get(dragId);
       if (!obj) return;
 
       // §4 Validate folder accepts element type (folder must be a collection node)
       const dropMeta = nodeMetaByKey.get(dropKey);
       if (!dropMeta?.hasChildren) {
-        message.warning('Cannot drop here.');
+        message.warning("Cannot drop here.");
         return;
       }
 
@@ -2487,7 +2498,7 @@ const ExplorerTree: React.FC = () => {
           lastModifiedAt: new Date().toISOString(),
           lastModifiedBy: actor,
         },
-        'merge',
+        "merge",
       );
       if (!res.ok) {
         message.error(res.error);
@@ -2499,14 +2510,14 @@ const ExplorerTree: React.FC = () => {
       const fromParent = parentByKey.get(dragKey) ?? null;
       auditObjectMutation({
         userId: actor,
-        actionType: 'MOVE',
+        actionType: "MOVE",
         objectId: dragId,
         objectType: obj.type,
         before: beforeState,
         after: { ...beforeState, _parentKey: dropKey },
       });
       emitExplorerEvent({
-        type: 'OBJECT_MOVED',
+        type: "OBJECT_MOVED",
         objectId: dragId,
         objectType: obj.type,
         fromParent,
@@ -2516,7 +2527,7 @@ const ExplorerTree: React.FC = () => {
       });
 
       setRefreshToken((x) => x + 1);
-      message.success('Element moved.');
+      message.success("Element moved.");
     },
     [actor, eaRepository, nodeMetaByKey, parentByKey, trySetEaRepository],
   );
@@ -2526,13 +2537,13 @@ const ExplorerTree: React.FC = () => {
   // =========================================================================
   const highlightText = React.useCallback(
     (text: string): React.ReactNode => {
-      if (!highlightTerm || typeof text !== 'string') return text;
+      if (!highlightTerm || typeof text !== "string") return text;
       const idx = text.toLowerCase().indexOf(highlightTerm);
       if (idx === -1) return text;
       return (
         <>
           {text.slice(0, idx)}
-          <span style={{ backgroundColor: '#ffe58f', fontWeight: 600 }}>
+          <span style={{ backgroundColor: "#ffe58f", fontWeight: 600 }}>
             {text.slice(idx, idx + highlightTerm.length)}
           </span>
           {text.slice(idx + highlightTerm.length)}
@@ -2550,11 +2561,11 @@ const ExplorerTree: React.FC = () => {
 
   const renderTreeTitle = React.useCallback(
     (node: any) => {
-      const k = typeof node.key === 'string' ? node.key : '';
+      const k = typeof node.key === "string" ? node.key : "";
       const isPathAncestor =
-        typeof node.key === 'string' && activePathAncestors.has(node.key);
+        typeof node.key === "string" && activePathAncestors.has(node.key);
       const isSearchMatch =
-        typeof node.key === 'string' && matchedKeys.has(node.key);
+        typeof node.key === "string" && matchedKeys.has(node.key);
       const data = (node as any)?.data as
         | {
             elementId?: string;
@@ -2573,17 +2584,17 @@ const ExplorerTree: React.FC = () => {
       const canDrag = canDragElement || canDragView || canDragRoadmap;
 
       const dragTitle = canDragView
-        ? 'Drag to canvas to open this view'
+        ? "Drag to canvas to open this view"
         : canDragRoadmap
-          ? 'Drag to canvas to open this roadmap'
+          ? "Drag to canvas to open this roadmap"
           : canDragElement
-            ? 'Drag to canvas to reuse this element'
+            ? "Drag to canvas to reuse this element"
             : undefined;
 
       if (renamingKey && data?.elementId === renamingKey) {
         return (
           <span
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             onClick={(e) => e.stopPropagation()}
           >
             <Input
@@ -2593,25 +2604,25 @@ const ExplorerTree: React.FC = () => {
               onChange={(e) => setRenameValue(e.target.value)}
               onPressEnter={commitRename}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') cancelRename();
+                if (e.key === "Escape") cancelRename();
               }}
               onBlur={commitRename}
               style={{ width: 180, height: 22, fontSize: 12 }}
               autoFocus
             />
             <CheckOutlined
-              style={{ fontSize: 11, color: '#52c41a', cursor: 'pointer' }}
+              style={{ fontSize: 11, color: "#52c41a", cursor: "pointer" }}
               onClick={commitRename}
             />
             <CloseOutlined
-              style={{ fontSize: 11, color: '#ff4d4f', cursor: 'pointer' }}
+              style={{ fontSize: 11, color: "#ff4d4f", cursor: "pointer" }}
               onClick={cancelRename}
             />
           </span>
         );
       }
 
-      const titleText = typeof node.title === 'string' ? node.title : '';
+      const titleText = typeof node.title === "string" ? node.title : "";
       const renderedTitle =
         highlightTerm && titleText ? highlightText(titleText) : node.title;
 
@@ -2622,10 +2633,10 @@ const ExplorerTree: React.FC = () => {
       const showCreateButton = Boolean(quickCreate) && !node.isLeaf;
 
       return (
-        <Dropdown trigger={['contextMenu']} menu={menuForKey(k)}>
+        <Dropdown trigger={["contextMenu"]} menu={menuForKey(k)}>
           <span
             className={
-              `${isPathAncestor ? (styles.pathActive ?? '') : ''} ${isSearchMatch ? 'explorer-search-match' : ''}`.trim() ||
+              `${isPathAncestor ? (styles.pathActive ?? "") : ""} ${isSearchMatch ? "explorer-search-match" : ""}`.trim() ||
               undefined
             }
             draggable={canDrag}
@@ -2733,10 +2744,10 @@ const ExplorerTree: React.FC = () => {
         {searchVisible && (
           <div
             style={{
-              padding: '4px 8px 8px',
-              display: 'flex',
+              padding: "4px 8px 8px",
+              display: "flex",
               gap: 4,
-              alignItems: 'center',
+              alignItems: "center",
             }}
           >
             <Input
@@ -2746,8 +2757,8 @@ const ExplorerTree: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setSearchQuery('');
+                if (e.key === "Escape") {
+                  setSearchQuery("");
                   setSearchVisible(false);
                 }
               }}
@@ -2756,13 +2767,13 @@ const ExplorerTree: React.FC = () => {
             />
             <Typography.Text
               type="secondary"
-              style={{ fontSize: 11, whiteSpace: 'nowrap' }}
+              style={{ fontSize: 11, whiteSpace: "nowrap" }}
             >
               {matchedKeys.size > 0
                 ? `${matchedKeys.size} found`
                 : searchQuery
-                  ? 'No matches'
-                  : ''}
+                  ? "No matches"
+                  : ""}
             </Typography.Text>
           </div>
         )}
@@ -2777,7 +2788,7 @@ const ExplorerTree: React.FC = () => {
             onClose={dismissSeedBanner}
             message="Repository is empty"
             description={
-              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Space direction="vertical" size={4} style={{ width: "100%" }}>
                 <Typography.Text>
                   Seed sample architecture data to avoid blank diagrams.
                 </Typography.Text>
@@ -2821,7 +2832,7 @@ const ExplorerTree: React.FC = () => {
             ) : (
               <span className={styles.explorerTreeToggle}>
                 <span className={styles.explorerTreeToggleGlyph}>
-                  {expanded ? '−' : '+'}
+                  {expanded ? "−" : "+"}
                 </span>
               </span>
             )
@@ -2831,10 +2842,10 @@ const ExplorerTree: React.FC = () => {
           // §1 Single click handler
           onSelect={(selectedKeys, info) => {
             const key = selectedKeys?.[0];
-            if (typeof key !== 'string') return;
+            if (typeof key !== "string") return;
             const target =
               (info?.nativeEvent?.target as HTMLElement | null) ?? null;
-            if (target?.closest?.('.ant-tree-switcher')) return;
+            if (target?.closest?.(".ant-tree-switcher")) return;
 
             const data = (info?.node as any)?.data as {
               elementId?: string;
@@ -2844,13 +2855,13 @@ const ExplorerTree: React.FC = () => {
               ? EXPLORER_KEYS.element(data.elementId)
               : key;
 
-            setSelection({ kind: 'repository', keys: [effectiveKey] });
-            if (effectiveKey.startsWith('element:')) {
+            setSelection({ kind: "repository", keys: [effectiveKey] });
+            if (effectiveKey.startsWith("element:")) {
               if (data?.elementId && data?.elementType) {
                 setSelectedElement({
                   id: data.elementId,
                   type: data.elementType,
-                  source: 'Explorer',
+                  source: "Explorer",
                 });
               }
             }
@@ -2858,8 +2869,8 @@ const ExplorerTree: React.FC = () => {
           }}
           onRightClick={(info) => {
             const key =
-              typeof info?.node?.key === 'string' ? info.node.key : '';
-            if (key.startsWith('element:')) {
+              typeof info?.node?.key === "string" ? info.node.key : "";
+            if (key.startsWith("element:")) {
               const data = (info?.node as any)?.data as {
                 elementId?: string;
                 elementType?: string;
@@ -2868,7 +2879,7 @@ const ExplorerTree: React.FC = () => {
                 setSelectedElement({
                   id: data.elementId,
                   type: data.elementType,
-                  source: 'Explorer',
+                  source: "Explorer",
                 });
               }
             }
@@ -2880,27 +2891,27 @@ const ExplorerTree: React.FC = () => {
       <Modal
         open={createElementModalOpen}
         title={
-          createElementModalStep === 'SELECT_TYPE'
-            ? 'Create element'
+          createElementModalStep === "SELECT_TYPE"
+            ? "Create element"
             : `Create ${
                 createElementFormState.type
                   ? titleForObjectType(createElementFormState.type)
-                  : 'element'
+                  : "element"
               }`
         }
         onCancel={closeCreateElementModal}
         onOk={handleCreateElementModalOk}
-        okText={createElementModalStep === 'SELECT_TYPE' ? 'Next' : 'Create'}
+        okText={createElementModalStep === "SELECT_TYPE" ? "Next" : "Create"}
         destroyOnClose
       >
-        {createElementModalStep === 'SELECT_TYPE' ? (
+        {createElementModalStep === "SELECT_TYPE" ? (
           <Form layout="vertical">
             <Form.Item label="Element Type" required>
               <Select
                 placeholder={
                   createElementModalCategory
                     ? `Select element type in ${createElementModalCategory}`
-                    : 'Select element type'
+                    : "Select element type"
                 }
                 options={scopedCreateTypeOptions}
                 value={createElementFormState.type || undefined}
@@ -2963,7 +2974,7 @@ const ExplorerTree: React.FC = () => {
       {/* §8 Change Type Modal */}
       <Modal
         open={changeTypeModalOpen}
-        title={`Change Type — ${changeTypeTarget?.name ?? ''}`}
+        title={`Change Type — ${changeTypeTarget?.name ?? ""}`}
         onCancel={() => setChangeTypeModalOpen(false)}
         onOk={commitChangeType}
         okText="Change Type"
@@ -2974,7 +2985,7 @@ const ExplorerTree: React.FC = () => {
         destroyOnClose
       >
         {changeTypeTarget && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <Typography.Text type="secondary">Current Type</Typography.Text>
               <Input
@@ -2992,7 +3003,7 @@ const ExplorerTree: React.FC = () => {
                   (o) => o.value !== changeTypeTarget.type,
                 )}
                 onChange={(val) => setChangeTypeNewType(val as ObjectType)}
-                style={{ width: '100%', marginTop: 4 }}
+                style={{ width: "100%", marginTop: 4 }}
                 showSearch
                 optionFilterProp="label"
               />
@@ -3019,7 +3030,7 @@ const ExplorerTree: React.FC = () => {
         destroyOnClose
       >
         {relationshipSource ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <Typography.Text type="secondary">Source Element</Typography.Text>
               <Input
@@ -3059,10 +3070,10 @@ const ExplorerTree: React.FC = () => {
                     nextType,
                     relationshipSource,
                   );
-                  setSelectedTargetId(nextTargets[0]?.value ?? '');
+                  setSelectedTargetId(nextTargets[0]?.value ?? "");
                 }}
                 placeholder="Select relationship type"
-                style={{ width: '100%', marginTop: 4 }}
+                style={{ width: "100%", marginTop: 4 }}
               />
             </div>
             <div>
@@ -3081,7 +3092,7 @@ const ExplorerTree: React.FC = () => {
                 }
                 onChange={(val) => setSelectedTargetId(String(val))}
                 placeholder="Select target"
-                style={{ width: '100%', marginTop: 4 }}
+                style={{ width: "100%", marginTop: 4 }}
                 disabled={!selectedRelationshipType}
               />
             </div>
@@ -3103,7 +3114,7 @@ const ExplorerTree: React.FC = () => {
         okButtonProps={{ disabled: !addToViewViewId || !addToViewTarget }}
         destroyOnClose
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space direction="vertical" style={{ width: "100%" }}>
           <div>
             <Typography.Text type="secondary">Target view</Typography.Text>
             <Select
@@ -3113,7 +3124,7 @@ const ExplorerTree: React.FC = () => {
                 label: `${v.name} (${v.viewpointId})`,
               }))}
               onChange={(val) => setAddToViewViewId(val as string)}
-              style={{ width: '100%', marginTop: 6 }}
+              style={{ width: "100%", marginTop: 6 }}
               placeholder="Choose a view"
             />
           </div>
@@ -3129,7 +3140,7 @@ const ExplorerTree: React.FC = () => {
       {/* §11 Audit Trail Modal */}
       <Modal
         open={Boolean(auditTrailObjectId)}
-        title={`Audit Trail — ${auditTrailObjectId ?? ''}`}
+        title={`Audit Trail — ${auditTrailObjectId ?? ""}`}
         onCancel={() => setAuditTrailObjectId(null)}
         footer={null}
         destroyOnClose
@@ -3141,7 +3152,7 @@ const ExplorerTree: React.FC = () => {
       {/* Baseline Preview Modal */}
       <Modal
         open={baselinePreviewOpen}
-        title={baselinePreview?.name || 'Baseline'}
+        title={baselinePreview?.name || "Baseline"}
         onCancel={() => {
           setBaselinePreview(null);
           setBaselinePreviewOpen(false);
@@ -3150,7 +3161,7 @@ const ExplorerTree: React.FC = () => {
         destroyOnClose
       >
         {baselinePreview && (
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space direction="vertical" size={12} style={{ width: "100%" }}>
             <Typography.Text type="secondary">
               Read-only snapshot.
             </Typography.Text>
@@ -3162,10 +3173,10 @@ const ExplorerTree: React.FC = () => {
                 {baselinePreview.createdAt}
               </Descriptions.Item>
               <Descriptions.Item label="Created by">
-                {baselinePreview.createdBy ?? '—'}
+                {baselinePreview.createdBy ?? "—"}
               </Descriptions.Item>
               <Descriptions.Item label="Description">
-                {baselinePreview.description ?? '—'}
+                {baselinePreview.description ?? "—"}
               </Descriptions.Item>
               <Descriptions.Item label="Elements captured">
                 {baselinePreview.elements.length}
@@ -3187,7 +3198,7 @@ const ExplorerTree: React.FC = () => {
 // ---------------------------------------------------------------------------
 const AuditTrailView: React.FC<{ objectId: string }> = ({ objectId }) => {
   const entries = React.useMemo(() => {
-    const { queryAuditLog } = require('./explorerAuditLog');
+    const { queryAuditLog } = require("./explorerAuditLog");
     return queryAuditLog({ objectId, limit: 50 });
   }, [objectId]);
 
@@ -3200,11 +3211,11 @@ const AuditTrailView: React.FC<{ objectId: string }> = ({ objectId }) => {
   }
 
   return (
-    <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+    <div style={{ maxHeight: 400, overflowY: "auto" }}>
       {entries.map((entry: any) => (
         <div
           key={entry.id}
-          style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}
+          style={{ padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}
         >
           <Space size={8}>
             <Tag color="blue">{entry.actionType}</Tag>
@@ -3214,12 +3225,12 @@ const AuditTrailView: React.FC<{ objectId: string }> = ({ objectId }) => {
             <Typography.Text>by {entry.userId}</Typography.Text>
           </Space>
           {entry.beforeState && (
-            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "#8c8c8c", marginTop: 4 }}>
               Before: {JSON.stringify(entry.beforeState).slice(0, 120)}…
             </div>
           )}
           {entry.afterState && (
-            <div style={{ fontSize: 11, color: '#8c8c8c' }}>
+            <div style={{ fontSize: 11, color: "#8c8c8c" }}>
               After: {JSON.stringify(entry.afterState).slice(0, 120)}…
             </div>
           )}

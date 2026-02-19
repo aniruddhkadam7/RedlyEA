@@ -83,7 +83,9 @@ export type ArchiMateAlignmentLayer = {
   version: ArchiMate3Version;
 
   mapElementType: (internalElementType: string) => ElementAlignment;
-  mapRelationshipType: (internalRelationshipType: string) => RelationshipAlignment;
+  mapRelationshipType: (
+    internalRelationshipType: string,
+  ) => RelationshipAlignment;
 
   /**
    * Convenience helper for bulk alignment reports.
@@ -109,13 +111,27 @@ export const ARCHIMATE_3_LATEST: ArchiMate3Version = '3.3';
 // NOTE: This is an alignment table, not enforcement. Concepts are best-fit mappings.
 const ELEMENT_CONCEPTS_3X: Readonly<Record<string, ArchiMateElementConcept>> = {
   Capability: { id: 'Capability', name: 'Capability', layer: 'Strategy' },
-  BusinessProcess: { id: 'BusinessProcess', name: 'Business Process', layer: 'Business' },
-  Application: { id: 'ApplicationComponent', name: 'Application Component', layer: 'Application' },
+  BusinessProcess: {
+    id: 'BusinessProcess',
+    name: 'Business Process',
+    layer: 'Business',
+  },
+  Application: {
+    id: 'ApplicationComponent',
+    name: 'Application Component',
+    layer: 'Application',
+  },
   Technology: { id: 'Node', name: 'Node', layer: 'Technology' },
-  Programme: { id: 'WorkPackage', name: 'Work Package', layer: 'ImplementationAndMigration' },
+  Programme: {
+    id: 'WorkPackage',
+    name: 'Work Package',
+    layer: 'ImplementationAndMigration',
+  },
 } as const;
 
-const RELATIONSHIP_CONCEPTS_3X: Readonly<Record<string, RelationshipAlignment>> = {
+const RELATIONSHIP_CONCEPTS_3X: Readonly<
+  Record<string, RelationshipAlignment>
+> = {
   // Internal: Capability -> BusinessProcess (decomposition/traceability)
   DECOMPOSES_TO: {
     version: ARCHIMATE_3_LATEST,
@@ -189,7 +205,8 @@ const RELATIONSHIP_CONCEPTS_3X: Readonly<Record<string, RelationshipAlignment>> 
     status: 'Supported',
     concept: { id: 'Assignment', name: 'Assignment' },
     direction: 'SameDirection',
-    notes: 'Best-fit for deployment/hosting traceability (application deployed on node).',
+    notes:
+      'Best-fit for deployment/hosting traceability (application deployed on node).',
   },
 
   // Internal: Programme -> (Capability|Application|Technology)
@@ -199,7 +216,8 @@ const RELATIONSHIP_CONCEPTS_3X: Readonly<Record<string, RelationshipAlignment>> 
     status: 'Supported',
     concept: { id: 'Influence', name: 'Influence' },
     direction: 'SameDirection',
-    notes: 'Best-fit: represents influence/impact from a work package to target elements.',
+    notes:
+      'Best-fit: represents influence/impact from a work package to target elements.',
   },
 } as const;
 
@@ -249,10 +267,16 @@ export function createArchiMateAlignmentLayer(
       };
     }
 
-    return makeUnsupportedElement(version, key, 'No ArchiMate 3.x concept mapping is defined for this internal elementType.');
+    return makeUnsupportedElement(
+      version,
+      key,
+      'No ArchiMate 3.x concept mapping is defined for this internal elementType.',
+    );
   };
 
-  const mapRelationshipType = (internalRelationshipType: string): RelationshipAlignment => {
+  const mapRelationshipType = (
+    internalRelationshipType: string,
+  ): RelationshipAlignment => {
     const key = normalize(internalRelationshipType);
     const known = RELATIONSHIP_CONCEPTS_3X[key];
     if (known) {
@@ -270,17 +294,29 @@ export function createArchiMateAlignmentLayer(
   const alignTypes: ArchiMateAlignmentLayer['alignTypes'] = (input) => {
     const elements = (input.elementTypes ?? [])
       .map((t) => mapElementType(t))
-      .sort((a, b) => a.internalElementType.localeCompare(b.internalElementType));
+      .sort((a, b) =>
+        a.internalElementType.localeCompare(b.internalElementType),
+      );
 
     const relationships = (input.relationshipTypes ?? [])
       .map((t) => mapRelationshipType(t))
-      .sort((a, b) => a.internalRelationshipType.localeCompare(b.internalRelationshipType));
+      .sort((a, b) =>
+        a.internalRelationshipType.localeCompare(b.internalRelationshipType),
+      );
 
-    const supportedElements = elements.filter((e) => e.status === 'Supported').length;
-    const unsupportedElements = elements.filter((e) => e.status !== 'Supported').length;
+    const supportedElements = elements.filter(
+      (e) => e.status === 'Supported',
+    ).length;
+    const unsupportedElements = elements.filter(
+      (e) => e.status !== 'Supported',
+    ).length;
 
-    const supportedRelationships = relationships.filter((r) => r.status === 'Supported').length;
-    const unsupportedRelationships = relationships.filter((r) => r.status !== 'Supported').length;
+    const supportedRelationships = relationships.filter(
+      (r) => r.status === 'Supported',
+    ).length;
+    const unsupportedRelationships = relationships.filter(
+      (r) => r.status !== 'Supported',
+    ).length;
 
     return {
       elements,
@@ -307,4 +343,5 @@ export function createArchiMateAlignmentLayer(
  *
  * Keep in mind this is alignment-only; it should not be used to enforce semantics.
  */
-export const ARCHIMATE_ALIGNMENT_3X: ArchiMateAlignmentLayer = createArchiMateAlignmentLayer(ARCHIMATE_3_LATEST);
+export const ARCHIMATE_ALIGNMENT_3X: ArchiMateAlignmentLayer =
+  createArchiMateAlignmentLayer(ARCHIMATE_3_LATEST);

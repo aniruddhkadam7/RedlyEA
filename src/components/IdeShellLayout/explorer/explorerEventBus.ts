@@ -109,13 +109,21 @@ const listeners = new Set<ExplorerEventHandler>();
  */
 export function emitExplorerEvent(event: ExplorerEvent): void {
   // Notify in-memory listeners (React hooks)
-  listeners.forEach(fn => {
-    try { fn(event); } catch { /* swallow per-listener errors */ }
+  listeners.forEach((fn) => {
+    try {
+      fn(event);
+    } catch {
+      /* swallow per-listener errors */
+    }
   });
   // Also dispatch as a Window CustomEvent for cross-component bridging
   try {
-    window.dispatchEvent(new CustomEvent<ExplorerEvent>(EXPLORER_EVENT_KEY, { detail: event }));
-  } catch { /* SSR guard */ }
+    window.dispatchEvent(
+      new CustomEvent<ExplorerEvent>(EXPLORER_EVENT_KEY, { detail: event }),
+    );
+  } catch {
+    /* SSR guard */
+  }
 }
 
 /**
@@ -123,13 +131,18 @@ export function emitExplorerEvent(event: ExplorerEvent): void {
  */
 export function onExplorerEvent(handler: ExplorerEventHandler): () => void {
   listeners.add(handler);
-  return () => { listeners.delete(handler); };
+  return () => {
+    listeners.delete(handler);
+  };
 }
 
 /**
  * React hook: subscribe to explorer events for the lifetime of the component.
  */
-export function useExplorerEvent(handler: ExplorerEventHandler, deps: React.DependencyList = []): void {
+export function useExplorerEvent(
+  handler: ExplorerEventHandler,
+  deps: React.DependencyList = [],
+): void {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableHandler = typeof handler === 'function' ? handler : () => {};
   // We avoid importing React here to keep this file framework-light.

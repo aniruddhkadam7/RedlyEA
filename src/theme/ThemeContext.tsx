@@ -6,8 +6,9 @@
  *  - sets `data-theme` on <html> for CSS selectors
  *  - wraps children in Ant Design <ConfigProvider> with the correct theme algorithm
  */
+
+import { theme as antdTheme, ConfigProvider } from 'antd';
 import React from 'react';
-import { ConfigProvider, theme as antdTheme } from 'antd';
 import { runtimeEnv } from '@/runtime/runtimeEnv';
 
 // ---------------------------------------------------------------------------
@@ -47,7 +48,9 @@ export const useAppTheme = () => React.useContext(ThemeContext);
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [theme, setThemeRaw] = React.useState<AppTheme>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);

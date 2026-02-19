@@ -13,10 +13,10 @@ import { FormattedMessage, useIntl } from '@umijs/max';
 import { useRequest } from 'ahooks';
 import { Button, Drawer, Input } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
+import { message } from '@/ea/eaConsole';
 import { removeRule, rule } from '@/services/ant-design-pro/api';
 import CreateForm from './components/CreateForm';
 import UpdateForm from './components/UpdateForm';
-import { message } from '@/ea/eaConsole';
 
 const TableList: React.FC = () => {
   const actionRef = useRef<ActionType | null>(null);

@@ -1,5 +1,11 @@
 export type EAConsoleLevel = 'info' | 'warning' | 'error' | 'success';
-export type EAConsoleDomain = 'canvas' | 'relationship' | 'validation' | 'repository' | 'governance' | 'system';
+export type EAConsoleDomain =
+  | 'canvas'
+  | 'relationship'
+  | 'validation'
+  | 'repository'
+  | 'governance'
+  | 'system';
 
 export type EAConsoleMessage = {
   id: string;
@@ -23,11 +29,14 @@ let messages: EAConsoleInternalMessage[] = [];
 let cleanupTimer: number | null = null;
 
 const notify = () => {
-  listeners.forEach((listener) => listener());
+  for (const listener of listeners) {
+    listener();
+  }
 };
 
 const generateId = () => {
-  if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID();
+  if (typeof globalThis.crypto?.randomUUID === 'function')
+    return globalThis.crypto.randomUUID();
   return `ea-console-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
@@ -49,7 +58,9 @@ const scheduleCleanup = () => {
   cleanupTimer = window.setTimeout(() => {
     cleanupTimer = null;
     const cutoff = Date.now();
-    const nextMessages = messages.filter((msg) => !msg.expiresAt || msg.expiresAt > cutoff);
+    const nextMessages = messages.filter(
+      (msg) => !msg.expiresAt || msg.expiresAt > cutoff,
+    );
     if (nextMessages.length !== messages.length) {
       messages = nextMessages;
       notify();
@@ -70,7 +81,9 @@ export type EAConsolePushInput = {
 
 const push = (input: EAConsolePushInput): string => {
   const now = input.timestamp ?? Date.now();
-  const ttlMs = input.ttlMs ?? (input.level === 'success' ? DEFAULT_SUCCESS_TTL_MS : undefined);
+  const ttlMs =
+    input.ttlMs ??
+    (input.level === 'success' ? DEFAULT_SUCCESS_TTL_MS : undefined);
   const message: EAConsoleInternalMessage = {
     id: input.id ?? generateId(),
     timestamp: now,
@@ -132,14 +145,31 @@ type MessageArgs =
       context?: EAConsoleMessage['context'];
     };
 
-const pushMessage = (level: EAConsoleLevel, args: MessageArgs, duration?: number) => {
-  const isObj = typeof args === 'object' && args !== null && !Array.isArray(args);
-  const content = isObj ? normalizeContent((args as any).content) : normalizeContent(args);
+const pushMessage = (
+  level: EAConsoleLevel,
+  args: MessageArgs,
+  duration?: number,
+) => {
+  const isObj =
+    typeof args === 'object' && args !== null && !Array.isArray(args);
+  const content = isObj
+    ? normalizeContent((args as any).content)
+    : normalizeContent(args);
   const key = isObj ? (args as any).key : undefined;
-  const domain = (isObj ? (args as any).domain : undefined) as EAConsoleDomain | undefined;
+  const domain = (isObj ? (args as any).domain : undefined) as
+    | EAConsoleDomain
+    | undefined;
   const context = isObj ? (args as any).context : undefined;
-  const rawDuration = typeof duration === 'number' ? duration : isObj ? (args as any).duration : undefined;
-  const ttlMs = typeof rawDuration === 'number' && rawDuration > 0 ? rawDuration * 1000 : undefined;
+  const rawDuration =
+    typeof duration === 'number'
+      ? duration
+      : isObj
+        ? (args as any).duration
+        : undefined;
+  const ttlMs =
+    typeof rawDuration === 'number' && rawDuration > 0
+      ? rawDuration * 1000
+      : undefined;
   return eaConsole.push({
     id: key,
     level,
@@ -151,11 +181,16 @@ const pushMessage = (level: EAConsoleLevel, args: MessageArgs, duration?: number
 };
 
 export const message = {
-  info: (args: MessageArgs, duration?: number) => pushMessage('info', args, duration),
-  success: (args: MessageArgs, duration?: number) => pushMessage('success', args, duration),
-  warning: (args: MessageArgs, duration?: number) => pushMessage('warning', args, duration),
-  error: (args: MessageArgs, duration?: number) => pushMessage('error', args, duration),
-  loading: (args: MessageArgs, duration?: number) => pushMessage('info', args, duration),
+  info: (args: MessageArgs, duration?: number) =>
+    pushMessage('info', args, duration),
+  success: (args: MessageArgs, duration?: number) =>
+    pushMessage('success', args, duration),
+  warning: (args: MessageArgs, duration?: number) =>
+    pushMessage('warning', args, duration),
+  error: (args: MessageArgs, duration?: number) =>
+    pushMessage('error', args, duration),
+  loading: (args: MessageArgs, duration?: number) =>
+    pushMessage('info', args, duration),
   destroy: (key?: string) => {
     if (key) remove(key);
     else clear();
@@ -175,7 +210,10 @@ const pushNotification = (level: EAConsoleLevel, args: NotificationArgs) => {
   const title = normalizeContent(args.message);
   const description = normalizeContent(args.description);
   const combined = description ? `${title} ${description}`.trim() : title;
-  const ttlMs = typeof args.duration === 'number' && args.duration > 0 ? args.duration * 1000 : undefined;
+  const ttlMs =
+    typeof args.duration === 'number' && args.duration > 0
+      ? args.duration * 1000
+      : undefined;
   return eaConsole.push({
     id: args.key,
     level,

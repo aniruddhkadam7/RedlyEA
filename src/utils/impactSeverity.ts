@@ -22,7 +22,9 @@ export function computeImpactSeverity({
 }: ComputeImpactSeverityInput): ComputeImpactSeverityResult {
   // Defensive normalization (pure; no side effects)
   const hard = Number.isFinite(hardPathCount) ? Math.max(0, hardPathCount) : 0;
-  const softOnly = Number.isFinite(softOnlyPathCount) ? Math.max(0, softOnlyPathCount) : 0;
+  const softOnly = Number.isFinite(softOnlyPathCount)
+    ? Math.max(0, softOnlyPathCount)
+    : 0;
   const total = Number.isFinite(totalPaths) ? Math.max(0, totalPaths) : 0;
 
   // Path evidence weighting: hard paths carry more impact signal than soft-only paths.
@@ -33,7 +35,8 @@ export function computeImpactSeverity({
   // (total is retained as an input but not trusted as the source of truth).
   const effectivePathEvidence = hard * hardWeight + softOnly * softWeight;
 
-  const criticalityMultiplier = criticality === 'high' ? 3 : criticality === 'medium' ? 2 : 1;
+  const criticalityMultiplier =
+    criticality === 'high' ? 3 : criticality === 'medium' ? 2 : 1;
 
   // Diminishing returns + normalization to 0..100:
   // score = 100 * (1 - e^(-k * evidence * multiplier))
@@ -44,7 +47,10 @@ export function computeImpactSeverity({
   // If there are explicitly zero total paths, treat as zero impact regardless of evidence.
   const normalized = total === 0 ? 0 : 1 - Math.exp(-k * raw);
 
-  const severityScore = Math.max(0, Math.min(100, Math.round(100 * normalized)));
+  const severityScore = Math.max(
+    0,
+    Math.min(100, Math.round(100 * normalized)),
+  );
 
   const severityLabel: ImpactSeverityLabel =
     severityScore >= 70 ? 'High' : severityScore >= 40 ? 'Medium' : 'Low';

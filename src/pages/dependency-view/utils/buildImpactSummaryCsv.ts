@@ -1,7 +1,15 @@
-import type { DatasetInfo, ImpactSummary } from '../components/ApplicationSidePanel';
+import type {
+  DatasetInfo,
+  ImpactSummary,
+} from '../components/ApplicationSidePanel';
 
 const csvEscape = (value: string) => {
-  if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
+  if (
+    value.includes('"') ||
+    value.includes(',') ||
+    value.includes('\n') ||
+    value.includes('\r')
+  ) {
     return `"${value.replaceAll('"', '""')}"`;
   }
   return value;

@@ -60,7 +60,9 @@ export function clearGovernanceLog(): void {
   }
 }
 
-export function appendGovernanceLog(entry: Omit<GovernanceLogEntry, 'id' | 'occurredAt'>): void {
+export function appendGovernanceLog(
+  entry: Omit<GovernanceLogEntry, 'id' | 'occurredAt'>,
+): void {
   try {
     const current = readGovernanceLog();
     const next: GovernanceLogEntry = {
@@ -78,9 +80,12 @@ export function appendGovernanceLog(entry: Omit<GovernanceLogEntry, 'id' | 'occu
       last.repositoryName === next.repositoryName &&
       last.architectureScope === next.architectureScope &&
       last.summary.total === next.summary.total &&
-      last.summary.mandatoryFindingCount === next.summary.mandatoryFindingCount &&
-      last.summary.relationshipErrorCount === next.summary.relationshipErrorCount &&
-      last.summary.invalidRelationshipInsertCount === next.summary.invalidRelationshipInsertCount
+      last.summary.mandatoryFindingCount ===
+        next.summary.mandatoryFindingCount &&
+      last.summary.relationshipErrorCount ===
+        next.summary.relationshipErrorCount &&
+      last.summary.invalidRelationshipInsertCount ===
+        next.summary.invalidRelationshipInsertCount
     ) {
       return;
     }

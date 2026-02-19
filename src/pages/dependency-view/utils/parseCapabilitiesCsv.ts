@@ -1,5 +1,5 @@
 import { isValidObjectType, type ObjectType } from './eaMetaModel';
-import { type EaRepository } from './eaRepository';
+import type { EaRepository } from './eaRepository';
 
 export type CapabilitiesCsvRow = {
   id: string;
@@ -20,11 +20,14 @@ export type CapabilitiesCsvParseFailure = {
   errors: string[];
 };
 
-export type CapabilitiesCsvParseResult = CapabilitiesCsvParseSuccess | CapabilitiesCsvParseFailure;
+export type CapabilitiesCsvParseResult =
+  | CapabilitiesCsvParseSuccess
+  | CapabilitiesCsvParseFailure;
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 const parseCsv = (inputText: string): string[][] => {
   const text = stripBom(inputText);
@@ -92,7 +95,8 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
@@ -107,7 +111,13 @@ export function parseAndValidateCapabilitiesCsv(
   if (rows.length === 0) return { ok: false, errors: ['CSV is empty.'] };
 
   const header = rows[0].map(normalizeHeader);
-  const requiredColumns = ['id', 'type', 'category', 'parent_id', 'name'] as const;
+  const requiredColumns = [
+    'id',
+    'type',
+    'category',
+    'parent_id',
+    'name',
+  ] as const;
 
   const indexByColumn = new Map<string, number>();
   header.forEach((h, idx) => {
@@ -116,7 +126,10 @@ export function parseAndValidateCapabilitiesCsv(
 
   const missing = requiredColumns.filter((col) => !indexByColumn.has(col));
   if (missing.length > 0) {
-    return { ok: false, errors: [`Missing required column(s): ${missing.join(', ')}.`] };
+    return {
+      ok: false,
+      errors: [`Missing required column(s): ${missing.join(', ')}.`],
+    };
   }
 
   const capabilities: CapabilitiesCsvRow[] = [];
@@ -128,11 +141,11 @@ export function parseAndValidateCapabilitiesCsv(
 
     const displayRow = r + 1;
 
-    const rawId = (row[indexByColumn.get('id')!] ?? '').trim();
-    const rawType = (row[indexByColumn.get('type')!] ?? '').trim();
-    const rawCategory = (row[indexByColumn.get('category')!] ?? '').trim();
-    const rawParentId = (row[indexByColumn.get('parent_id')!] ?? '').trim();
-    const rawName = (row[indexByColumn.get('name')!] ?? '').trim();
+    const rawId = (row[indexByColumn.get('id') ?? 0] ?? '').trim();
+    const rawType = (row[indexByColumn.get('type') ?? 0] ?? '').trim();
+    const rawCategory = (row[indexByColumn.get('category') ?? 0] ?? '').trim();
+    const rawParentId = (row[indexByColumn.get('parent_id') ?? 0] ?? '').trim();
+    const rawName = (row[indexByColumn.get('name') ?? 0] ?? '').trim();
 
     if (!rawId) errors.push(`Row ${displayRow}: id is required.`);
     if (!rawName) errors.push(`Row ${displayRow}: name is required.`);
@@ -146,22 +159,39 @@ export function parseAndValidateCapabilitiesCsv(
     if (!rawCategory) errors.push(`Row ${displayRow}: category is required.`);
 
     if (rawParentId && !opts.repository.objects.has(rawParentId)) {
-      errors.push(`Row ${displayRow}: parent_id references unknown object id "${rawParentId}".`);
+      errors.push(
+        `Row ${displayRow}: parent_id references unknown object id "${rawParentId}".`,
+      );
     }
 
     if (rawId) {
-      if (seenIds.has(rawId)) errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
+      if (seenIds.has(rawId))
+        errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
       else seenIds.add(rawId);
     }
 
     const attributes: Record<string, unknown> = {};
     for (const [col, idx] of indexByColumn) {
-      if (col === 'id' || col === 'type' || col === 'category' || col === 'parent_id' || col === 'name') continue;
+      if (
+        col === 'id' ||
+        col === 'type' ||
+        col === 'category' ||
+        col === 'parent_id' ||
+        col === 'name'
+      )
+        continue;
       const value = (row[idx] ?? '').trim();
       if (value !== '') attributes[col] = value;
     }
 
-    if (rawId && rawType && isValidObjectType(rawType) && rawName && rawCategory && (!rawParentId || opts.repository.objects.has(rawParentId))) {
+    if (
+      rawId &&
+      rawType &&
+      isValidObjectType(rawType) &&
+      rawName &&
+      rawCategory &&
+      (!rawParentId || opts.repository.objects.has(rawParentId))
+    ) {
       capabilities.push({
         id: rawId,
         type: rawType,
@@ -174,7 +204,8 @@ export function parseAndValidateCapabilitiesCsv(
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (capabilities.length === 0) return { ok: false, errors: ['No capability rows found.'] };
+  if (capabilities.length === 0)
+    return { ok: false, errors: ['No capability rows found.'] };
 
   return { ok: true, capabilities };
 }

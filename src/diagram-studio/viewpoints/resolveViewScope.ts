@@ -1,6 +1,10 @@
-import { ViewpointRegistry } from './ViewpointRegistry';
+import type {
+  EaObject,
+  EaPersistedRelationship,
+  EaRepository,
+} from '@/pages/dependency-view/utils/eaRepository';
 import type { ViewInstance } from './ViewInstance';
-import type { EaObject, EaPersistedRelationship, EaRepository } from '@/pages/dependency-view/utils/eaRepository';
+import { ViewpointRegistry } from './ViewpointRegistry';
 
 export type ViewScopeResolutionResult = {
   readonly elements: readonly EaObject[];
@@ -31,12 +35,18 @@ export function resolveViewScope(args: {
   const { view, repository } = args;
 
   const viewpoint = ViewpointRegistry.require(view.viewpointId);
-  const allowedElementTypes = new Set(viewpoint.allowedElementTypes.map(normalize));
-  const allowedRelationshipTypes = new Set(viewpoint.allowedRelationshipTypes.map(normalize));
+  const allowedElementTypes = new Set(
+    viewpoint.allowedElementTypes.map(normalize),
+  );
+  const allowedRelationshipTypes = new Set(
+    viewpoint.allowedRelationshipTypes.map(normalize),
+  );
 
   const scopeFilter = (() => {
     if (view.scope.kind === 'ManualSelection') {
-      const ids = new Set((view.scope.elementIds ?? []).map(normalize).filter(Boolean));
+      const ids = new Set(
+        (view.scope.elementIds ?? []).map(normalize).filter(Boolean),
+      );
       return (id: string) => ids.has(normalize(id));
     }
     return (_id: string) => true;
@@ -52,7 +62,8 @@ export function resolveViewScope(args: {
   // relationships are eligible. This prevents relationships created in other
   // views from appearing here.
   const visibleRelIds = view.visibleRelationshipIds;
-  const hasExplicitRelFilter = Array.isArray(visibleRelIds) && visibleRelIds.length > 0;
+  const hasExplicitRelFilter =
+    Array.isArray(visibleRelIds) && visibleRelIds.length > 0;
   const visibleRelIdSet = hasExplicitRelFilter
     ? new Set(visibleRelIds?.map(normalize).filter(Boolean))
     : null;
@@ -64,7 +75,9 @@ export function resolveViewScope(args: {
     if (!allowedIds.has(fromId) || !allowedIds.has(toId)) return false;
     // If the view tracks explicit relationship IDs, enforce the filter
     if (visibleRelIdSet) {
-      const relId = normalize(rel.id ?? `${rel.fromId}__${rel.toId}__${rel.type}`);
+      const relId = normalize(
+        rel.id ?? `${rel.fromId}__${rel.toId}__${rel.type}`,
+      );
       return visibleRelIdSet.has(relId);
     }
     return true;

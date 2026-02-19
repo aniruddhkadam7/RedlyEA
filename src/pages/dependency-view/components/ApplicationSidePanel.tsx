@@ -71,7 +71,9 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
   rootApplication,
   impactDepth,
 }) => {
-  const [selectedRankedImpactId, setSelectedRankedImpactId] = useState<string | undefined>(undefined);
+  const [selectedRankedImpactId, setSelectedRankedImpactId] = useState<
+    string | undefined
+  >(undefined);
 
   useEffect(() => {
     setSelectedRankedImpactId(undefined);
@@ -88,7 +90,9 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
     if (!rootId || !targetId) return undefined;
     if (!impactPaths || impactPaths.length === 0) return undefined;
 
-    const examplePath = impactPaths.find((p) => p.length >= 2 && p[0] === rootId && p[p.length - 1] === targetId);
+    const examplePath = impactPaths.find(
+      (p) => p.length >= 2 && p[0] === rootId && p[p.length - 1] === targetId,
+    );
     if (!examplePath) return undefined;
 
     return examplePath.map((id) => nameById.get(id) ?? id).join(' → ');
@@ -110,9 +114,13 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
         {selectedDependency ? 'Dependency Details' : 'Application Details'}
       </h2>
 
-      <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+      <div
+        style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }}
+      />
       <h3 style={{ margin: 0, fontSize: 14 }}>Graph Scope</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}
+      >
         <div style={{ opacity: 0.7 }}>Mode</div>
         <div>{graphViewMode === 'landscape' ? 'Landscape' : 'Impact'}</div>
 
@@ -128,9 +136,13 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
       </div>
 
       {!selectedApplication && !selectedDependency ? (
-        <div style={{ opacity: 0.7 }}>Click a node or edge to view metadata.</div>
+        <div style={{ opacity: 0.7 }}>
+          Click a node or edge to view metadata.
+        </div>
       ) : selectedDependency ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}
+        >
           <div style={{ opacity: 0.7 }}>Source</div>
           <div>{selectedDependency.sourceApplication.name}</div>
 
@@ -145,7 +157,13 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 8 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '120px 1fr',
+              gap: 8,
+            }}
+          >
             <div style={{ opacity: 0.7 }}>Name</div>
             <div>{selectedApplication?.name}</div>
 
@@ -158,9 +176,21 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
 
           {impactSummary ? (
             <>
-              <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+              <div
+                style={{
+                  height: 1,
+                  background: 'rgba(0,0,0,0.08)',
+                  margin: '8px 0',
+                }}
+              />
               <h3 style={{ margin: 0, fontSize: 14 }}>Impact Summary</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 8 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '160px 1fr',
+                  gap: 8,
+                }}
+              >
                 <div style={{ opacity: 0.7 }}>Total impacted</div>
                 <div>{impactSummary.totalImpactedApplications}</div>
 
@@ -181,23 +211,45 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
 
           {rankedImpacts && rankedImpacts.length > 0 ? (
             <>
-              <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+              <div
+                style={{
+                  height: 1,
+                  background: 'rgba(0,0,0,0.08)',
+                  margin: '8px 0',
+                }}
+              />
               <h3 style={{ margin: 0, fontSize: 14 }}>Ranked Impacts</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  fontSize: 12,
+                }}
+              >
                 {rankedImpacts.map((item) => (
                   <div
                     key={item.applicationId}
                     style={{ lineHeight: 1.3 }}
-                    onClick={() => setSelectedRankedImpactId(item.applicationId)}
+                    onClick={() =>
+                      setSelectedRankedImpactId(item.applicationId)
+                    }
                   >
-                    {item.applicationName} — {item.severityLabel} ({item.severityScore})
+                    {item.applicationName} — {item.severityLabel} (
+                    {item.severityScore})
                   </div>
                 ))}
               </div>
 
               {impactExplanation ? (
                 <>
-                  <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+                  <div
+                    style={{
+                      height: 1,
+                      background: 'rgba(0,0,0,0.08)',
+                      margin: '8px 0',
+                    }}
+                  />
                   <div>Why is this impacted?</div>
                   <div>{impactExplanation}</div>
                 </>
@@ -205,9 +257,21 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
             </>
           ) : null}
 
-          <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+          <div
+            style={{
+              height: 1,
+              background: 'rgba(0,0,0,0.08)',
+              margin: '8px 0',
+            }}
+          />
           <h3 style={{ margin: 0, fontSize: 14 }}>Impact Assumptions</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 8 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '160px 1fr',
+              gap: 8,
+            }}
+          >
             <div style={{ opacity: 0.7 }}>Direction</div>
             <div>Downstream</div>
 
@@ -223,9 +287,21 @@ const ApplicationSidePanel: React.FC<ApplicationSidePanelProps> = ({
 
           {datasetInfo ? (
             <>
-              <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '8px 0' }} />
+              <div
+                style={{
+                  height: 1,
+                  background: 'rgba(0,0,0,0.08)',
+                  margin: '8px 0',
+                }}
+              />
               <h3 style={{ margin: 0, fontSize: 14 }}>Dataset</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 8 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '160px 1fr',
+                  gap: 8,
+                }}
+              >
                 <div style={{ opacity: 0.7 }}>Source</div>
                 <div>{datasetInfo.source}</div>
 

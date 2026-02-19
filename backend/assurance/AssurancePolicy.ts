@@ -16,18 +16,25 @@ export type AssurancePolicy = {
   severityOverrides: Partial<Record<string, AssuranceSeverity>>;
 };
 
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null;
 
-const isAssuranceSeverity = (v: unknown): v is AssuranceSeverity => v === 'Info' || v === 'Warning' || v === 'Error';
+const isAssuranceSeverity = (v: unknown): v is AssuranceSeverity =>
+  v === 'Info' || v === 'Warning' || v === 'Error';
 
 function parseAssurancePolicy(raw: unknown): AssurancePolicy {
-  if (!isObject(raw)) throw new Error('Invalid assurance policy: expected object.');
+  if (!isObject(raw))
+    throw new Error('Invalid assurance policy: expected object.');
 
   const version = raw.version;
-  if (version !== 1) throw new Error(`Invalid assurance policy: unsupported version "${String(version)}".`);
+  if (version !== 1)
+    throw new Error(
+      `Invalid assurance policy: unsupported version "${String(version)}".`,
+    );
 
   const enabledDomainsRaw = raw.enabledDomains;
-  if (!isObject(enabledDomainsRaw)) throw new Error('Invalid assurance policy: enabledDomains is required.');
+  if (!isObject(enabledDomainsRaw))
+    throw new Error('Invalid assurance policy: enabledDomains is required.');
 
   const enabledDomains = {
     repositoryValidation: Boolean(enabledDomainsRaw.repositoryValidation),
@@ -37,7 +44,9 @@ function parseAssurancePolicy(raw: unknown): AssurancePolicy {
   } as const;
 
   const failOnSeveritiesRaw = raw.failOnSeverities;
-  const failOnSeverities: AssuranceSeverity[] = Array.isArray(failOnSeveritiesRaw)
+  const failOnSeverities: AssuranceSeverity[] = Array.isArray(
+    failOnSeveritiesRaw,
+  )
     ? failOnSeveritiesRaw.filter(isAssuranceSeverity)
     : ['Error'];
 
@@ -58,4 +67,5 @@ function parseAssurancePolicy(raw: unknown): AssurancePolicy {
   };
 }
 
-export const ENTERPRISE_ASSURANCE_POLICY: AssurancePolicy = parseAssurancePolicy(policyJson);
+export const ENTERPRISE_ASSURANCE_POLICY: AssurancePolicy =
+  parseAssurancePolicy(policyJson);

@@ -18,25 +18,28 @@
  */
 
 import React from 'react';
-import type { ObjectType, RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
+import type {
+  ObjectType,
+  RelationshipType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 import {
-  resolveConnection,
-  resolveConnectionsForSource,
   findDirectRelationships,
   findIndirectPaths,
+  resolveConnection,
+  resolveConnectionsForSource,
 } from './connectionResolutionEngine';
 import {
-  getConnectionFeedback,
-  clearConnectionFeedbackClasses,
   CONNECTION_FEEDBACK_CLASSES,
+  clearConnectionFeedbackClasses,
+  getConnectionFeedback,
 } from './connectionVisualFeedback';
+import type { ConnectionPaletteSelection } from './InlineConnectionPalette';
 import type {
+  ConnectionEditAction,
   ConnectionResolution,
   CreatedConnection,
-  ConnectionEditAction,
   IndirectPath,
 } from './types';
-import type { ConnectionPaletteSelection } from './InlineConnectionPalette';
 
 // ─── Types ───────────────────────────────────────────────────────────
 export type ConnectionResolutionState = {
@@ -116,7 +119,9 @@ const INITIAL_STATE: ConnectionResolutionState = {
 };
 
 // ─── Hook ────────────────────────────────────────────────────────────
-export function useConnectionResolution(options: UseConnectionResolutionOptions) {
+export function useConnectionResolution(
+  options: UseConnectionResolutionOptions,
+) {
   const {
     resolveElementType,
     viewpointRelationshipTypes,
@@ -125,7 +130,8 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
     logMessage,
   } = options;
 
-  const [state, setState] = React.useState<ConnectionResolutionState>(INITIAL_STATE);
+  const [state, setState] =
+    React.useState<ConnectionResolutionState>(INITIAL_STATE);
   const stateRef = React.useRef(state);
   stateRef.current = state;
 
@@ -135,7 +141,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
    * Pre-computes resolution for ALL targets on the canvas.
    */
   const onDragStart = React.useCallback(
-    (sourceId: string, allTargets: ReadonlyArray<{ id: string; type: ObjectType }>) => {
+    (
+      sourceId: string,
+      allTargets: ReadonlyArray<{ id: string; type: ObjectType }>,
+    ) => {
       const sourceType = resolveElementType(sourceId);
       if (!sourceType) return;
 
@@ -177,7 +186,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
 
       const feedback = getConnectionFeedback(resolution);
       clearConnectionFeedbackClasses(targetNode);
-      if (feedback.cssClass && feedback.cssClass !== CONNECTION_FEEDBACK_CLASSES.neutral) {
+      if (
+        feedback.cssClass &&
+        feedback.cssClass !== CONNECTION_FEEDBACK_CLASSES.neutral
+      ) {
         targetNode.addClass(feedback.cssClass);
       }
     },
@@ -238,7 +250,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
               type: choice.type,
             });
             if (result.ok) {
-              logMessage?.('info', `Connected: ${sourceType} → ${targetType} (${choice.label})`);
+              logMessage?.(
+                'info',
+                `Connected: ${sourceType} → ${targetType} (${choice.label})`,
+              );
               if (result.id) {
                 setState((prev) => {
                   const next = new Map(prev.createdConnections);
@@ -257,7 +272,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
                 });
               }
             } else {
-              logMessage?.('warn', result.error ?? 'Failed to create connection.');
+              logMessage?.(
+                'warn',
+                result.error ?? 'Failed to create connection.',
+              );
             }
           } else {
             // Indirect — auto-create with intermediate elements.
@@ -285,7 +303,12 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
           break;
       }
     },
-    [createRelationship, logMessage, resolveElementType, viewpointRelationshipTypes],
+    [
+      createRelationship,
+      logMessage,
+      resolveElementType,
+      viewpointRelationshipTypes,
+    ],
   );
 
   // ─── Execute Indirect Path ───────────────────────────────────────
@@ -312,7 +335,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
           position: screenPosition, // Will be laid out by the caller.
         });
         if (!result.ok || !result.id) {
-          logMessage?.('warn', `Failed to create intermediate ${intermediateType}: ${result.error}`);
+          logMessage?.(
+            'warn',
+            `Failed to create intermediate ${intermediateType}: ${result.error}`,
+          );
           return;
         }
         intermediateIds.push(result.id);
@@ -330,14 +356,18 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
           type: hop.relationshipType,
         });
         if (!result.ok) {
-          logMessage?.('warn', `Failed to create hop ${hop.fromType} → ${hop.toType}: ${result.error}`);
+          logMessage?.(
+            'warn',
+            `Failed to create hop ${hop.fromType} → ${hop.toType}: ${result.error}`,
+          );
           return;
         }
         if (result.id) edgeIds.push(result.id);
       }
 
       // Register the compound connection.
-      const primaryEdgeId = edgeIds[edgeIds.length - 1] ?? `compound-${Date.now()}`;
+      const primaryEdgeId =
+        edgeIds[edgeIds.length - 1] ?? `compound-${Date.now()}`;
       setState((prev) => {
         const next = new Map(prev.createdConnections);
         next.set(primaryEdgeId, {
@@ -377,7 +407,10 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
           type: selection.type,
         });
         if (result.ok) {
-          logMessage?.('info', `Connected: ${resolution.sourceType} → ${resolution.targetType}`);
+          logMessage?.(
+            'info',
+            `Connected: ${resolution.sourceType} → ${resolution.targetType}`,
+          );
           if (result.id) {
             setState((prev) => {
               const next = new Map(prev.createdConnections);
@@ -426,12 +459,19 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
       switch (action.action) {
         case 'change-type':
           // TODO: Implement type change via repository transaction.
-          logMessage?.('info', `Relationship type changed to ${action.newType}`);
+          logMessage?.(
+            'info',
+            `Relationship type changed to ${action.newType}`,
+          );
           setState((prev) => {
             const next = new Map(prev.createdConnections);
             const updated = { ...connection, primaryType: action.newType };
             next.set(connection.primaryEdgeId, updated);
-            return { ...prev, createdConnections: next, editorState: { ...editorState, connection: updated } };
+            return {
+              ...prev,
+              createdConnections: next,
+              editorState: { ...editorState, connection: updated },
+            };
           });
           break;
 
@@ -441,7 +481,11 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
             const next = new Map(prev.createdConnections);
             const updated = { ...connection, collapsed: false };
             next.set(connection.primaryEdgeId, updated);
-            return { ...prev, createdConnections: next, editorState: { ...editorState, connection: updated } };
+            return {
+              ...prev,
+              createdConnections: next,
+              editorState: { ...editorState, connection: updated },
+            };
           });
           break;
 
@@ -451,12 +495,19 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
             const next = new Map(prev.createdConnections);
             const updated = { ...connection, collapsed: true };
             next.set(connection.primaryEdgeId, updated);
-            return { ...prev, createdConnections: next, editorState: { ...editorState, connection: updated } };
+            return {
+              ...prev,
+              createdConnections: next,
+              editorState: { ...editorState, connection: updated },
+            };
           });
           break;
 
         case 'switch-path':
-          logMessage?.('info', `Switched path to: via ${action.newPath.intermediateTypes.join(' → ')}`);
+          logMessage?.(
+            'info',
+            `Switched path to: via ${action.newPath.intermediateTypes.join(' → ')}`,
+          );
           // TODO: Remove old intermediates, create new path.
           break;
       }
@@ -478,7 +529,9 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
       const targetType = resolveElementType(connection.targetId);
       if (!sourceType || !targetType) return;
 
-      const validTypes = findDirectRelationships(sourceType, targetType).map((d) => d.type);
+      const validTypes = findDirectRelationships(sourceType, targetType).map(
+        (d) => d.type,
+      );
       const validIndirectPaths = findIndirectPaths(sourceType, targetType);
 
       setState((prev) => ({
@@ -507,14 +560,11 @@ export function useConnectionResolution(options: UseConnectionResolutionOptions)
   }, []);
 
   // ─── Get Feedback for Target ─────────────────────────────────────
-  const getFeedbackForTarget = React.useCallback(
-    (targetId: string) => {
-      const resolution = stateRef.current.resolutionCache.get(targetId);
-      if (!resolution) return null;
-      return getConnectionFeedback(resolution);
-    },
-    [],
-  );
+  const getFeedbackForTarget = React.useCallback((targetId: string) => {
+    const resolution = stateRef.current.resolutionCache.get(targetId);
+    if (!resolution) return null;
+    return getConnectionFeedback(resolution);
+  }, []);
 
   return {
     state,

@@ -1,22 +1,45 @@
-import { validateArchitectureRepository } from '../analysis/RepositoryValidation';
 import { validateRelationshipRepository } from '../analysis/RelationshipValidation';
-import { createRelationshipRepository, type RelationshipRepository } from '../repository/RelationshipRepository';
+import { validateArchitectureRepository } from '../analysis/RepositoryValidation';
 import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import {
+  createRelationshipRepository,
+  type RelationshipRepository,
+} from '../repository/RelationshipRepository';
 
 export type ValidationTrigger = 'Save' | 'RelationshipCreation';
 
 export type ValidationGateResult =
-  | { ok: true; trigger: ValidationTrigger; observedAt: string; warnings?: string[]; message?: string }
-  | { ok: false; trigger: ValidationTrigger; observedAt: string; message: string; violations: string[] };
+  | {
+      ok: true;
+      trigger: ValidationTrigger;
+      observedAt: string;
+      warnings?: string[];
+      message?: string;
+    }
+  | {
+      ok: false;
+      trigger: ValidationTrigger;
+      observedAt: string;
+      message: string;
+      violations: string[];
+    };
 
-const hasErrors = <T extends { severity: string }>(findings: readonly T[]): boolean =>
-  findings.some((f) => f.severity === 'Error');
+const hasErrors = <T extends { severity: string }>(
+  findings: readonly T[],
+): boolean => findings.some((f) => f.severity === 'Error');
 
-const formatCount = (n: number, unit: string): string => `${n} ${unit}${n === 1 ? '' : 's'}`;
+const formatCount = (n: number, unit: string): string =>
+  `${n} ${unit}${n === 1 ? '' : 's'}`;
 
-type Layer = 'Business' | 'Application' | 'Technology' | 'Implementation & Migration' | 'Governance' | 'Unknown';
+type Layer =
+  | 'Business'
+  | 'Application'
+  | 'Technology'
+  | 'Implementation & Migration'
+  | 'Governance'
+  | 'Unknown';
 
 const elementLayer = (element: BaseArchitectureElement | null): Layer => {
   if (!element) return 'Unknown';
@@ -60,7 +83,9 @@ const elementLayer = (element: BaseArchitectureElement | null): Layer => {
   }
 };
 
-const byId = (relationships: RelationshipRepository): Map<string, BaseArchitectureRelationship[]> => {
+const byId = (
+  relationships: RelationshipRepository,
+): Map<string, BaseArchitectureRelationship[]> => {
   const map = new Map<string, BaseArchitectureRelationship[]>();
   for (const rel of relationships.getAllRelationships()) {
     const list = map.get(rel.sourceElementId) ?? [];
@@ -88,11 +113,14 @@ const collectRequiredRelationshipViolations = (
       (r) =>
         r.relationshipType === 'SUPPORTED_BY' &&
         r.sourceElementId === cap.id &&
-        (r.targetElementType === 'ApplicationService' || r.targetElementType === 'Application'),
+        (r.targetElementType === 'ApplicationService' ||
+          r.targetElementType === 'Application'),
     );
 
     if (!supported) {
-      violations.push(`Capability "${cap.name}" (${cap.id}) must be supported by at least one ApplicationService.`);
+      violations.push(
+        `Capability "${cap.name}" (${cap.id}) must be supported by at least one ApplicationService.`,
+      );
     }
   }
 
@@ -100,7 +128,10 @@ const collectRequiredRelationshipViolations = (
   for (const svc of elements.getElementsByType('applicationServices')) {
     const rels = relsByElement.get(svc.id) ?? [];
     const providesOutgoing = rels.filter(
-      (r) => r.relationshipType === 'PROVIDED_BY' && r.sourceElementId === svc.id && r.sourceElementType === 'ApplicationService',
+      (r) =>
+        r.relationshipType === 'PROVIDED_BY' &&
+        r.sourceElementId === svc.id &&
+        r.sourceElementType === 'ApplicationService',
     );
 
     if (providesOutgoing.length !== 1) {
@@ -114,11 +145,16 @@ const collectRequiredRelationshipViolations = (
   for (const app of elements.getElementsByType('applications')) {
     const rels = relsByElement.get(app.id) ?? [];
     const hosted = rels.some(
-      (r) => r.relationshipType === 'DEPLOYED_ON' && r.sourceElementId === app.id && r.targetElementType === 'Technology',
+      (r) =>
+        r.relationshipType === 'DEPLOYED_ON' &&
+        r.sourceElementId === app.id &&
+        r.targetElementType === 'Technology',
     );
 
     if (!hosted) {
-      violations.push(`Application "${app.name}" (${app.id}) must be deployed on at least one Technology.`);
+      violations.push(
+        `Application "${app.name}" (${app.id}) must be deployed on at least one Technology.`,
+      );
     }
   }
 
@@ -126,11 +162,16 @@ const collectRequiredRelationshipViolations = (
   for (const project of elements.getElementsByType('projects')) {
     const rels = relsByElement.get(project.id) ?? [];
     const implementsAny = rels.some(
-      (r) => r.relationshipType === 'IMPLEMENTS' && r.sourceElementId === project.id && r.targetElementType === 'Application',
+      (r) =>
+        r.relationshipType === 'IMPLEMENTS' &&
+        r.sourceElementId === project.id &&
+        r.targetElementType === 'Application',
     );
 
     if (!implementsAny) {
-      violations.push(`Project "${project.name}" (${project.id}) must implement at least one Application.`);
+      violations.push(
+        `Project "${project.name}" (${project.id}) must implement at least one Application.`,
+      );
     }
   }
 
@@ -165,7 +206,10 @@ const collectCrossLayerViolations = (
     }
 
     // Block Project -> Technology
-    if ((source?.elementType ?? '') === 'Project' && targetLayer === 'Technology') {
+    if (
+      (source?.elementType ?? '') === 'Project' &&
+      targetLayer === 'Technology'
+    ) {
       violations.push(
         `Invalid cross-layer relationship: Project "${source?.name ?? rel.sourceElementId}" cannot target Technology "${target?.name ?? rel.targetElementId}".`,
       );
@@ -187,10 +231,14 @@ const collectOrphanViolations = (
     const rels = relsByElement.get(cap.id) ?? [];
     const owned = rels.some(
       (r) =>
-        r.relationshipType === 'OWNS' && r.targetElementId === cap.id && r.sourceElementType === 'Enterprise',
+        r.relationshipType === 'OWNS' &&
+        r.targetElementId === cap.id &&
+        r.sourceElementType === 'Enterprise',
     );
     if (!owned) {
-      violations.push(`Capability "${cap.name}" (${cap.id}) is orphaned: no owning Enterprise.`);
+      violations.push(
+        `Capability "${cap.name}" (${cap.id}) is orphaned: no owning Enterprise.`,
+      );
     }
   }
 
@@ -200,13 +248,15 @@ const collectOrphanViolations = (
     const linkedToBusinessService = rels.some(
       (r) =>
         (r.sourceElementId === app.id || r.targetElementId === app.id) &&
-        (r.sourceElementType === 'BusinessService' || r.targetElementType === 'BusinessService'),
+        (r.sourceElementType === 'BusinessService' ||
+          r.targetElementType === 'BusinessService'),
     );
 
     const linkedToApplicationService = rels.some(
       (r) =>
         (r.sourceElementId === app.id || r.targetElementId === app.id) &&
-        (r.sourceElementType === 'ApplicationService' || r.targetElementType === 'ApplicationService'),
+        (r.sourceElementType === 'ApplicationService' ||
+          r.targetElementType === 'ApplicationService'),
     );
 
     if (!linkedToBusinessService && !linkedToApplicationService) {
@@ -220,11 +270,16 @@ const collectOrphanViolations = (
   for (const tech of elements.getElementsByType('technologies')) {
     const rels = relsByElement.get(tech.id) ?? [];
     const hasApp = rels.some(
-      (r) => r.relationshipType === 'DEPLOYED_ON' && r.targetElementId === tech.id && r.sourceElementType === 'Application',
+      (r) =>
+        r.relationshipType === 'DEPLOYED_ON' &&
+        r.targetElementId === tech.id &&
+        r.sourceElementType === 'Application',
     );
 
     if (!hasApp) {
-      violations.push(`Technology "${tech.name}" (${tech.id}) is orphaned: no deployed Application.`);
+      violations.push(
+        `Technology "${tech.name}" (${tech.id}) is orphaned: no deployed Application.`,
+      );
     }
   }
 
@@ -244,12 +299,24 @@ export class StrictValidationEngine {
     const now = input.now ?? new Date();
     const mode = input.mode ?? 'Strict';
     const repoReport = validateArchitectureRepository(input.elements, now);
-    const relationshipRepo = input.relationships ?? createRelationshipRepository(input.elements);
-    const relationshipReport = validateRelationshipRepository(input.elements, relationshipRepo, now);
+    const relationshipRepo =
+      input.relationships ?? createRelationshipRepository(input.elements);
+    const relationshipReport = validateRelationshipRepository(
+      input.elements,
+      relationshipRepo,
+      now,
+    );
 
-    const requiredRelationshipViolations = collectRequiredRelationshipViolations(input.elements, relationshipRepo);
-    const orphanViolations = collectOrphanViolations(input.elements, relationshipRepo);
-    const crossLayerViolations = collectCrossLayerViolations(input.elements, relationshipRepo);
+    const requiredRelationshipViolations =
+      collectRequiredRelationshipViolations(input.elements, relationshipRepo);
+    const orphanViolations = collectOrphanViolations(
+      input.elements,
+      relationshipRepo,
+    );
+    const crossLayerViolations = collectCrossLayerViolations(
+      input.elements,
+      relationshipRepo,
+    );
 
     const violations: string[] = [];
     for (const f of repoReport.findings) {
@@ -262,7 +329,11 @@ export class StrictValidationEngine {
       violations.push(`[Relationship:${f.checkId}] ${f.message}`);
     }
 
-    violations.push(...requiredRelationshipViolations.map((m) => `[RequiredRelationship] ${m}`));
+    violations.push(
+      ...requiredRelationshipViolations.map(
+        (m) => `[RequiredRelationship] ${m}`,
+      ),
+    );
     violations.push(...orphanViolations.map((m) => `[Orphan] ${m}`));
     violations.push(...crossLayerViolations.map((m) => `[CrossLayer] ${m}`));
 
@@ -301,8 +372,12 @@ export class StrictValidationEngine {
     const mode = input.mode ?? 'Strict';
     const warnings: string[] = [];
 
-    const source = input.elements.getElementById(input.candidate.sourceElementId);
-    const target = input.elements.getElementById(input.candidate.targetElementId);
+    const source = input.elements.getElementById(
+      input.candidate.sourceElementId,
+    );
+    const target = input.elements.getElementById(
+      input.candidate.targetElementId,
+    );
 
     const sourceLayer = elementLayer(source);
     const targetLayer = elementLayer(target);
@@ -310,23 +385,50 @@ export class StrictValidationEngine {
     // Explicit cross-layer guardrails on creation.
     if (sourceLayer === 'Business' && targetLayer === 'Technology') {
       const observedAt = (input.now ?? new Date()).toISOString();
-      const message = 'Relationship blocked: Business layer elements cannot target Technology layer elements directly.';
+      const message =
+        'Relationship blocked: Business layer elements cannot target Technology layer elements directly.';
       if (mode === 'Advisory') warnings.push(message);
-      else return { ok: false, trigger: 'RelationshipCreation', observedAt, message, violations: [message] };
+      else
+        return {
+          ok: false,
+          trigger: 'RelationshipCreation',
+          observedAt,
+          message,
+          violations: [message],
+        };
     }
 
     if (sourceLayer === 'Technology' && targetLayer === 'Business') {
       const observedAt = (input.now ?? new Date()).toISOString();
-      const message = 'Relationship blocked: Technology layer elements cannot target Business layer elements.';
+      const message =
+        'Relationship blocked: Technology layer elements cannot target Business layer elements.';
       if (mode === 'Advisory') warnings.push(message);
-      else return { ok: false, trigger: 'RelationshipCreation', observedAt, message, violations: [message] };
+      else
+        return {
+          ok: false,
+          trigger: 'RelationshipCreation',
+          observedAt,
+          message,
+          violations: [message],
+        };
     }
 
-    if ((source?.elementType ?? '') === 'Project' && targetLayer === 'Technology') {
+    if (
+      (source?.elementType ?? '') === 'Project' &&
+      targetLayer === 'Technology'
+    ) {
       const observedAt = (input.now ?? new Date()).toISOString();
-      const message = 'Relationship blocked: Project cannot target Technology elements.';
+      const message =
+        'Relationship blocked: Project cannot target Technology elements.';
       if (mode === 'Advisory') warnings.push(message);
-      else return { ok: false, trigger: 'RelationshipCreation', observedAt, message, violations: [message] };
+      else
+        return {
+          ok: false,
+          trigger: 'RelationshipCreation',
+          observedAt,
+          message,
+          violations: [message],
+        };
     }
 
     const staged = createRelationshipRepository(input.elements);
@@ -362,21 +464,24 @@ export class StrictValidationEngine {
     const blocking = report.findings.filter((f) => f.severity === 'Error');
     if (hasErrors(blocking)) {
       if (mode === 'Advisory') {
-        warnings.push(
-          ...blocking.map((f) => `[${f.checkId}] ${f.message}`),
-        );
+        warnings.push(...blocking.map((f) => `[${f.checkId}] ${f.message}`));
       } else {
-      return {
-        ok: false,
-        trigger: 'RelationshipCreation',
-        observedAt: report.observedAt,
-        message: `Validation failed on relationship creation (${formatCount(blocking.length, 'error')}).`,
-        violations: blocking.map((f) => `[${f.checkId}] ${f.message}`),
-      };
+        return {
+          ok: false,
+          trigger: 'RelationshipCreation',
+          observedAt: report.observedAt,
+          message: `Validation failed on relationship creation (${formatCount(blocking.length, 'error')}).`,
+          violations: blocking.map((f) => `[${f.checkId}] ${f.message}`),
+        };
       }
     }
 
-    return { ok: true, trigger: 'RelationshipCreation', observedAt: report.observedAt, warnings: warnings.length ? warnings : undefined };
+    return {
+      ok: true,
+      trigger: 'RelationshipCreation',
+      observedAt: report.observedAt,
+      warnings: warnings.length ? warnings : undefined,
+    };
   }
 }
 

@@ -1,8 +1,8 @@
-import { getPlateauById } from './PlateauStore';
-import type { Plateau } from './Plateau';
 import { getBaselineById } from '../baselines/BaselineStore';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
 import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import type { Plateau } from './Plateau';
+import { getPlateauById } from './PlateauStore';
 
 export type GapElementChange = {
   id: string;
@@ -49,7 +49,9 @@ const loadPlateauSnapshot = (
     return {
       elements: [],
       relationships: [],
-      warnings: ['Plateau does not reference a baseline; cannot derive element/relationship state.'],
+      warnings: [
+        'Plateau does not reference a baseline; cannot derive element/relationship state.',
+      ],
     };
   }
 
@@ -58,7 +60,9 @@ const loadPlateauSnapshot = (
     return {
       elements: [],
       relationships: [],
-      warnings: [`Baseline not found for plateau ${plateau.id}: ${plateau.stateRef.baselineId}`],
+      warnings: [
+        `Baseline not found for plateau ${plateau.id}: ${plateau.stateRef.baselineId}`,
+      ],
     };
   }
 
@@ -69,7 +73,10 @@ const loadPlateauSnapshot = (
   };
 };
 
-export function computeGapBetweenPlateaus(fromPlateauId: string, toPlateauId: string): GapResult {
+export function computeGapBetweenPlateaus(
+  fromPlateauId: string,
+  toPlateauId: string,
+): GapResult {
   const fromPlateau = getPlateauById(fromPlateauId);
   const toPlateau = getPlateauById(toPlateauId);
 
@@ -91,7 +98,10 @@ export function computeGapBetweenPlateaus(fromPlateauId: string, toPlateauId: st
   const removedElements: GapElementChange[] = [];
   const changedElements: GapElementChange[] = [];
 
-  const allElementIds = new Set<string>([...fromElements.keys(), ...toElements.keys()]);
+  const allElementIds = new Set<string>([
+    ...fromElements.keys(),
+    ...toElements.keys(),
+  ]);
   for (const id of allElementIds) {
     const from = fromElements.get(id) ?? null;
     const to = toElements.get(id) ?? null;

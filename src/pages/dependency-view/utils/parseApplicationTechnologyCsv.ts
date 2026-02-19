@@ -1,4 +1,4 @@
-import { type RelationshipType } from './eaMetaModel';
+import type { RelationshipType } from './eaMetaModel';
 
 export type ApplicationTechnologyCsvRow = {
   applicationId: string;
@@ -23,7 +23,8 @@ export type ApplicationTechnologyCsvParseResult =
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 const parseCsv = (inputText: string): string[][] => {
   const text = stripBom(inputText);
@@ -91,12 +92,15 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
 
-export function parseAndValidateApplicationTechnologyCsv(csvText: string): ApplicationTechnologyCsvParseResult {
+export function parseAndValidateApplicationTechnologyCsv(
+  csvText: string,
+): ApplicationTechnologyCsvParseResult {
   const errors: string[] = [];
 
   const rows = parseCsv(csvText);
@@ -112,7 +116,10 @@ export function parseAndValidateApplicationTechnologyCsv(csvText: string): Appli
 
   const missing = requiredColumns.filter((col) => !indexByColumn.has(col));
   if (missing.length > 0) {
-    return { ok: false, errors: [`Missing required column(s): ${missing.join(', ')}.`] };
+    return {
+      ok: false,
+      errors: [`Missing required column(s): ${missing.join(', ')}.`],
+    };
   }
 
   const relationshipTypeIdx = indexByColumn.get('relationshiptype');
@@ -125,11 +132,17 @@ export function parseAndValidateApplicationTechnologyCsv(csvText: string): Appli
 
     const displayRow = r + 1;
 
-    const rawAppId = (row[indexByColumn.get('applicationid')!] ?? '').trim();
-    const rawTechId = (row[indexByColumn.get('technologyid')!] ?? '').trim();
+    const rawAppId = (
+      row[indexByColumn.get('applicationid') ?? 0] ?? ''
+    ).trim();
+    const rawTechId = (
+      row[indexByColumn.get('technologyid') ?? 0] ?? ''
+    ).trim();
 
     const rawRelType =
-      relationshipTypeIdx === undefined ? '' : (row[relationshipTypeIdx] ?? '').trim().toUpperCase();
+      relationshipTypeIdx === undefined
+        ? ''
+        : (row[relationshipTypeIdx] ?? '').trim().toUpperCase();
 
     if (!rawAppId) errors.push(`Row ${displayRow}: applicationId is required.`);
     if (!rawTechId) errors.push(`Row ${displayRow}: technologyId is required.`);
@@ -144,12 +157,21 @@ export function parseAndValidateApplicationTechnologyCsv(csvText: string): Appli
 
     const attributes: Record<string, unknown> = {};
     for (const [col, idx] of indexByColumn) {
-      if (col === 'applicationid' || col === 'technologyid' || col === 'relationshiptype') continue;
+      if (
+        col === 'applicationid' ||
+        col === 'technologyid' ||
+        col === 'relationshiptype'
+      )
+        continue;
       const value = (row[idx] ?? '').trim();
       if (value !== '') attributes[col] = value;
     }
 
-    if (rawAppId && rawTechId && (!rawRelType || rawRelType === 'DEPLOYED_ON')) {
+    if (
+      rawAppId &&
+      rawTechId &&
+      (!rawRelType || rawRelType === 'DEPLOYED_ON')
+    ) {
       mappings.push({
         applicationId: rawAppId,
         technologyId: rawTechId,
@@ -160,7 +182,8 @@ export function parseAndValidateApplicationTechnologyCsv(csvText: string): Appli
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (mappings.length === 0) return { ok: false, errors: ['No application–technology rows found.'] };
+  if (mappings.length === 0)
+    return { ok: false, errors: ['No application–technology rows found.'] };
 
   return { ok: true, mappings };
 }

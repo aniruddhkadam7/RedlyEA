@@ -9,12 +9,12 @@ type RequestMethod =
 
 type Primitive = string | number | boolean;
 
-type RequestParams = Record<
-  string,
-  Primitive | Primitive[] | null | undefined
->;
+type RequestParams = Record<string, Primitive | Primitive[] | null | undefined>;
 
-export type RequestOptions = Omit<RequestInit, 'method' | 'headers' | 'body'> & {
+export type RequestOptions = Omit<
+  RequestInit,
+  'method' | 'headers' | 'body'
+> & {
   method?: RequestMethod;
   params?: RequestParams;
   data?: unknown;
@@ -26,9 +26,13 @@ const appendParams = (url: string, params?: RequestParams): string => {
   if (!params) return url;
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value === null || value === undefined) return;
+    if (value === null || value === undefined) {
+      return;
+    }
     if (Array.isArray(value)) {
-      value.forEach((item) => query.append(key, String(item)));
+      for (const item of value) {
+        query.append(key, String(item));
+      }
       return;
     }
     query.append(key, String(value));
@@ -46,9 +50,13 @@ const toFormBody = (data: unknown): URLSearchParams => {
   const body = new URLSearchParams();
   if (!data || typeof data !== 'object') return body;
   Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
-    if (value === null || value === undefined) return;
+    if (value === null || value === undefined) {
+      return;
+    }
     if (Array.isArray(value)) {
-      value.forEach((item) => body.append(key, String(item)));
+      for (const item of value) {
+        body.append(key, String(item));
+      }
       return;
     }
     body.append(key, String(value));
@@ -101,7 +109,9 @@ export async function request<T = any>(
     : await response.text();
 
   if (!response.ok) {
-    const error: any = new Error(`Request failed with status ${response.status}`);
+    const error: any = new Error(
+      `Request failed with status ${response.status}`,
+    );
     error.response = response;
     error.data = payload;
     throw error;

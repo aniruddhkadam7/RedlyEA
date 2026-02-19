@@ -45,10 +45,11 @@ export const EA_VIEWS: readonly EaViewDefinition[] = [
   },
 ] as const;
 
-export const EA_VIEW_BY_ID: Record<EaViewId, EaViewDefinition> = EA_VIEWS.reduce(
-  (acc, v) => {
-    acc[v.id] = v;
-    return acc;
-  },
-  {} as Record<EaViewId, EaViewDefinition>,
-);
+export const EA_VIEW_BY_ID: Record<EaViewId, EaViewDefinition> =
+  EA_VIEWS.reduce(
+    (acc, v) => {
+      acc[v.id] = v;
+      return acc;
+    },
+    {} as Record<EaViewId, EaViewDefinition>,
+  );

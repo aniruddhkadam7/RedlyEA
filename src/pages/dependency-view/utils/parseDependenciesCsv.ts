@@ -1,181 +1,4 @@
 export type DependenciesCsvRow = {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   from: string;
   to: string;
   dependencyStrength: 'hard' | 'soft';
@@ -192,11 +15,14 @@ export type DependenciesCsvParseFailure = {
   errors: string[];
 };
 
-export type DependenciesCsvParseResult = DependenciesCsvParseSuccess | DependenciesCsvParseFailure;
+export type DependenciesCsvParseResult =
+  | DependenciesCsvParseSuccess
+  | DependenciesCsvParseFailure;
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 // Minimal CSV parser that supports:
 // - commas
@@ -268,7 +94,8 @@ const parseCsv = (inputText: string): string[][] => {
   pushField();
   pushRow();
 
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
@@ -308,19 +135,30 @@ export function parseAndValidateDependenciesCsv(
 
     const displayRow = r + 1;
 
-    const rawFrom = (row[indexByColumn.get('from')!] ?? '').trim();
-    const rawTo = (row[indexByColumn.get('to')!] ?? '').trim();
-    const rawStrength = (row[indexByColumn.get('dependencystrength')!] ?? '').trim().toLowerCase();
-    const rawType = dependencyTypeIdx === undefined ? '' : (row[dependencyTypeIdx] ?? '').trim();
+    const rawFrom = (row[indexByColumn.get('from') ?? 0] ?? '').trim();
+    const rawTo = (row[indexByColumn.get('to') ?? 0] ?? '').trim();
+    const rawStrength = (
+      row[indexByColumn.get('dependencystrength') ?? 0] ?? ''
+    )
+      .trim()
+      .toLowerCase();
+    const rawType =
+      dependencyTypeIdx === undefined
+        ? ''
+        : (row[dependencyTypeIdx] ?? '').trim();
 
     if (!rawFrom) errors.push(`Row ${displayRow}: from is required.`);
     if (!rawTo) errors.push(`Row ${displayRow}: to is required.`);
 
     if (rawFrom && !opts.existingApplicationIds.has(rawFrom)) {
-      errors.push(`Row ${displayRow}: from references unknown application id "${rawFrom}".`);
+      errors.push(
+        `Row ${displayRow}: from references unknown application id "${rawFrom}".`,
+      );
     }
     if (rawTo && !opts.existingApplicationIds.has(rawTo)) {
-      errors.push(`Row ${displayRow}: to references unknown application id "${rawTo}".`);
+      errors.push(
+        `Row ${displayRow}: to references unknown application id "${rawTo}".`,
+      );
     }
 
     if (rawStrength !== 'hard' && rawStrength !== 'soft') {
@@ -346,7 +184,8 @@ export function parseAndValidateDependenciesCsv(
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (dependencies.length === 0) return { ok: false, errors: ['No dependency rows found.'] };
+  if (dependencies.length === 0)
+    return { ok: false, errors: ['No dependency rows found.'] };
 
   return { ok: true, dependencies };
 }

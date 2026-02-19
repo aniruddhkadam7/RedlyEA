@@ -1,14 +1,23 @@
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Switch,
+  Typography,
+} from 'antd';
 import React from 'react';
-import { Alert, Button, Card, Divider, Form, Input, InputNumber, Select, Space, Switch, Typography } from 'antd';
-
-import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
-import type {
-  ImpactAnalysisDirection,
-  ImpactAnalysisIntent,
-  ImpactAnalysisRequest,
-} from '../../../backend/analysis/ImpactAnalysisRequest';
-import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
-
+import { createAnalysisResult } from '@/analysis/analysisResultsStore';
+import { useEaProject } from '@/ea/EaProjectContext';
+import { useEaRepository } from '@/ea/EaRepositoryContext';
+import { message } from '@/ea/eaConsole';
+import { getTimeHorizonWindow } from '@/repository/timeHorizonPolicy';
+import { postImpactAnalyze } from '@/services/ea/impact';
 import {
   getRepositoryApplications,
   getRepositoryCapabilities,
@@ -16,13 +25,14 @@ import {
   getRepositoryProgrammes,
   getRepositoryTechnologies,
 } from '@/services/ea/repository';
-import { postImpactAnalyze } from '@/services/ea/impact';
+import type {
+  ImpactAnalysisDirection,
+  ImpactAnalysisIntent,
+  ImpactAnalysisRequest,
+} from '../../../backend/analysis/ImpactAnalysisRequest';
+import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
+import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
 import { useIdeShell } from './index';
-import { message } from '@/ea/eaConsole';
-import { useEaProject } from '@/ea/EaProjectContext';
-import { createAnalysisResult } from '@/analysis/analysisResultsStore';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
-import { getTimeHorizonWindow } from '@/repository/timeHorizonPolicy';
 
 type ElementOption = {
   id: string;
@@ -44,9 +54,14 @@ const fnv1aHex = (input: string): string => {
 
 const stableRequestId = (basis: string) => `req_${fnv1aHex(basis)}`;
 
-const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(compareStrings);
+const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(
+  compareStrings,
+);
 
-const directionOptions: Array<{ label: string; value: ImpactAnalysisDirection }> = [
+const directionOptions: Array<{
+  label: string;
+  value: ImpactAnalysisDirection;
+}> = [
   { label: 'Downstream (source → target)', value: 'Downstream' },
   { label: 'Upstream (target → source)', value: 'Upstream' },
   { label: 'Bidirectional (both)', value: 'Bidirectional' },
@@ -67,7 +82,10 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
   const [form] = Form.useForm();
 
   const [elements, setElements] = React.useState<ElementOption[]>([]);
-  const elementById = React.useMemo(() => new Map(elements.map((e) => [e.id, e])), [elements]);
+  const elementById = React.useMemo(
+    () => new Map(elements.map((e) => [e.id, e])),
+    [elements],
+  );
 
   const [loadingElements, setLoadingElements] = React.useState(false);
   const [running, setRunning] = React.useState(false);
@@ -93,7 +111,11 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
       if (progs?.success) all.push(...(progs.data ?? []));
 
       const next = all
-        .map((e) => ({ id: normalizeId(e.id), name: e.name || e.id, elementType: e.elementType }))
+        .map((e) => ({
+          id: normalizeId(e.id),
+          name: e.name || e.id,
+          elementType: e.elementType,
+        }))
         .filter((e) => e.id.length > 0)
         .sort(
           (a, b) =>
@@ -104,7 +126,9 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
 
       setElements(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load repository elements.');
+      setError(
+        e instanceof Error ? e.message : 'Failed to load repository elements.',
+      );
       setElements([]);
     } finally {
       setLoadingElements(false);
@@ -139,9 +163,15 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
       const cap = getTimeHorizonWindow(metadata?.timeHorizon).maxAnalysisDepth;
       const maxDepth = Math.min(requestedMaxDepth, cap);
       if (requestedMaxDepth !== maxDepth) {
-        message.info(`Time Horizon '${metadata?.timeHorizon ?? '1–3 years'}' caps impact depth at ${cap}. Running with maxDepth=${maxDepth}.`);
+        message.info(
+          `Time Horizon '${metadata?.timeHorizon ?? '1–3 years'}' caps impact depth at ${cap}. Running with maxDepth=${maxDepth}.`,
+        );
       }
-      const includedRelationshipTypes = (values.includedRelationshipTypes as string[]).slice().sort(compareStrings);
+      const includedRelationshipTypes = (
+        values.includedRelationshipTypes as string[]
+      )
+        .slice()
+        .sort(compareStrings);
       const analysisIntent = values.analysisIntent as ImpactAnalysisIntent;
       const requestedBy = String(values.requestedBy ?? '').trim();
       const includePaths = Boolean(values.includePaths);
@@ -172,7 +202,8 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
       };
 
       const resp = await postImpactAnalyze(request, { includePaths });
-      if (!resp?.success) throw new Error(resp?.errorMessage || 'Impact analysis failed.');
+      if (!resp?.success)
+        throw new Error(resp?.errorMessage || 'Impact analysis failed.');
 
       const rootLabel = root?.name ? root.name : rootElementId;
       const result = createAnalysisResult({
@@ -191,7 +222,8 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
                 ranAt: resp.data.audit.ranAt,
                 direction: resp.data.audit.parameters.direction,
                 maxDepth: resp.data.audit.parameters.maxDepth,
-                includedRelationshipTypes: resp.data.audit.parameters.includedRelationshipTypes,
+                includedRelationshipTypes:
+                  resp.data.audit.parameters.includedRelationshipTypes,
               }
             : undefined,
           elementIndex: elements,
@@ -250,19 +282,39 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item label="Direction" name="direction" rules={[{ required: true }]} style={{ minWidth: 240 }}>
+            <Form.Item
+              label="Direction"
+              name="direction"
+              rules={[{ required: true }]}
+              style={{ minWidth: 240 }}
+            >
               <Select options={directionOptions} />
             </Form.Item>
 
-            <Form.Item label="Max depth" name="maxDepth" rules={[{ required: true }]} style={{ width: 140 }}>
+            <Form.Item
+              label="Max depth"
+              name="maxDepth"
+              rules={[{ required: true }]}
+              style={{ width: 140 }}
+            >
               <InputNumber min={1} max={25} />
             </Form.Item>
 
-            <Form.Item label="Intent" name="analysisIntent" rules={[{ required: true }]} style={{ minWidth: 200 }}>
+            <Form.Item
+              label="Intent"
+              name="analysisIntent"
+              rules={[{ required: true }]}
+              style={{ minWidth: 200 }}
+            >
               <Select options={intentOptions} />
             </Form.Item>
 
-            <Form.Item label="Requested by" name="requestedBy" rules={[{ required: true }]} style={{ minWidth: 200 }}>
+            <Form.Item
+              label="Requested by"
+              name="requestedBy"
+              rules={[{ required: true }]}
+              style={{ minWidth: 200 }}
+            >
               <Input />
             </Form.Item>
           </Space>
@@ -270,12 +322,20 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
           <Form.Item
             label="Allowed relationship types"
             name="includedRelationshipTypes"
-            rules={[{ required: true, message: 'Select at least one relationship type' }]}
+            rules={[
+              {
+                required: true,
+                message: 'Select at least one relationship type',
+              },
+            ]}
           >
             <Select
               mode="multiple"
               placeholder="Select relationship types"
-              options={relationshipTypeOptions.map((t) => ({ value: t, label: t }))}
+              options={relationshipTypeOptions.map((t) => ({
+                value: t,
+                label: t,
+              }))}
             />
           </Form.Item>
 
@@ -288,9 +348,21 @@ const ImpactAnalysisWorkspaceTab: React.FC = () => {
             <Switch />
           </Form.Item>
 
-          {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} /> : null}
+          {error ? (
+            <Alert
+              type="error"
+              showIcon
+              message={error}
+              style={{ marginBottom: 12 }}
+            />
+          ) : null}
 
-          <Button type="primary" onClick={() => void runAnalysis()} loading={running} disabled={loadingElements}>
+          <Button
+            type="primary"
+            onClick={() => void runAnalysis()}
+            loading={running}
+            disabled={loadingElements}
+          >
             Run analysis
           </Button>
         </Form>

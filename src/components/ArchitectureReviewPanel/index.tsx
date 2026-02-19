@@ -1,18 +1,32 @@
+import {
+  Button,
+  Card,
+  Descriptions,
+  Input,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import React from 'react';
-
-import { Button, Card, Descriptions, Input, Select, Space, Tag, Typography } from 'antd';
-
+import {
+  getArchitectureReview,
+  putArchitectureReview,
+} from '@/services/ea/reviews';
 import type {
   ArchitectureReviewRecord,
   ArchitectureReviewState,
   ReviewSubjectKind,
 } from '../../../backend/review/ArchitectureReview';
 
-import { getArchitectureReview, putArchitectureReview } from '@/services/ea/reviews';
+const normalizeId = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
-const normalizeId = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
-
-const REVIEW_STATES: ArchitectureReviewState[] = ['Not Reviewed', 'Reviewed', 'Review Findings Accepted'];
+const REVIEW_STATES: ArchitectureReviewState[] = [
+  'Not Reviewed',
+  'Reviewed',
+  'Review Findings Accepted',
+];
 
 const tagColorForState = (s: ArchitectureReviewState): string => {
   if (s === 'Review Findings Accepted') return 'green';
@@ -28,17 +42,23 @@ export type ArchitectureReviewPanelProps = {
   defaultReviewer?: string;
 };
 
-const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subjectKind, subjectId, defaultReviewer }) => {
+const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({
+  subjectKind,
+  subjectId,
+  defaultReviewer,
+}) => {
   const id = normalizeId(subjectId);
 
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const [state, setState] = React.useState<ArchitectureReviewState>('Not Reviewed');
+  const [state, setState] =
+    React.useState<ArchitectureReviewState>('Not Reviewed');
   const [reviewer, setReviewer] = React.useState<string>('');
   const [notes, setNotes] = React.useState<string>('');
-  const [lastKnownRecord, setLastKnownRecord] = React.useState<ArchitectureReviewRecord | null>(null);
+  const [lastKnownRecord, setLastKnownRecord] =
+    React.useState<ArchitectureReviewRecord | null>(null);
 
   const refresh = React.useCallback(async () => {
     if (!id) {
@@ -51,7 +71,8 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
     setError(null);
     try {
       const res = await getArchitectureReview(subjectKind, id);
-      if (!res?.success) throw new Error(res?.errorMessage || 'Failed to load review');
+      if (!res?.success)
+        throw new Error(res?.errorMessage || 'Failed to load review');
 
       const record = res.data ?? null;
       setLastKnownRecord(record);
@@ -89,7 +110,10 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
     setSaving(true);
     setError(null);
     try {
-      const effectiveReviewer = state === 'Not Reviewed' ? '' : normalizeId(reviewer) || (defaultReviewer ?? '') || 'unknown';
+      const effectiveReviewer =
+        state === 'Not Reviewed'
+          ? ''
+          : normalizeId(reviewer) || (defaultReviewer ?? '') || 'unknown';
       const effectiveNotes = state === 'Not Reviewed' ? '' : notes;
 
       const res = await putArchitectureReview(subjectKind, id, {
@@ -98,7 +122,8 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
         reviewNotes: effectiveNotes,
       });
 
-      if (!res?.success) throw new Error(res?.errorMessage || 'Failed to save review');
+      if (!res?.success)
+        throw new Error(res?.errorMessage || 'Failed to save review');
       setLastKnownRecord(res.data ?? null);
 
       // Refresh local inputs based on stored canonical record.
@@ -118,7 +143,9 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
     }
   }, [defaultReviewer, id, notes, reviewer, state, subjectKind]);
 
-  const reviewDateText = lastKnownRecord?.reviewDate ? lastKnownRecord.reviewDate : '—';
+  const reviewDateText = lastKnownRecord?.reviewDate
+    ? lastKnownRecord.reviewDate
+    : '—';
 
   return (
     <Card
@@ -134,7 +161,12 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
           <Button onClick={() => void refresh()} disabled={loading || saving}>
             Reload
           </Button>
-          <Button type="primary" onClick={() => void save()} loading={saving} disabled={loading || !id}>
+          <Button
+            type="primary"
+            onClick={() => void save()}
+            loading={saving}
+            disabled={loading || !id}
+          >
             Save
           </Button>
         </Space>
@@ -182,15 +214,23 @@ const ArchitectureReviewPanel: React.FC<ArchitectureReviewPanelProps> = ({ subje
             <Input.TextArea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={state === 'Not Reviewed' ? 'Mark as Reviewed to add notes.' : 'What was checked, what was decided, what was accepted.'}
+              placeholder={
+                state === 'Not Reviewed'
+                  ? 'Mark as Reviewed to add notes.'
+                  : 'What was checked, what was decided, what was accepted.'
+              }
               disabled={state === 'Not Reviewed'}
               autoSize={{ minRows: 3, maxRows: 8 }}
             />
           </div>
 
           <Descriptions size="small" column={1} bordered>
-            <Descriptions.Item label="Subject">{subjectKind} · {id || '(missing id)'}</Descriptions.Item>
-            <Descriptions.Item label="Review date">{reviewDateText}</Descriptions.Item>
+            <Descriptions.Item label="Subject">
+              {subjectKind} · {id || '(missing id)'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Review date">
+              {reviewDateText}
+            </Descriptions.Item>
           </Descriptions>
         </Space>
       </div>

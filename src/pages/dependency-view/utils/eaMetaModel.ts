@@ -81,7 +81,12 @@ export const RELATIONSHIP_TYPES = [
 
 export type RelationshipType = (typeof RELATIONSHIP_TYPES)[number];
 
-export type EaLayer = 'Business' | 'Application' | 'Technology' | 'Implementation & Migration' | 'Governance';
+export type EaLayer =
+  | 'Business'
+  | 'Application'
+  | 'Technology'
+  | 'Implementation & Migration'
+  | 'Governance';
 
 export type EaObjectTypeDefinition = {
   type: ObjectType;
@@ -111,7 +116,10 @@ export const EA_LAYERS: readonly EaLayer[] = [
   'Governance',
 ] as const;
 
-export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition> = {
+export const OBJECT_TYPE_DEFINITIONS: Record<
+  ObjectType,
+  EaObjectTypeDefinition
+> = {
   Enterprise: {
     type: 'Enterprise',
     layer: 'Business',
@@ -124,7 +132,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Programme: {
     type: 'Programme',
     layer: 'Implementation & Migration',
-    description: 'A strategic initiative grouping related change outcomes and delivery work.',
+    description:
+      'A strategic initiative grouping related change outcomes and delivery work.',
     attributes: ['name'],
     allowedOutgoingRelationships: ['DELIVERS', 'IMPACTS'],
     allowedIncomingRelationships: [],
@@ -132,7 +141,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Project: {
     type: 'Project',
     layer: 'Implementation & Migration',
-    description: 'A time-bound delivery effort (v1: catalogued but not fully modeled).',
+    description:
+      'A time-bound delivery effort (v1: catalogued but not fully modeled).',
     attributes: ['name'],
     allowedOutgoingRelationships: ['IMPLEMENTS'],
     allowedIncomingRelationships: [],
@@ -148,7 +158,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Requirement: {
     type: 'Requirement',
     layer: 'Governance',
-    description: 'A requirement that constrains or informs architecture and change work.',
+    description:
+      'A requirement that constrains or informs architecture and change work.',
     attributes: ['name'],
     allowedOutgoingRelationships: [],
     allowedIncomingRelationships: [],
@@ -156,7 +167,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Standard: {
     type: 'Standard',
     layer: 'Governance',
-    description: 'A governance standard that constrains architecture decisions and delivery.',
+    description:
+      'A governance standard that constrains architecture decisions and delivery.',
     attributes: ['name'],
     allowedOutgoingRelationships: [],
     allowedIncomingRelationships: [],
@@ -174,7 +186,11 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
     layer: 'Business',
     description: 'A business capability (what the business does).',
     attributes: ['name', 'category'],
-    allowedOutgoingRelationships: ['DECOMPOSES_TO', 'COMPOSED_OF', 'REALIZED_BY'],
+    allowedOutgoingRelationships: [
+      'DECOMPOSES_TO',
+      'COMPOSED_OF',
+      'REALIZED_BY',
+    ],
     allowedIncomingRelationships: ['DECOMPOSES_TO', 'COMPOSED_OF'],
   },
   SubCapability: {
@@ -188,7 +204,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   ValueStream: {
     type: 'ValueStream',
     layer: 'Business',
-    description: 'A value stream (TOGAF-aligned): end-to-end value delivery stream across capabilities and stages.',
+    description:
+      'A value stream (TOGAF-aligned): end-to-end value delivery stream across capabilities and stages.',
     attributes: ['name'],
     allowedOutgoingRelationships: [],
     allowedIncomingRelationships: [],
@@ -196,7 +213,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   BusinessProcess: {
     type: 'BusinessProcess',
     layer: 'Business',
-    description: 'A business process (how work is performed across steps/activities).',
+    description:
+      'A business process (how work is performed across steps/activities).',
     attributes: ['name'],
     allowedOutgoingRelationships: ['REALIZES', 'TRIGGERS', 'SERVED_BY'],
     allowedIncomingRelationships: ['REALIZED_BY', 'TRIGGERS', 'USED_BY'],
@@ -204,7 +222,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   BusinessService: {
     type: 'BusinessService',
     layer: 'Business',
-    description: 'A business service that exposes value delivery, realized by capabilities and supported by application services.',
+    description:
+      'A business service that exposes value delivery, realized by capabilities and supported by application services.',
     attributes: ['name'],
     allowedOutgoingRelationships: ['SUPPORTED_BY'],
     allowedIncomingRelationships: ['SUPPORTS'],
@@ -212,7 +231,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Department: {
     type: 'Department',
     layer: 'Business',
-    description: 'An organizational unit (cannot exist without an owning Enterprise).',
+    description:
+      'An organizational unit (cannot exist without an owning Enterprise).',
     attributes: ['name'],
     allowedOutgoingRelationships: [],
     allowedIncomingRelationships: ['HAS'],
@@ -223,12 +243,22 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
     description: 'A software application or service.',
     attributes: ['name', 'criticality', 'lifecycle'],
     allowedOutgoingRelationships: ['USES', 'EXPOSES', 'DEPLOYED_ON'],
-    allowedIncomingRelationships: ['SERVED_BY', 'USES', 'PROVIDED_BY', 'USED_BY', 'DELIVERS', 'SUPPORTED_BY', 'OWNS', 'IMPLEMENTS'],
+    allowedIncomingRelationships: [
+      'SERVED_BY',
+      'USES',
+      'PROVIDED_BY',
+      'USED_BY',
+      'DELIVERS',
+      'SUPPORTED_BY',
+      'OWNS',
+      'IMPLEMENTS',
+    ],
   },
   ApplicationService: {
     type: 'ApplicationService',
     layer: 'Application',
-    description: 'An application-exposed service (fine-grained traceability layer). Belongs to exactly one Application.',
+    description:
+      'An application-exposed service (fine-grained traceability layer). Belongs to exactly one Application.',
     attributes: ['name'],
     allowedOutgoingRelationships: ['PROVIDED_BY', 'USED_BY'],
     allowedIncomingRelationships: ['EXPOSES'],
@@ -244,7 +274,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Technology: {
     type: 'Technology',
     layer: 'Technology',
-    description: 'A technology platform/component that applications run on or use.',
+    description:
+      'A technology platform/component that applications run on or use.',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -252,7 +283,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Node: {
     type: 'Node',
     layer: 'Technology',
-    description: 'A compute node (physical or virtual) that hosts runtimes and infrastructure.',
+    description:
+      'A compute node (physical or virtual) that hosts runtimes and infrastructure.',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -260,7 +292,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Server: {
     type: 'Server',
     layer: 'Technology',
-    description: 'A physical or virtual server hosting applications and infrastructure services.',
+    description:
+      'A physical or virtual server hosting applications and infrastructure services.',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -276,7 +309,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   VM: {
     type: 'VM',
     layer: 'Technology',
-    description: 'A virtual machine runtime instance (guest OS on a hypervisor).',
+    description:
+      'A virtual machine runtime instance (guest OS on a hypervisor).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -284,7 +318,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Container: {
     type: 'Container',
     layer: 'Technology',
-    description: 'A container runtime instance (application workload container).',
+    description:
+      'A container runtime instance (application workload container).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -292,7 +327,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Runtime: {
     type: 'Runtime',
     layer: 'Technology',
-    description: 'A runtime environment (container runtime, VM image, or managed runtime).',
+    description:
+      'A runtime environment (container runtime, VM image, or managed runtime).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPENDS_ON', 'DEPLOYED_ON'],
@@ -316,7 +352,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   Network: {
     type: 'Network',
     layer: 'Technology',
-    description: 'Network segment, fabric, or connectivity domain (VPC, LAN, WAN).',
+    description:
+      'Network segment, fabric, or connectivity domain (VPC, LAN, WAN).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -348,7 +385,8 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   IntegrationPlatform: {
     type: 'IntegrationPlatform',
     layer: 'Technology',
-    description: 'Integration platform (ESB, iPaaS, workflow, or middleware hub).',
+    description:
+      'Integration platform (ESB, iPaaS, workflow, or middleware hub).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
@@ -356,18 +394,23 @@ export const OBJECT_TYPE_DEFINITIONS: Record<ObjectType, EaObjectTypeDefinition>
   CloudService: {
     type: 'CloudService',
     layer: 'Technology',
-    description: 'A managed cloud service (storage, compute, integration, or platform service).',
+    description:
+      'A managed cloud service (storage, compute, integration, or platform service).',
     attributes: ['name', 'environment', 'type'],
     allowedOutgoingRelationships: ['CONNECTS_TO'],
     allowedIncomingRelationships: ['CONNECTS_TO', 'DEPLOYED_ON'],
   },
 } as const;
 
-export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelationshipTypeDefinition> = {
+export const RELATIONSHIP_TYPE_DEFINITIONS: Record<
+  RelationshipType,
+  EaRelationshipTypeDefinition
+> = {
   DECOMPOSES_TO: {
     type: 'DECOMPOSES_TO',
     layer: 'Business',
-    description: 'Decomposition relationship used to break a parent element into child elements.',
+    description:
+      'Decomposition relationship used to break a parent element into child elements.',
     fromTypes: ['CapabilityCategory', 'Capability', 'SubCapability'],
     toTypes: ['CapabilityCategory', 'Capability', 'SubCapability'],
     attributes: [],
@@ -375,7 +418,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   COMPOSED_OF: {
     type: 'COMPOSED_OF',
     layer: 'Business',
-    description: 'Capability is composed of a sub-capability (explicit hierarchy relationship).',
+    description:
+      'Capability is composed of a sub-capability (explicit hierarchy relationship).',
     fromTypes: ['CapabilityCategory', 'Capability', 'SubCapability'],
     toTypes: ['CapabilityCategory', 'Capability', 'SubCapability'],
     // Keep this strict: only allow Capability hierarchy edges.
@@ -389,7 +433,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   REALIZES: {
     type: 'REALIZES',
     layer: 'Business',
-    description: 'Indicates a business process realizes (implements/enables) a capability.',
+    description:
+      'Indicates a business process realizes (implements/enables) a capability.',
     fromTypes: ['BusinessProcess'],
     toTypes: ['Capability'],
     attributes: [],
@@ -397,7 +442,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   TRIGGERS: {
     type: 'TRIGGERS',
     layer: 'Business',
-    description: 'Indicates a business process triggers another business process.',
+    description:
+      'Indicates a business process triggers another business process.',
     fromTypes: ['BusinessProcess'],
     toTypes: ['BusinessProcess'],
     attributes: [],
@@ -413,7 +459,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   INTEGRATES_WITH: {
     type: 'INTEGRATES_WITH',
     layer: 'Application',
-    description: 'Application integrates with another Application (preferred over generic DEPENDS_ON).',
+    description:
+      'Application integrates with another Application (preferred over generic DEPENDS_ON).',
     fromTypes: ['Application'],
     toTypes: ['Application'],
     attributes: ['dependencyStrength', 'dependencyType'],
@@ -430,9 +477,42 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   CONNECTS_TO: {
     type: 'CONNECTS_TO',
     layer: 'Technology',
-    description: 'Technology connects to Technology (infrastructure connectivity).',
-    fromTypes: ['Technology', 'Node', 'Server', 'Compute', 'VM', 'Container', 'Runtime', 'Database', 'Storage', 'Network', 'LoadBalancer', 'API', 'MessageBroker', 'IntegrationPlatform', 'CloudService'],
-    toTypes: ['Technology', 'Node', 'Server', 'Compute', 'VM', 'Container', 'Runtime', 'Database', 'Storage', 'Network', 'LoadBalancer', 'API', 'MessageBroker', 'IntegrationPlatform', 'CloudService'],
+    description:
+      'Technology connects to Technology (infrastructure connectivity).',
+    fromTypes: [
+      'Technology',
+      'Node',
+      'Server',
+      'Compute',
+      'VM',
+      'Container',
+      'Runtime',
+      'Database',
+      'Storage',
+      'Network',
+      'LoadBalancer',
+      'API',
+      'MessageBroker',
+      'IntegrationPlatform',
+      'CloudService',
+    ],
+    toTypes: [
+      'Technology',
+      'Node',
+      'Server',
+      'Compute',
+      'VM',
+      'Container',
+      'Runtime',
+      'Database',
+      'Storage',
+      'Network',
+      'LoadBalancer',
+      'API',
+      'MessageBroker',
+      'IntegrationPlatform',
+      'CloudService',
+    ],
     attributes: [],
   },
   USES: {
@@ -462,7 +542,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   USED_BY: {
     type: 'USED_BY',
     layer: 'Application',
-    description: 'Application Service is used by an Application or Business Process.',
+    description:
+      'Application Service is used by an Application or Business Process.',
     fromTypes: ['ApplicationService'],
     toTypes: ['Application', 'BusinessProcess'],
     attributes: [],
@@ -472,15 +553,37 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
     layer: 'Technology',
     description: 'Application is deployed on technology.',
     fromTypes: ['Application'],
-    toTypes: ['Technology', 'Node', 'Server', 'Compute', 'VM', 'Container', 'Runtime', 'Database', 'Storage', 'Network', 'LoadBalancer', 'API', 'MessageBroker', 'IntegrationPlatform', 'CloudService'],
+    toTypes: [
+      'Technology',
+      'Node',
+      'Server',
+      'Compute',
+      'VM',
+      'Container',
+      'Runtime',
+      'Database',
+      'Storage',
+      'Network',
+      'LoadBalancer',
+      'API',
+      'MessageBroker',
+      'IntegrationPlatform',
+      'CloudService',
+    ],
     attributes: [],
   },
   DELIVERS: {
     type: 'DELIVERS',
     layer: 'Implementation & Migration',
-    description: 'Delivery relationship from a programme to a delivered business/application outcome.',
+    description:
+      'Delivery relationship from a programme to a delivered business/application outcome.',
     fromTypes: ['Programme'],
-    toTypes: ['CapabilityCategory', 'Capability', 'SubCapability', 'Application'],
+    toTypes: [
+      'CapabilityCategory',
+      'Capability',
+      'SubCapability',
+      'Application',
+    ],
     attributes: [],
   },
   OWNS: {
@@ -495,7 +598,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   HAS: {
     type: 'HAS',
     layer: 'Business',
-    description: 'Enterprise has a Department (Departments cannot exist without an Enterprise).',
+    description:
+      'Enterprise has a Department (Departments cannot exist without an Enterprise).',
     fromTypes: ['Enterprise'],
     toTypes: ['Department'],
     attributes: [],
@@ -511,7 +615,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   SUPPORTS: {
     type: 'SUPPORTS',
     layer: 'Application',
-    description: 'Application Service supports a Business Service (traceability layer).',
+    description:
+      'Application Service supports a Business Service (traceability layer).',
     fromTypes: ['ApplicationService'],
     toTypes: ['BusinessService'],
     attributes: [],
@@ -519,7 +624,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   CONSUMES: {
     type: 'CONSUMES',
     layer: 'Application',
-    description: 'Application Service consumes another Application Service (service-to-service dependency).',
+    description:
+      'Application Service consumes another Application Service (service-to-service dependency).',
     fromTypes: ['ApplicationService'],
     toTypes: ['ApplicationService'],
     attributes: ['dependencyStrength', 'dependencyType'],
@@ -541,7 +647,8 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
   IMPACTS: {
     type: 'IMPACTS',
     layer: 'Implementation & Migration',
-    description: 'Programme impacts a Capability (roadmap / change traceability).',
+    description:
+      'Programme impacts a Capability (roadmap / change traceability).',
     fromTypes: ['Programme'],
     toTypes: ['Capability', 'SubCapability'],
     attributes: [],
@@ -557,9 +664,17 @@ export const RELATIONSHIP_TYPE_DEFINITIONS: Record<RelationshipType, EaRelations
 } as const;
 
 export function isValidObjectType(type: unknown): type is ObjectType {
-  return typeof type === 'string' && (OBJECT_TYPES as readonly string[]).includes(type);
+  return (
+    typeof type === 'string' &&
+    (OBJECT_TYPES as readonly string[]).includes(type)
+  );
 }
 
-export function isValidRelationshipType(type: unknown): type is RelationshipType {
-  return typeof type === 'string' && (RELATIONSHIP_TYPES as readonly string[]).includes(type);
+export function isValidRelationshipType(
+  type: unknown,
+): type is RelationshipType {
+  return (
+    typeof type === 'string' &&
+    (RELATIONSHIP_TYPES as readonly string[]).includes(type)
+  );
 }

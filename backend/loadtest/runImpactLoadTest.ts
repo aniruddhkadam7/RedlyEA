@@ -1,9 +1,8 @@
-import { RepositoryGraphAbstractionLayer } from '../graph/RepositoryGraphAbstractionLayer';
 import { ImpactAnalysisEngine } from '../analysis/ImpactAnalysisEngine';
 import type { ImpactAnalysisRequest } from '../analysis/ImpactAnalysisRequest';
-
-import { generateSyntheticDataset } from './SyntheticDatasetGenerator';
+import { RepositoryGraphAbstractionLayer } from '../graph/RepositoryGraphAbstractionLayer';
 import { SeededRandom } from './SeededRandom';
+import { generateSyntheticDataset } from './SyntheticDatasetGenerator';
 
 const nowMs = (): number => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,14 +18,15 @@ const asInt = (value: string | undefined, fallback: number): number => {
   return Math.trunc(n);
 };
 
-const asFloat = (value: string | undefined, fallback: number): number => {
+const _asFloat = (value: string | undefined, fallback: number): number => {
   if (!value) return fallback;
   const n = Number.parseFloat(value);
   if (!Number.isFinite(n)) return fallback;
   return n;
 };
 
-const asString = (value: string | undefined, fallback: string): string => (value ?? '').trim() || fallback;
+const asString = (value: string | undefined, fallback: string): string =>
+  (value ?? '').trim() || fallback;
 
 const asBool = (value: string | undefined, fallback: boolean): boolean => {
   if (value === undefined) return fallback;
@@ -92,12 +92,18 @@ const parseArgs = (argv: string[]): Args => {
 
     dependencyFanout: asInt(map.get('dependencyFanout'), 8),
     appChainDepth: asInt(map.get('appChainDepth'), 50),
-    programmeImpactsPerProgramme: asInt(map.get('programmeImpactsPerProgramme'), 60),
+    programmeImpactsPerProgramme: asInt(
+      map.get('programmeImpactsPerProgramme'),
+      60,
+    ),
 
     runs: asInt(map.get('runs'), 50),
     concurrency: Math.max(1, asInt(map.get('concurrency'), 1)),
 
-    rootKind: (asString(map.get('rootKind'), 'Application') as any) === 'Programme' ? 'Programme' : 'Application',
+    rootKind:
+      (asString(map.get('rootKind'), 'Application') as any) === 'Programme'
+        ? 'Programme'
+        : 'Application',
     maxDepth: Math.max(1, asInt(map.get('maxDepth'), 10)),
     includePaths: asBool(map.get('includePaths'), false),
 
@@ -108,7 +114,10 @@ const parseArgs = (argv: string[]): Args => {
 
 const percentile = (sorted: number[], p: number): number => {
   if (!sorted.length) return 0;
-  const idx = Math.min(sorted.length - 1, Math.max(0, Math.floor(p * (sorted.length - 1))));
+  const idx = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.floor(p * (sorted.length - 1))),
+  );
   return sorted[idx];
 };
 
@@ -125,10 +134,21 @@ const memSnapshot = () => {
   };
 };
 
-const buildRequest = (args: Args, runIndex: number, rootId: string, rootType: Args['rootKind']): ImpactAnalysisRequest => {
+const buildRequest = (
+  args: Args,
+  runIndex: number,
+  rootId: string,
+  rootType: Args['rootKind'],
+): ImpactAnalysisRequest => {
   const includedRelationshipTypes =
     rootType === 'Programme'
-      ? ['IMPACTS', 'DECOMPOSES_TO', 'SERVED_BY', 'INTEGRATES_WITH', 'DEPLOYED_ON']
+      ? [
+          'IMPACTS',
+          'DECOMPOSES_TO',
+          'SERVED_BY',
+          'INTEGRATES_WITH',
+          'DEPLOYED_ON',
+        ]
       : ['INTEGRATES_WITH'];
 
   return {
@@ -149,7 +169,13 @@ const buildRequest = (args: Args, runIndex: number, rootId: string, rootType: Ar
   };
 };
 
-async function runOne(engine: ImpactAnalysisEngine, args: Args, runIndex: number, rootId: string, rootType: Args['rootKind']) {
+async function runOne(
+  engine: ImpactAnalysisEngine,
+  args: Args,
+  runIndex: number,
+  rootId: string,
+  rootType: Args['rootKind'],
+) {
   const started = nowMs();
   const memBefore = memSnapshot();
 
@@ -157,7 +183,10 @@ async function runOne(engine: ImpactAnalysisEngine, args: Args, runIndex: number
     const request = buildRequest(args, runIndex, rootId, rootType);
     const res = await engine.analyze(request, {
       includePaths: args.includePaths,
-      safeguards: { maxTraversalNodes: args.maxTraversalNodes, maxPathCount: args.maxPathCount },
+      safeguards: {
+        maxTraversalNodes: args.maxTraversalNodes,
+        maxPathCount: args.maxPathCount,
+      },
     });
 
     const durationMs = nowMs() - started;
@@ -203,13 +232,20 @@ export async function main(argv = process.argv.slice(2)) {
     programmeImpactsPerProgramme: args.programmeImpactsPerProgramme,
   });
 
-  const graph = new RepositoryGraphAbstractionLayer({ elements: dataset.repo, relationships: dataset.relRepo });
+  const graph = new RepositoryGraphAbstractionLayer({
+    elements: dataset.repo,
+    relationships: dataset.relRepo,
+  });
   const engine = new ImpactAnalysisEngine(graph);
 
   const rng = new SeededRandom(args.seed ^ 0x9e3779b9);
 
-  const rootPool = args.rootKind === 'Programme' ? dataset.ids.programmes : dataset.ids.applications;
-  if (!rootPool.length) throw new Error(`No root candidates for rootKind=${args.rootKind}`);
+  const rootPool =
+    args.rootKind === 'Programme'
+      ? dataset.ids.programmes
+      : dataset.ids.applications;
+  if (!rootPool.length)
+    throw new Error(`No root candidates for rootKind=${args.rootKind}`);
 
   const runsTotal = Math.max(1, Math.trunc(args.runs));
   const concurrency = Math.max(1, Math.trunc(args.concurrency));
@@ -254,7 +290,10 @@ export async function main(argv = process.argv.slice(2)) {
   const failedRuns = results.filter((r) => !r.ok);
   const abortedRuns = okRuns.filter((r) => r.aborted);
 
-  const durations = okRuns.map((r) => r.durationMs).slice().sort((a, b) => a - b);
+  const durations = okRuns
+    .map((r) => r.durationMs)
+    .slice()
+    .sort((a, b) => a - b);
 
   const summary = {
     type: 'ea.loadtest.summary',
@@ -271,14 +310,22 @@ export async function main(argv = process.argv.slice(2)) {
       p50: percentile(durations, 0.5),
       p95: percentile(durations, 0.95),
       max: durations[durations.length - 1] ?? 0,
-      avg: durations.length ? durations.reduce((s, x) => s + x, 0) / durations.length : 0,
+      avg: durations.length
+        ? durations.reduce((s, x) => s + x, 0) / durations.length
+        : 0,
     },
     memoryBytes: {
       start: memStart,
       end: memEnd,
     },
-    failureModes: failedRuns.slice(0, 10).map((r) => (r.ok ? null : r.errorMessage)).filter(Boolean),
-    abortWarningsSample: abortedRuns.slice(0, 5).flatMap((r) => (r.ok ? r.warnings : [])).slice(0, 10),
+    failureModes: failedRuns
+      .slice(0, 10)
+      .map((r) => (r.ok ? null : r.errorMessage))
+      .filter(Boolean),
+    abortWarningsSample: abortedRuns
+      .slice(0, 5)
+      .flatMap((r) => (r.ok ? r.warnings : []))
+      .slice(0, 10),
   };
 
   // eslint-disable-next-line no-console
@@ -289,6 +336,11 @@ export async function main(argv = process.argv.slice(2)) {
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 main().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error(JSON.stringify({ type: 'ea.loadtest.fatal', errorMessage: err instanceof Error ? err.message : String(err) }));
+  console.error(
+    JSON.stringify({
+      type: 'ea.loadtest.fatal',
+      errorMessage: err instanceof Error ? err.message : String(err),
+    }),
+  );
   process.exitCode = 1;
 });

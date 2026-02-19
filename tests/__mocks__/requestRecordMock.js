@@ -1,5 +1,5 @@
-const { parse } = require('url');
-const path = require('path');
+const { parse } = require('node:url');
+const path = require('node:path');
 
 function loadSceneCache(scene) {
   const cachePath = path.join(
@@ -49,11 +49,14 @@ async function startMock({ port, scene }) {
   global.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input?.url;
     const method = String(init.method || input?.method || 'GET').toUpperCase();
-    const resolved = new URL(url || '/', global.location?.href || 'http://localhost');
+    const resolved = new URL(
+      url || '/',
+      global.location?.href || 'http://localhost',
+    );
     const pathname = parse(resolved.href).pathname;
     const key = `${method} ${pathname}`;
 
-    if (Object.prototype.hasOwnProperty.call(mockFile, key)) {
+    if (Object.hasOwn(mockFile, key)) {
       return toResponse(200, mockFile[key], {
         'content-type': 'application/json; charset=utf-8',
       });

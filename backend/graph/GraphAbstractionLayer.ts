@@ -17,10 +17,14 @@ import type { BaseArchitectureRelationship } from '../repository/BaseArchitectur
  */
 export interface GraphAbstractionLayer {
   /** Outgoing (source → target) edges for a node id. */
-  getOutgoingEdges(nodeId: string): Promise<readonly BaseArchitectureRelationship[]>;
+  getOutgoingEdges(
+    nodeId: string,
+  ): Promise<readonly BaseArchitectureRelationship[]>;
 
   /** Incoming (source → target) edges where nodeId is the target. */
-  getIncomingEdges(nodeId: string): Promise<readonly BaseArchitectureRelationship[]>;
+  getIncomingEdges(
+    nodeId: string,
+  ): Promise<readonly BaseArchitectureRelationship[]>;
 
   /** Returns the node (element) by id, or null if unknown. */
   getNode(nodeId: string): Promise<BaseArchitectureElement | null>;

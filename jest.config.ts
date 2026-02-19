@@ -9,10 +9,13 @@ export default async (): Promise<any> => {
   return {
     ...config,
     moduleNameMapper: {
-      '^@@/requestRecordMock$': '<rootDir>/tests/__mocks__/requestRecordMock.js',
+      '^@@/requestRecordMock$':
+        '<rootDir>/tests/__mocks__/requestRecordMock.js',
       ...(config.moduleNameMapper || {}),
-      '\\.(png|jpe?g|gif|webp|avif|svg)$': '<rootDir>/tests/__mocks__/fileMock.js',
-      '\\.(mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
+      '\\.(png|jpe?g|gif|webp|avif|svg)$':
+        '<rootDir>/tests/__mocks__/fileMock.js',
+      '\\.(mp4|webm|wav|mp3|m4a|aac|oga)$':
+        '<rootDir>/tests/__mocks__/fileMock.js',
       '\\.(eot|otf|ttf|woff2?)$': '<rootDir>/tests/__mocks__/fileMock.js',
     },
     testEnvironmentOptions: {

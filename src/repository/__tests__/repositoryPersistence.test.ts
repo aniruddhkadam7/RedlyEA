@@ -7,18 +7,16 @@
  * 3. Canvas is a pure projection — repository is the single source of truth.
  */
 
-import { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
-import {
-  readRepositorySnapshot,
-  writeRepositorySnapshot,
-  REPOSITORY_SNAPSHOT_STORAGE_KEY,
-  type RepositorySnapshot,
-} from '@/repository/repositorySnapshotStore';
 import { ViewLayoutStore } from '@/diagram-studio/view-runtime/ViewLayoutStore';
-import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import { DesignWorkspaceStore } from '@/ea/DesignWorkspaceStore';
 import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 import type { DesignWorkspace } from '@/ea/DesignWorkspaceStore';
+import { DesignWorkspaceStore } from '@/ea/DesignWorkspaceStore';
+import { EaRepository } from '@/pages/dependency-view/utils/eaRepository';
+import {
+  type RepositorySnapshot,
+  readRepositorySnapshot,
+  writeRepositorySnapshot,
+} from '@/repository/repositorySnapshotStore';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -61,7 +59,10 @@ const TEST_METADATA = {
   },
 };
 
-const buildSnapshot = (repo: EaRepository, extra?: Partial<RepositorySnapshot>): RepositorySnapshot => ({
+const buildSnapshot = (
+  repo: EaRepository,
+  extra?: Partial<RepositorySnapshot>,
+): RepositorySnapshot => ({
   version: 1,
   metadata: TEST_METADATA,
   objects: Array.from(repo.objects.values()),
@@ -84,7 +85,10 @@ const makeTestView = (id: string, name: string): ViewInstance => ({
   status: 'SAVED',
 });
 
-const makeTestWorkspace = (repositoryName: string, overrides?: Partial<DesignWorkspace>): DesignWorkspace => ({
+const makeTestWorkspace = (
+  repositoryName: string,
+  overrides?: Partial<DesignWorkspace>,
+): DesignWorkspace => ({
   id: `ws-${Date.now()}`,
   repositoryName,
   name: 'Test Workspace',
@@ -120,8 +124,16 @@ describe('Repository Persistence', () => {
   test('create element → close → reopen → element exists', () => {
     // 1. Create repository with an element
     const repo = new EaRepository();
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'Acme Corp' } });
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'CRM System' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'Acme Corp' },
+    });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'CRM System' },
+    });
 
     // 2. Persist to localStorage
     const snapshot = buildSnapshot(repo);
@@ -133,28 +145,42 @@ describe('Repository Persistence', () => {
     // 4. Reopen — read from localStorage
     const restored = readRepositorySnapshot();
     expect(restored).not.toBeNull();
-    expect(restored!.objects).toHaveLength(2);
-    expect(restored!.objects.find((o) => o.id === 'ent-1')).toBeTruthy();
-    expect(restored!.objects.find((o) => o.id === 'app-1')).toBeTruthy();
+    expect(restored?.objects).toHaveLength(2);
+    expect(restored?.objects.find((o) => o.id === 'ent-1')).toBeTruthy();
+    expect(restored?.objects.find((o) => o.id === 'app-1')).toBeTruthy();
 
     // 5. Reconstruct EaRepository
     const restoredRepo = new EaRepository({
-      objects: restored!.objects,
-      relationships: restored!.relationships,
+      objects: restored?.objects,
+      relationships: restored?.relationships,
     });
     expect(restoredRepo.objects.size).toBe(2);
     expect(restoredRepo.objects.get('app-1')?.type).toBe('Application');
-    expect((restoredRepo.objects.get('app-1')?.attributes as any)?.name).toBe('CRM System');
+    expect((restoredRepo.objects.get('app-1')?.attributes as any)?.name).toBe(
+      'CRM System',
+    );
   });
 
   test('move element → reopen → same position', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
 
     // Persist repo with layout positions in workspace
     const workspace = makeTestWorkspace('test-repo', {
       layout: {
-        nodes: [{ id: 'app-1', label: 'App', elementType: 'Application' as any, x: 300, y: 450 }],
+        nodes: [
+          {
+            id: 'app-1',
+            label: 'App',
+            elementType: 'Application' as any,
+            x: 300,
+            y: 450,
+          },
+        ],
         edges: [],
       },
     });
@@ -165,32 +191,40 @@ describe('Repository Persistence', () => {
 
     // Reopen
     const restored = readRepositorySnapshot();
-    const restoredWorkspaces = restored!.studioState?.designWorkspaces ?? [];
+    const restoredWorkspaces = restored?.studioState?.designWorkspaces ?? [];
     expect(restoredWorkspaces).toHaveLength(1);
     const restoredLayout = restoredWorkspaces[0].layout;
     expect(restoredLayout?.nodes).toHaveLength(1);
-    expect(restoredLayout!.nodes[0].x).toBe(300);
-    expect(restoredLayout!.nodes[0].y).toBe(450);
+    expect(restoredLayout?.nodes[0].x).toBe(300);
+    expect(restoredLayout?.nodes[0].y).toBe(450);
   });
 
   test('create relationship → reopen → edge exists', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'Ent' } });
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'Ent' },
+    });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
     repo.addRelationship({ fromId: 'ent-1', toId: 'app-1', type: 'OWNS' });
 
     const snapshot = buildSnapshot(repo);
     writeRepositorySnapshot(snapshot);
 
     const restored = readRepositorySnapshot();
-    expect(restored!.relationships).toHaveLength(1);
-    expect(restored!.relationships[0].fromId).toBe('ent-1');
-    expect(restored!.relationships[0].toId).toBe('app-1');
-    expect(restored!.relationships[0].type).toBe('OWNS');
+    expect(restored?.relationships).toHaveLength(1);
+    expect(restored?.relationships[0].fromId).toBe('ent-1');
+    expect(restored?.relationships[0].toId).toBe('app-1');
+    expect(restored?.relationships[0].type).toBe('OWNS');
 
     const restoredRepo = new EaRepository({
-      objects: restored!.objects,
-      relationships: restored!.relationships,
+      objects: restored?.objects,
+      relationships: restored?.relationships,
     });
     expect(restoredRepo.relationships).toHaveLength(1);
     expect(restoredRepo.relationships[0].type).toBe('OWNS');
@@ -212,12 +246,14 @@ describe('Repository Persistence', () => {
 
     writeRepositorySnapshot(buildSnapshot(repo));
     const restored = readRepositorySnapshot();
-    const obj = restored!.objects.find((o) => o.id === 'app-1');
+    const obj = restored?.objects.find((o) => o.id === 'app-1');
     expect(obj).toBeTruthy();
-    expect((obj!.attributes as any).name).toBe('ERP System');
-    expect((obj!.attributes as any).description).toBe('Enterprise Resource Planning');
-    expect((obj!.attributes as any).lifecycleState).toBe('Active');
-    expect((obj!.attributes as any).createdBy).toBe('architect');
+    expect((obj?.attributes as any).name).toBe('ERP System');
+    expect((obj?.attributes as any).description).toBe(
+      'Enterprise Resource Planning',
+    );
+    expect((obj?.attributes as any).lifecycleState).toBe('Active');
+    expect((obj?.attributes as any).createdBy).toBe('architect');
   });
 });
 
@@ -229,7 +265,11 @@ describe('View Layout Persistence', () => {
   test('ViewLayoutStore persists and retrieves positions', () => {
     // Require a snapshot to exist first
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
     writeRepositorySnapshot(buildSnapshot(repo));
 
     ViewLayoutStore.set('view-1', {
@@ -242,8 +282,16 @@ describe('View Layout Persistence', () => {
 
   test('ViewLayoutStore.updatePosition merges into existing layout', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App 1' } });
-    repo.addObject({ id: 'app-2', type: 'Application', attributes: { name: 'App 2' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App 1' },
+    });
+    repo.addObject({
+      id: 'app-2',
+      type: 'Application',
+      attributes: { name: 'App 2' },
+    });
     writeRepositorySnapshot(buildSnapshot(repo));
 
     ViewLayoutStore.set('view-1', {
@@ -295,7 +343,11 @@ describe('View Layout Persistence', () => {
 
   test('same element in same view renders identically', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'CRM' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'CRM' },
+    });
     writeRepositorySnapshot(buildSnapshot(repo));
 
     ViewLayoutStore.set('view-1', { 'app-1': { x: 150, y: 250 } });
@@ -309,8 +361,16 @@ describe('View Layout Persistence', () => {
 
   test('removing element from view does NOT delete it from repository', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
-    repo.addObject({ id: 'app-2', type: 'Application', attributes: { name: 'App 2' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
+    repo.addObject({
+      id: 'app-2',
+      type: 'Application',
+      attributes: { name: 'App 2' },
+    });
     const snapshot = buildSnapshot(repo);
     writeRepositorySnapshot(snapshot);
 
@@ -324,8 +384,8 @@ describe('View Layout Persistence', () => {
 
     // Element must still exist in repository
     const restored = readRepositorySnapshot();
-    expect(restored!.objects.find((o) => o.id === 'app-1')).toBeTruthy();
-    expect(restored!.objects).toHaveLength(2);
+    expect(restored?.objects.find((o) => o.id === 'app-1')).toBeTruthy();
+    expect(restored?.objects).toHaveLength(2);
   });
 });
 
@@ -336,13 +396,19 @@ describe('View Layout Persistence', () => {
 describe('Negative Tests — Repository Integrity', () => {
   test('EaRepository rejects duplicate object IDs', () => {
     const repo = new EaRepository();
-    expect(repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: {} }).ok).toBe(true);
-    expect(repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: {} }).ok).toBe(false);
+    expect(
+      repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: {} }).ok,
+    ).toBe(true);
+    expect(
+      repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: {} }).ok,
+    ).toBe(false);
   });
 
   test('EaRepository rejects invalid object types', () => {
     const repo = new EaRepository();
-    expect(repo.addObject({ id: 'x', type: 'InvalidType', attributes: {} }).ok).toBe(false);
+    expect(
+      repo.addObject({ id: 'x', type: 'InvalidType', attributes: {} }).ok,
+    ).toBe(false);
   });
 
   test('EaRepository rejects relationships with dangling references', () => {
@@ -359,14 +425,30 @@ describe('Negative Tests — Repository Integrity', () => {
 
   test('no element should exist only in workspace without repository entry', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'Ent' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'Ent' },
+    });
 
     // Workspace references an element NOT in the repository
     const workspace = makeTestWorkspace('test-repo', {
       layout: {
         nodes: [
-          { id: 'ent-1', label: 'Ent', elementType: 'Enterprise' as any, x: 100, y: 100 },
-          { id: 'ghost', label: 'Ghost', elementType: 'Application' as any, x: 200, y: 200 },
+          {
+            id: 'ent-1',
+            label: 'Ent',
+            elementType: 'Enterprise' as any,
+            x: 100,
+            y: 100,
+          },
+          {
+            id: 'ghost',
+            label: 'Ghost',
+            elementType: 'Application' as any,
+            x: 200,
+            y: 200,
+          },
         ],
         edges: [],
       },
@@ -380,8 +462,8 @@ describe('Negative Tests — Repository Integrity', () => {
     // because it doesn't exist in the repository.
     const restored = readRepositorySnapshot();
     const restoredRepo = new EaRepository({
-      objects: restored!.objects,
-      relationships: restored!.relationships,
+      objects: restored?.objects,
+      relationships: restored?.relationships,
     });
 
     // 'ghost' is NOT in the repository
@@ -391,8 +473,10 @@ describe('Negative Tests — Repository Integrity', () => {
 
     // The workspace layout may contain 'ghost', but the canvas rebuild
     // must filter it out. We simulate what the rehydration useEffect does:
-    const wsLayout = restored!.studioState?.designWorkspaces?.[0]?.layout;
-    const visibleNodes = (wsLayout?.nodes ?? []).filter((n) => restoredRepo.objects.has(n.id));
+    const wsLayout = restored?.studioState?.designWorkspaces?.[0]?.layout;
+    const visibleNodes = (wsLayout?.nodes ?? []).filter((n) =>
+      restoredRepo.objects.has(n.id),
+    );
     expect(visibleNodes).toHaveLength(1);
     expect(visibleNodes[0].id).toBe('ent-1');
   });
@@ -405,11 +489,23 @@ describe('Negative Tests — Repository Integrity', () => {
 describe('Design Workspace Persistence', () => {
   test('workspace with layout is persisted in snapshot', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
 
     const workspace = makeTestWorkspace('test-repo', {
       layout: {
-        nodes: [{ id: 'app-1', label: 'App', elementType: 'Application' as any, x: 50, y: 75 }],
+        nodes: [
+          {
+            id: 'app-1',
+            label: 'App',
+            elementType: 'Application' as any,
+            x: 50,
+            y: 75,
+          },
+        ],
         edges: [],
       },
       stagedElements: [
@@ -431,24 +527,36 @@ describe('Design Workspace Persistence', () => {
     writeRepositorySnapshot(snapshot);
 
     const restored = readRepositorySnapshot();
-    const ws = restored!.studioState?.designWorkspaces?.[0];
+    const ws = restored?.studioState?.designWorkspaces?.[0];
     expect(ws).toBeTruthy();
-    expect(ws!.layout?.nodes).toHaveLength(1);
-    expect(ws!.layout!.nodes[0].x).toBe(50);
-    expect(ws!.layout!.nodes[0].y).toBe(75);
-    expect(ws!.stagedElements).toHaveLength(1);
-    expect(ws!.stagedElements[0].name).toBe('App');
+    expect(ws?.layout?.nodes).toHaveLength(1);
+    expect(ws?.layout?.nodes[0].x).toBe(50);
+    expect(ws?.layout?.nodes[0].y).toBe(75);
+    expect(ws?.stagedElements).toHaveLength(1);
+    expect(ws?.stagedElements[0].name).toBe('App');
   });
 
   test('DesignWorkspaceStore round-trip preserves layout positions', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App' },
+    });
     writeRepositorySnapshot(buildSnapshot(repo));
 
     const workspace = makeTestWorkspace('test-repo', {
       id: 'ws-test',
       layout: {
-        nodes: [{ id: 'app-1', label: 'App', elementType: 'Application' as any, x: 123, y: 456 }],
+        nodes: [
+          {
+            id: 'app-1',
+            label: 'App',
+            elementType: 'Application' as any,
+            x: 123,
+            y: 456,
+          },
+        ],
         edges: [],
       },
     });
@@ -471,7 +579,11 @@ describe('Reload Stress Test', () => {
     const repo = new EaRepository();
 
     // Create 20 elements
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'Acme' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'Acme' },
+    });
     const elementTypes: Array<{ type: string; layer: string }> = [
       { type: 'Application', layer: 'Application' },
       { type: 'Technology', layer: 'Technology' },
@@ -482,7 +594,11 @@ describe('Reload Stress Test', () => {
 
     for (let i = 2; i <= 20; i++) {
       const et = elementTypes[(i - 2) % elementTypes.length];
-      repo.addObject({ id: `el-${i}`, type: et.type, attributes: { name: `Element ${i}` } });
+      repo.addObject({
+        id: `el-${i}`,
+        type: et.type,
+        attributes: { name: `Element ${i}` },
+      });
     }
 
     expect(repo.objects.size).toBe(20);
@@ -493,7 +609,11 @@ describe('Reload Stress Test', () => {
     for (let i = 2; i <= 20; i++) {
       const obj = repo.objects.get(`el-${i}`);
       if (obj?.type === 'Application') {
-        const res = repo.addRelationship({ fromId: 'ent-1', toId: `el-${i}`, type: 'OWNS' });
+        const res = repo.addRelationship({
+          fromId: 'ent-1',
+          toId: `el-${i}`,
+          type: 'OWNS',
+        });
         if (res.ok) relCount++;
       }
     }
@@ -505,7 +625,11 @@ describe('Reload Stress Test', () => {
           if (relCount >= 30) break;
           const target = repo.objects.get(`el-${j}`);
           if (target?.type === 'Technology') {
-            const res = repo.addRelationship({ fromId: `el-${i}`, toId: `el-${j}`, type: 'DEPLOYED_ON' });
+            const res = repo.addRelationship({
+              fromId: `el-${i}`,
+              toId: `el-${j}`,
+              type: 'DEPLOYED_ON',
+            });
             if (res.ok) relCount++;
           }
         }
@@ -520,7 +644,11 @@ describe('Reload Stress Test', () => {
           if (relCount >= 30) break;
           const target = repo.objects.get(`el-${j}`);
           if (target?.type === 'Database') {
-            const res = repo.addRelationship({ fromId: `el-${i}`, toId: `el-${j}`, type: 'USES' });
+            const res = repo.addRelationship({
+              fromId: `el-${i}`,
+              toId: `el-${j}`,
+              type: 'USES',
+            });
             if (res.ok) relCount++;
           }
         }
@@ -529,13 +657,15 @@ describe('Reload Stress Test', () => {
     }
 
     // Build workspace layout with positions
-    const workspaceNodes = Array.from(repo.objects.values()).map((obj, idx) => ({
-      id: obj.id,
-      label: (obj.attributes as any)?.name ?? obj.id,
-      elementType: obj.type as any,
-      x: 100 + (idx % 5) * 200,
-      y: 100 + Math.floor(idx / 5) * 150,
-    }));
+    const workspaceNodes = Array.from(repo.objects.values()).map(
+      (obj, idx) => ({
+        id: obj.id,
+        label: (obj.attributes as any)?.name ?? obj.id,
+        elementType: obj.type as any,
+        x: 100 + (idx % 5) * 200,
+        y: 100 + Math.floor(idx / 5) * 150,
+      }),
+    );
     const workspaceEdges = repo.relationships.map((rel) => ({
       id: rel.id,
       source: rel.fromId,
@@ -559,31 +689,32 @@ describe('Reload Stress Test', () => {
     expect(restored).not.toBeNull();
 
     // Verify ALL elements survived
-    expect(restored!.objects).toHaveLength(20);
+    expect(restored?.objects).toHaveLength(20);
     for (let i = 1; i <= 20; i++) {
       const id = i === 1 ? 'ent-1' : `el-${i}`;
-      expect(restored!.objects.find((o) => o.id === id)).toBeTruthy();
+      expect(restored?.objects.find((o) => o.id === id)).toBeTruthy();
     }
 
     // Verify ALL relationships survived
-    expect(restored!.relationships.length).toBeGreaterThanOrEqual(relCount);
+    expect(restored?.relationships.length).toBeGreaterThanOrEqual(relCount);
 
     // Verify ALL positions survived
-    const restoredWs = restored!.studioState?.designWorkspaces?.[0];
+    const restoredWs = restored?.studioState?.designWorkspaces?.[0];
     expect(restoredWs?.layout?.nodes).toHaveLength(20);
 
     // Verify positions are exactly what we set
-    for (const node of restoredWs!.layout!.nodes) {
+    const nodes = restoredWs?.layout?.nodes ?? [];
+    for (const node of nodes) {
       const original = workspaceNodes.find((n) => n.id === node.id);
       expect(original).toBeTruthy();
-      expect(node.x).toBe(original!.x);
-      expect(node.y).toBe(original!.y);
+      expect(node.x).toBe(original?.x);
+      expect(node.y).toBe(original?.y);
     }
 
     // Reconstruct repository — must be identical
     const restoredRepo = new EaRepository({
-      objects: restored!.objects,
-      relationships: restored!.relationships,
+      objects: restored?.objects,
+      relationships: restored?.relationships,
     });
     expect(restoredRepo.objects.size).toBe(20);
     expect(restoredRepo.relationships.length).toBe(repo.relationships.length);
@@ -642,18 +773,18 @@ describe('Reload Stress Test', () => {
 
     const firstRel = repo.getRelationshipsBySourceId('app-0')[0];
     expect(firstRel).toBeTruthy();
-    const removeRes = repo.removeRelationshipById(firstRel!.id);
+    const removeRes = repo.removeRelationshipById(firstRel?.id);
     expect(removeRes.ok).toBe(true);
-    expect(repo.getRelationshipById(firstRel!.id)).toBeNull();
+    expect(repo.getRelationshipById(firstRel?.id)).toBeNull();
     expect(repo.getRelationshipsBySourceId('app-0')).toHaveLength(4);
 
     const updatedAt = new Date().toISOString();
-    const updateRes = repo.updateRelationship(repo.relationships[0]!.id, {
+    const updateRes = repo.updateRelationship(repo.relationships[0]?.id, {
       metadata: { quality: 'verified' },
       updatedAt,
     });
     expect(updateRes.ok).toBe(true);
-    expect(repo.getRelationshipById(repo.relationships[0]!.id)?.updatedAt).toBe(
+    expect(repo.getRelationshipById(repo.relationships[0]?.id)?.updatedAt).toBe(
       updatedAt,
     );
 
@@ -662,18 +793,22 @@ describe('Reload Stress Test', () => {
 
     const restored = readRepositorySnapshot();
     expect(restored).not.toBeNull();
-    expect(restored!.objects).toHaveLength(1000);
-    expect(restored!.relationships).toHaveLength(4999);
+    expect(restored?.objects).toHaveLength(1000);
+    expect(restored?.relationships).toHaveLength(4999);
 
     const restoredRepo = new EaRepository({
-      objects: restored!.objects,
-      relationships: restored!.relationships,
+      objects: restored?.objects,
+      relationships: restored?.relationships,
     });
 
     expect(restoredRepo.validateRelationshipIntegrity().ok).toBe(true);
     expect(restoredRepo.relationships).toHaveLength(4999);
-    expect(restoredRepo.getRelationshipsBySourceId('app-0').length).toBeGreaterThanOrEqual(3);
-    expect(restoredRepo.getRelationshipsByTargetId('app-0').length).toBeGreaterThanOrEqual(4);
+    expect(
+      restoredRepo.getRelationshipsBySourceId('app-0').length,
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      restoredRepo.getRelationshipsByTargetId('app-0').length,
+    ).toBeGreaterThanOrEqual(4);
   });
 });
 
@@ -684,15 +819,19 @@ describe('Reload Stress Test', () => {
 describe('View Persistence', () => {
   test('views are persisted inside the repository snapshot', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'ent-1', type: 'Enterprise', attributes: { name: 'E' } });
+    repo.addObject({
+      id: 'ent-1',
+      type: 'Enterprise',
+      attributes: { name: 'E' },
+    });
     const view = makeTestView('v-1', 'Application Landscape');
     const snapshot = buildSnapshot(repo, { views: [view] });
     writeRepositorySnapshot(snapshot);
 
     const restored = readRepositorySnapshot();
-    expect(restored!.views).toHaveLength(1);
-    expect(restored!.views![0].name).toBe('Application Landscape');
-    expect(restored!.views![0].id).toBe('v-1');
+    expect(restored?.views).toHaveLength(1);
+    expect(restored?.views?.[0].name).toBe('Application Landscape');
+    expect(restored?.views?.[0].id).toBe('v-1');
   });
 
   test('view layout positions persist independently of view', () => {
@@ -704,7 +843,10 @@ describe('View Persistence', () => {
 
     // Verify persisted in snapshot studioState
     const snap = readRepositorySnapshot();
-    expect(snap!.studioState?.viewLayouts?.['v-1']?.['app-1']).toEqual({ x: 500, y: 600 });
+    expect(snap?.studioState?.viewLayouts?.['v-1']?.['app-1']).toEqual({
+      x: 500,
+      y: 600,
+    });
   });
 });
 
@@ -715,39 +857,65 @@ describe('View Persistence', () => {
 describe('Deterministic Rehydration', () => {
   test('same repo + same workspace layout = same element positions', () => {
     const repo = new EaRepository();
-    repo.addObject({ id: 'app-1', type: 'Application', attributes: { name: 'App1' } });
-    repo.addObject({ id: 'app-2', type: 'Application', attributes: { name: 'App2' } });
+    repo.addObject({
+      id: 'app-1',
+      type: 'Application',
+      attributes: { name: 'App1' },
+    });
+    repo.addObject({
+      id: 'app-2',
+      type: 'Application',
+      attributes: { name: 'App2' },
+    });
 
     const layout = {
       nodes: [
-        { id: 'app-1', label: 'App1', elementType: 'Application' as any, x: 100, y: 200 },
-        { id: 'app-2', label: 'App2', elementType: 'Application' as any, x: 300, y: 400 },
+        {
+          id: 'app-1',
+          label: 'App1',
+          elementType: 'Application' as any,
+          x: 100,
+          y: 200,
+        },
+        {
+          id: 'app-2',
+          label: 'App2',
+          elementType: 'Application' as any,
+          x: 300,
+          y: 400,
+        },
       ],
       edges: [],
     };
 
     const workspace = makeTestWorkspace('test-repo', { layout });
-    writeRepositorySnapshot(buildSnapshot(repo, {
-      studioState: { viewLayouts: {}, designWorkspaces: [workspace] },
-    }));
+    writeRepositorySnapshot(
+      buildSnapshot(repo, {
+        studioState: { viewLayouts: {}, designWorkspaces: [workspace] },
+      }),
+    );
 
     // Read twice — must produce identical results
     const snap1 = readRepositorySnapshot();
     const snap2 = readRepositorySnapshot();
 
-    const ws1 = snap1!.studioState!.designWorkspaces![0];
-    const ws2 = snap2!.studioState!.designWorkspaces![0];
+    const ws1 = snap1?.studioState?.designWorkspaces?.[0];
+    const ws2 = snap2?.studioState?.designWorkspaces?.[0];
 
-    expect(ws1.layout!.nodes).toEqual(ws2.layout!.nodes);
-    expect(ws1.layout!.edges).toEqual(ws2.layout!.edges);
+    expect(ws1.layout?.nodes).toEqual(ws2.layout?.nodes);
+    expect(ws1.layout?.edges).toEqual(ws2.layout?.edges);
 
     // Simulate canvas build — filter by repo
     const restoredRepo = new EaRepository({
-      objects: snap1!.objects,
-      relationships: snap1!.relationships,
+      objects: snap1?.objects,
+      relationships: snap1?.relationships,
     });
-    const nodes1 = ws1.layout!.nodes.filter((n) => restoredRepo.objects.has(n.id));
-    const nodes2 = ws2.layout!.nodes.filter((n) => restoredRepo.objects.has(n.id));
+    const nodes1 = ws1.layout?.nodes.filter((n) =>
+      restoredRepo.objects.has(n.id),
+    );
+    const nodes2 = ws2.layout?.nodes.filter((n) =>
+      restoredRepo.objects.has(n.id),
+    );
     expect(nodes1).toEqual(nodes2);
   });
 });

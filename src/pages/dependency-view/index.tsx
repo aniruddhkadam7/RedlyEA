@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from '@umijs/max';
 import { Alert, Tag } from 'antd';
-import GraphView from './components/GraphView';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEaRepository } from '@/ea/EaRepositoryContext';
+import { getTimeHorizonWindow } from '@/repository/timeHorizonPolicy';
+import { computeImpactSeverity } from '@/utils/impactSeverity';
 import ApplicationSidePanel, {
   type ApplicationMetadata,
   type DatasetInfo,
@@ -9,22 +11,20 @@ import ApplicationSidePanel, {
   type ImpactSummary,
   type RankedImpactItem,
 } from './components/ApplicationSidePanel';
-import { computeImpactPaths } from './utils/computeImpactPaths';
-import { computeImpactSeverity } from '@/utils/impactSeverity';
-import { parseAndValidateApplicationsCsv } from './utils/parseApplicationsCsv';
-import { parseAndValidateDependenciesCsv } from './utils/parseDependenciesCsv';
+import GraphView from './components/GraphView';
 import { buildImpactSummaryCsv } from './utils/buildImpactSummaryCsv';
 import { buildRankedImpactsCsv } from './utils/buildRankedImpactsCsv';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
+import { computeImpactPaths } from './utils/computeImpactPaths';
 import { applyEaImportBatch } from './utils/eaImportUtils';
-import { parseAndValidateCapabilitiesCsv } from './utils/parseCapabilitiesCsv';
-import { parseAndValidateTechnologyCsv } from './utils/parseTechnologyCsv';
-import { parseAndValidateApplicationTechnologyCsv } from './utils/parseApplicationTechnologyCsv';
-import { parseAndValidateApplicationStructureCsv } from './utils/parseApplicationStructureCsv';
-import { parseAndValidateProgrammesCsv } from './utils/parseProgrammesCsv';
-import { parseAndValidateProgrammeMappingsCsv } from './utils/parseProgrammeMappingsCsv';
 import { EA_VIEW_BY_ID, type EaViewId } from './utils/eaViewDefinitions';
-import { getTimeHorizonWindow } from '@/repository/timeHorizonPolicy';
+import { parseAndValidateApplicationStructureCsv } from './utils/parseApplicationStructureCsv';
+import { parseAndValidateApplicationsCsv } from './utils/parseApplicationsCsv';
+import { parseAndValidateApplicationTechnologyCsv } from './utils/parseApplicationTechnologyCsv';
+import { parseAndValidateCapabilitiesCsv } from './utils/parseCapabilitiesCsv';
+import { parseAndValidateDependenciesCsv } from './utils/parseDependenciesCsv';
+import { parseAndValidateProgrammeMappingsCsv } from './utils/parseProgrammeMappingsCsv';
+import { parseAndValidateProgrammesCsv } from './utils/parseProgrammesCsv';
+import { parseAndValidateTechnologyCsv } from './utils/parseTechnologyCsv';
 
 type DependencyEdge = {
   from: string;
@@ -33,58 +33,50 @@ type DependencyEdge = {
   dependencyType?: string;
 };
 
-const isApplicationDependencyRelationship = (type: unknown): type is 'INTEGRATES_WITH' => type === 'INTEGRATES_WITH';
+const isApplicationDependencyRelationship = (
+  type: unknown,
+): type is 'INTEGRATES_WITH' => type === 'INTEGRATES_WITH';
 
-const DependencyView: React.FC = () => {
-  const location = useLocation();
+interface _DependencyViewInnerProps {
+  catalogDefined: boolean;
+  setCatalogDefined: (value: boolean) => void;
+  selectedViewId: EaViewId;
+  eaRepository: any;
+  metadata: any;
+  setEaRepository: any;
+  trySetEaRepository: any;
+}
 
-  const DIAGRAMS_ENABLED = false;
-  const [catalogDefined, setCatalogDefined] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('ea.catalogDefined') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    const onDefined = () => {
-      try {
-        setCatalogDefined(localStorage.getItem('ea.catalogDefined') === 'true');
-      } catch {
-        setCatalogDefined(false);
-      }
-    };
-    window.addEventListener('ea:catalogDefined', onDefined as EventListener);
-    return () => window.removeEventListener('ea:catalogDefined', onDefined as EventListener);
-  }, []);
-
-  const selectedViewId = useMemo<EaViewId>(() => {
-    const path = location.pathname;
-    if (path.startsWith('/diagrams/capability-map')) return 'capability-map';
-    if (path.startsWith('/diagrams/application-technology')) return 'technology-hosting';
-    if (path.startsWith('/diagrams/application-dependency')) return 'application-dependency-impact';
-    if (path.startsWith('/diagrams/technology-landscape')) return 'technology-hosting';
-    if (path.startsWith('/diagrams/application-landscape')) return 'application-landscape';
-    return 'application-dependency-impact';
-  }, [location.pathname]);
-
-  const { eaRepository, metadata, setEaRepository, trySetEaRepository } = useEaRepository();
-  if (!eaRepository) return null;
-
+const _DependencyViewInner: React.FC<_DependencyViewInnerProps> = ({
+  catalogDefined,
+  setCatalogDefined,
+  selectedViewId,
+  eaRepository,
+  metadata,
+  setEaRepository,
+  trySetEaRepository,
+}) => {
+  // All hooks called BEFORE any conditional logic
   const timeHorizon = metadata?.timeHorizon;
-  const horizonWindow = useMemo(() => getTimeHorizonWindow(timeHorizon), [timeHorizon]);
+  const horizonWindow = useMemo(
+    () => getTimeHorizonWindow(timeHorizon),
+    [timeHorizon],
+  );
 
   const architectureScope = metadata?.architectureScope ?? null;
   const canImportCapabilities = architectureScope !== 'Programme';
   const canImportProgrammes = architectureScope !== 'Domain';
 
   const dependencies = useMemo<DependencyEdge[]>(() => {
-    const toStrength = (value: unknown): DependencyEdge['dependencyStrength'] =>
+    const toStrength = (
+      value: unknown,
+    ): DependencyEdge['dependencyStrength'] =>
       value === 'hard' || value === 'soft' ? value : 'soft';
 
     const toType = (value: unknown): DependencyEdge['dependencyType'] =>
-      typeof value === 'string' && value.trim() ? (value as DependencyEdge['dependencyType']) : undefined;
+      typeof value === 'string' && value.trim()
+        ? (value as DependencyEdge['dependencyType'])
+        : undefined;
 
     const edges: DependencyEdge[] = [];
     for (const rel of eaRepository.relationships) {
@@ -99,15 +91,18 @@ const DependencyView: React.FC = () => {
     return edges;
   }, [eaRepository]);
 
-
   const applications = useMemo(() => {
     const toLifecycle = (value: unknown): ApplicationMetadata['lifecycle'] => {
-      if (value === 'planned' || value === 'active' || value === 'deprecated') return value;
+      if (value === 'planned' || value === 'active' || value === 'deprecated')
+        return value;
       return 'active';
     };
 
-    const toCriticality = (value: unknown): ApplicationMetadata['criticality'] => {
-      if (value === 'high' || value === 'medium' || value === 'low') return value;
+    const toCriticality = (
+      value: unknown,
+    ): ApplicationMetadata['criticality'] => {
+      if (value === 'high' || value === 'medium' || value === 'low')
+        return value;
       return 'low';
     };
 
@@ -115,7 +110,10 @@ const DependencyView: React.FC = () => {
     for (const obj of eaRepository.objects.values()) {
       if (obj.type !== 'Application') continue;
 
-      const name = typeof obj.attributes.name === 'string' && obj.attributes.name.trim() ? obj.attributes.name : obj.id;
+      const name =
+        typeof obj.attributes.name === 'string' && obj.attributes.name.trim()
+          ? obj.attributes.name
+          : obj.id;
 
       results.push({
         id: obj.id,
@@ -136,30 +134,48 @@ const DependencyView: React.FC = () => {
   const applicationsEaCsvInputRef = useRef<HTMLInputElement | null>(null);
   const appDependenciesEaCsvInputRef = useRef<HTMLInputElement | null>(null);
   const technologyCsvInputRef = useRef<HTMLInputElement | null>(null);
-  const applicationTechnologyCsvInputRef = useRef<HTMLInputElement | null>(null);
+  const applicationTechnologyCsvInputRef = useRef<HTMLInputElement | null>(
+    null,
+  );
   const applicationStructureCsvInputRef = useRef<HTMLInputElement | null>(null);
   const programmesCsvInputRef = useRef<HTMLInputElement | null>(null);
   const programmeMappingsCsvInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [graphViewMode, setGraphViewMode] = useState<'landscape' | 'impact'>('landscape');
+  const [graphViewMode, setGraphViewMode] = useState<'landscape' | 'impact'>(
+    'landscape',
+  );
 
   const [datasetInfo, setDatasetInfo] = useState<DatasetInfo>(() => ({
     source: 'Repository',
-    applicationCount: Array.from(eaRepository.objects.values()).filter((o) => o.type === 'Application').length,
-    dependencyCount: eaRepository.relationships.filter((r) => isApplicationDependencyRelationship(r.type)).length,
+    applicationCount: Array.from(eaRepository.objects.values()).filter(
+      (o) => o.type === 'Application',
+    ).length,
+    dependencyCount: eaRepository.relationships.filter((r) =>
+      isApplicationDependencyRelationship(r.type),
+    ).length,
     loadedAt: Date.now(),
   }));
 
-  const [applicationsCsvErrors, setApplicationsCsvErrors] = useState<string[]>([]);
+  const [applicationsCsvErrors, setApplicationsCsvErrors] = useState<string[]>(
+    [],
+  );
   const applicationsCsvInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [dependenciesCsvErrors, setDependenciesCsvErrors] = useState<string[]>([]);
+  const [dependenciesCsvErrors, setDependenciesCsvErrors] = useState<string[]>(
+    [],
+  );
   const dependenciesCsvInputRef = useRef<HTMLInputElement | null>(null);
 
   const [depth, setDepth] = useState<1 | 2 | 3>(1);
-  const [selectedApplication, setSelectedApplication] = useState<ApplicationMetadata | undefined>(undefined);
-  const [selectedDependency, setSelectedDependency] = useState<DependencyMetadata | undefined>(undefined);
-  const [impactSummary, setImpactSummary] = useState<ImpactSummary | undefined>(undefined);
+  const [selectedApplication, setSelectedApplication] = useState<
+    ApplicationMetadata | undefined
+  >(undefined);
+  const [selectedDependency, setSelectedDependency] = useState<
+    DependencyMetadata | undefined
+  >(undefined);
+  const [impactSummary, setImpactSummary] = useState<ImpactSummary | undefined>(
+    undefined,
+  );
   const [impactPaths, setImpactPaths] = useState<string[][]>([]);
   const [rankedImpacts, setRankedImpacts] = useState<RankedImpactItem[]>([]);
 
@@ -168,7 +184,10 @@ const DependencyView: React.FC = () => {
     [applications],
   );
 
-  const viewDefinition = useMemo(() => EA_VIEW_BY_ID[selectedViewId], [selectedViewId]);
+  const viewDefinition = useMemo(
+    () => EA_VIEW_BY_ID[selectedViewId],
+    [selectedViewId],
+  );
 
   const applicationIdSet = useMemo(
     () => new Set<string>(applications.map((a) => a.id)),
@@ -238,14 +257,18 @@ const DependencyView: React.FC = () => {
     setEaImportErrors([]);
   };
 
-  const onCapabilitiesCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onCapabilitiesCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
 
     try {
       const text = await file.text();
-      const result = parseAndValidateCapabilitiesCsv(text, { repository: eaRepository });
+      const result = parseAndValidateCapabilitiesCsv(text, {
+        repository: eaRepository,
+      });
       if (!result.ok) {
         setEaImportFailure('Import Capabilities CSV', result.errors);
         return;
@@ -266,7 +289,10 @@ const DependencyView: React.FC = () => {
           attributes: {},
         }));
 
-      const applyResult = applyEaImportBatch(eaRepository, { objects, relationships });
+      const applyResult = applyEaImportBatch(eaRepository, {
+        objects,
+        relationships,
+      });
       if (!applyResult.ok) {
         setEaImportFailure('Import Capabilities CSV', applyResult.errors);
         return;
@@ -277,7 +303,10 @@ const DependencyView: React.FC = () => {
         setEaImportFailure('Import Capabilities CSV', [applied.error]);
         return;
       }
-      setEaImportSuccess('Import Capabilities CSV', `imported ${objects.length} objects`);
+      setEaImportSuccess(
+        'Import Capabilities CSV',
+        `imported ${objects.length} objects`,
+      );
     } catch (err) {
       setEaImportFailure('Import Capabilities CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -285,7 +314,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onApplicationsEaCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onApplicationsEaCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -298,7 +329,9 @@ const DependencyView: React.FC = () => {
         return;
       }
 
-      const nextApplicationIdSet = new Set(result.applications.map((a) => a.id));
+      const nextApplicationIdSet = new Set(
+        result.applications.map((a) => a.id),
+      );
 
       const draft = eaRepository.clone();
 
@@ -311,7 +344,11 @@ const DependencyView: React.FC = () => {
         const res = draft.addObject({
           id: row.id,
           type: 'Application',
-          attributes: { name: row.name, criticality: row.criticality, lifecycle: row.lifecycle },
+          attributes: {
+            name: row.name,
+            criticality: row.criticality,
+            lifecycle: row.lifecycle,
+          },
         });
         if (!res.ok) errors.push(res.error);
       }
@@ -332,14 +369,19 @@ const DependencyView: React.FC = () => {
         return;
       }
       setGraphViewMode('landscape');
-      const dependencyCount = draft.relationships.filter((r) => isApplicationDependencyRelationship(r.type)).length;
+      const dependencyCount = draft.relationships.filter((r) =>
+        isApplicationDependencyRelationship(r.type),
+      ).length;
       setDatasetInfo({
         source: 'CSV',
         applicationCount: nextApplicationIdSet.size,
         dependencyCount,
         loadedAt: Date.now(),
       });
-      setEaImportSuccess('Import Applications CSV', `imported ${nextApplicationIdSet.size} applications`);
+      setEaImportSuccess(
+        'Import Applications CSV',
+        `imported ${nextApplicationIdSet.size} applications`,
+      );
     } catch (err) {
       setEaImportFailure('Import Applications CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -347,7 +389,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onApplicationDependenciesEaCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onApplicationDependenciesEaCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -367,9 +411,14 @@ const DependencyView: React.FC = () => {
 
     try {
       const text = await file.text();
-      const result = parseAndValidateDependenciesCsv(text, { existingApplicationIds });
+      const result = parseAndValidateDependenciesCsv(text, {
+        existingApplicationIds,
+      });
       if (!result.ok) {
-        setEaImportFailure('Import Application Dependencies CSV', result.errors);
+        setEaImportFailure(
+          'Import Application Dependencies CSV',
+          result.errors,
+        );
         return;
       }
 
@@ -377,26 +426,38 @@ const DependencyView: React.FC = () => {
         fromId: d.from,
         toId: d.to,
         type: 'INTEGRATES_WITH' as const,
-        attributes: { dependencyStrength: d.dependencyStrength, dependencyType: d.dependencyType },
+        attributes: {
+          dependencyStrength: d.dependencyStrength,
+          dependencyType: d.dependencyType,
+        },
       }));
 
       const applyResult = applyEaImportBatch(eaRepository, { relationships });
       if (!applyResult.ok) {
-        setEaImportFailure('Import Application Dependencies CSV', applyResult.errors);
+        setEaImportFailure(
+          'Import Application Dependencies CSV',
+          applyResult.errors,
+        );
         return;
       }
 
       const applied = trySetEaRepository(applyResult.nextRepository);
       if (!applied.ok) {
-        setEaImportFailure('Import Application Dependencies CSV', [applied.error]);
+        setEaImportFailure('Import Application Dependencies CSV', [
+          applied.error,
+        ]);
         return;
       }
 
       setGraphViewMode('landscape');
       setDatasetInfo({
         source: 'CSV',
-        applicationCount: Array.from(applyResult.nextRepository.objects.values()).filter((o) => o.type === 'Application').length,
-        dependencyCount: applyResult.nextRepository.relationships.filter((r) => isApplicationDependencyRelationship(r.type)).length,
+        applicationCount: Array.from(
+          applyResult.nextRepository.objects.values(),
+        ).filter((o) => o.type === 'Application').length,
+        dependencyCount: applyResult.nextRepository.relationships.filter((r) =>
+          isApplicationDependencyRelationship(r.type),
+        ).length,
         loadedAt: Date.now(),
       });
 
@@ -411,7 +472,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onTechnologyCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onTechnologyCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -441,7 +504,10 @@ const DependencyView: React.FC = () => {
         setEaImportFailure('Import Technology CSV', [applied.error]);
         return;
       }
-      setEaImportSuccess('Import Technology CSV', `imported ${objects.length} objects`);
+      setEaImportSuccess(
+        'Import Technology CSV',
+        `imported ${objects.length} objects`,
+      );
     } catch (err) {
       setEaImportFailure('Import Technology CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -449,7 +515,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onApplicationTechnologyCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onApplicationTechnologyCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -471,16 +539,24 @@ const DependencyView: React.FC = () => {
 
       const applyResult = applyEaImportBatch(eaRepository, { relationships });
       if (!applyResult.ok) {
-        setEaImportFailure('Import Application–Technology CSV', applyResult.errors);
+        setEaImportFailure(
+          'Import Application–Technology CSV',
+          applyResult.errors,
+        );
         return;
       }
 
       const applied = trySetEaRepository(applyResult.nextRepository);
       if (!applied.ok) {
-        setEaImportFailure('Import Application–Technology CSV', [applied.error]);
+        setEaImportFailure('Import Application–Technology CSV', [
+          applied.error,
+        ]);
         return;
       }
-      setEaImportSuccess('Import Application–Technology CSV', `imported ${relationships.length} relationships`);
+      setEaImportSuccess(
+        'Import Application–Technology CSV',
+        `imported ${relationships.length} relationships`,
+      );
     } catch (err) {
       setEaImportFailure('Import Application–Technology CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -488,7 +564,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onApplicationStructureCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onApplicationStructureCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -507,7 +585,9 @@ const DependencyView: React.FC = () => {
 
     try {
       const text = await file.text();
-      const result = parseAndValidateApplicationStructureCsv(text, { sourceLabel: file.name });
+      const result = parseAndValidateApplicationStructureCsv(text, {
+        sourceLabel: file.name,
+      });
       if (!result.ok) {
         setEaImportFailure('Import Application Structure CSV', result.errors);
         return;
@@ -515,7 +595,11 @@ const DependencyView: React.FC = () => {
 
       const importedAt = new Date().toISOString();
 
-      const objects: { id: string; type: 'Department' | 'Application'; attributes: Record<string, unknown> }[] = [];
+      const objects: {
+        id: string;
+        type: 'Department' | 'Application';
+        attributes: Record<string, unknown>;
+      }[] = [];
       const relationships: {
         fromId: string;
         toId: string;
@@ -536,21 +620,34 @@ const DependencyView: React.FC = () => {
           return;
         }
 
-        if (!eaRepository.objects.has(departmentId) && !seenNewObjects.has(departmentId)) {
+        if (
+          !eaRepository.objects.has(departmentId) &&
+          !seenNewObjects.has(departmentId)
+        ) {
           objects.push({
             id: departmentId,
             type: 'Department',
-            attributes: { name: row.department, sourceFile: file.name, sourceRow: displayRow, importedAt },
+            attributes: {
+              name: row.department,
+              sourceFile: file.name,
+              sourceRow: displayRow,
+              importedAt,
+            },
           });
           seenNewObjects.add(departmentId);
         }
 
-        if (!eaRepository.objects.has(row.applicationId) && !seenNewObjects.has(row.applicationId)) {
+        if (
+          !eaRepository.objects.has(row.applicationId) &&
+          !seenNewObjects.has(row.applicationId)
+        ) {
           objects.push({
             id: row.applicationId,
             type: 'Application',
             attributes: {
-              name: row.applicationName && row.applicationName.trim() ? row.applicationName.trim() : row.applicationId,
+              name: row.applicationName?.trim()
+                ? row.applicationName.trim()
+                : row.applicationId,
               sourceFile: file.name,
               sourceRow: displayRow,
               importedAt,
@@ -563,13 +660,24 @@ const DependencyView: React.FC = () => {
           fromId: departmentId,
           toId: row.applicationId,
           type: 'OWNS',
-          attributes: { sourceFile: file.name, sourceRow: displayRow, importedAt, ...row.attributes },
+          attributes: {
+            sourceFile: file.name,
+            sourceRow: displayRow,
+            importedAt,
+            ...row.attributes,
+          },
         });
       }
 
-      const applyResult = applyEaImportBatch(eaRepository, { objects, relationships });
+      const applyResult = applyEaImportBatch(eaRepository, {
+        objects,
+        relationships,
+      });
       if (!applyResult.ok) {
-        setEaImportFailure('Import Application Structure CSV', applyResult.errors);
+        setEaImportFailure(
+          'Import Application Structure CSV',
+          applyResult.errors,
+        );
         return;
       }
 
@@ -589,7 +697,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onProgrammesCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onProgrammesCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -619,7 +729,10 @@ const DependencyView: React.FC = () => {
         setEaImportFailure('Import Programmes CSV', [applied.error]);
         return;
       }
-      setEaImportSuccess('Import Programmes CSV', `imported ${objects.length} objects`);
+      setEaImportSuccess(
+        'Import Programmes CSV',
+        `imported ${objects.length} objects`,
+      );
     } catch (err) {
       setEaImportFailure('Import Programmes CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -627,7 +740,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onProgrammeMappingsCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onProgrammeMappingsCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -646,7 +761,9 @@ const DependencyView: React.FC = () => {
 
         const programmeObj = eaRepository.objects.get(m.programmeId);
         if (!programmeObj) {
-          errors.push(`Row ${displayRow}: programmeId references unknown object id "${m.programmeId}".`);
+          errors.push(
+            `Row ${displayRow}: programmeId references unknown object id "${m.programmeId}".`,
+          );
         } else if (programmeObj.type !== 'Programme') {
           errors.push(
             `Row ${displayRow}: programmeId must reference a Programme (got "${programmeObj.type}").`,
@@ -655,7 +772,9 @@ const DependencyView: React.FC = () => {
 
         const targetObj = eaRepository.objects.get(m.mappedId);
         if (!targetObj) {
-          errors.push(`Row ${displayRow}: mappedId references unknown object id "${m.mappedId}".`);
+          errors.push(
+            `Row ${displayRow}: mappedId references unknown object id "${m.mappedId}".`,
+          );
         } else if (targetObj.type !== m.mappedType) {
           errors.push(
             `Row ${displayRow}: mappedId type mismatch (expected "${m.mappedType}", got "${targetObj.type}").`,
@@ -686,7 +805,10 @@ const DependencyView: React.FC = () => {
         setEaImportFailure('Import Programme Mappings CSV', [applied.error]);
         return;
       }
-      setEaImportSuccess('Import Programme Mappings CSV', `imported ${relationships.length} relationships`);
+      setEaImportSuccess(
+        'Import Programme Mappings CSV',
+        `imported ${relationships.length} relationships`,
+      );
     } catch (err) {
       setEaImportFailure('Import Programme Mappings CSV', [
         `Failed to read or parse CSV: ${err instanceof Error ? err.message : String(err)}`,
@@ -694,7 +816,9 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onApplicationsCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onApplicationsCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     // Allow selecting the same file twice.
     e.target.value = '';
@@ -709,7 +833,9 @@ const DependencyView: React.FC = () => {
       }
 
       // Success: replace Application objects in the EA repository.
-      const nextApplicationIdSet = new Set(result.applications.map((a) => a.id));
+      const nextApplicationIdSet = new Set(
+        result.applications.map((a) => a.id),
+      );
 
       const draft = eaRepository.clone();
       for (const [id, obj] of draft.objects) {
@@ -721,7 +847,11 @@ const DependencyView: React.FC = () => {
         const res = draft.addObject({
           id: row.id,
           type: 'Application',
-          attributes: { name: row.name, criticality: row.criticality, lifecycle: row.lifecycle },
+          attributes: {
+            name: row.name,
+            criticality: row.criticality,
+            lifecycle: row.lifecycle,
+          },
         });
         if (!res.ok) errors.push(res.error);
       }
@@ -741,7 +871,9 @@ const DependencyView: React.FC = () => {
         return;
       }
       setGraphViewMode('landscape');
-      const dependencyCount = draft.relationships.filter((r) => isApplicationDependencyRelationship(r.type)).length;
+      const dependencyCount = draft.relationships.filter((r) =>
+        isApplicationDependencyRelationship(r.type),
+      ).length;
       setDatasetInfo({
         source: 'CSV',
         applicationCount: nextApplicationIdSet.size,
@@ -757,19 +889,25 @@ const DependencyView: React.FC = () => {
     }
   };
 
-  const onDependenciesCsvSelected: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onDependenciesCsvSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
 
     if (applications.length === 0) {
-      setDependenciesCsvErrors(['Cannot load dependencies: no applications dataset is loaded.']);
+      setDependenciesCsvErrors([
+        'Cannot load dependencies: no applications dataset is loaded.',
+      ]);
       return;
     }
 
     try {
       const text = await file.text();
-      const result = parseAndValidateDependenciesCsv(text, { existingApplicationIds: applicationIdSet });
+      const result = parseAndValidateDependenciesCsv(text, {
+        existingApplicationIds: applicationIdSet,
+      });
       if (!result.ok) {
         setDependenciesCsvErrors(result.errors);
         return;
@@ -777,14 +915,19 @@ const DependencyView: React.FC = () => {
 
       const draft = eaRepository.clone();
       // Replace application dependency relationships with the new set.
-      draft.relationships = draft.relationships.filter((r) => !isApplicationDependencyRelationship(r.type));
+      draft.relationships = draft.relationships.filter(
+        (r) => !isApplicationDependencyRelationship(r.type),
+      );
       const errors: string[] = [];
       for (const d of result.dependencies) {
         const res = draft.addRelationship({
           fromId: d.from,
           toId: d.to,
           type: 'INTEGRATES_WITH',
-          attributes: { dependencyStrength: d.dependencyStrength, dependencyType: d.dependencyType },
+          attributes: {
+            dependencyStrength: d.dependencyStrength,
+            dependencyType: d.dependencyType,
+          },
         });
         if (!res.ok) errors.push(res.error);
       }
@@ -803,7 +946,9 @@ const DependencyView: React.FC = () => {
       setDatasetInfo({
         source: 'CSV',
         applicationCount: applications.length,
-        dependencyCount: draft.relationships.filter((r) => isApplicationDependencyRelationship(r.type)).length,
+        dependencyCount: draft.relationships.filter((r) =>
+          isApplicationDependencyRelationship(r.type),
+        ).length,
         loadedAt: Date.now(),
       });
       setDependenciesCsvErrors([]);
@@ -815,7 +960,9 @@ const DependencyView: React.FC = () => {
   };
 
   const canExportImpactSummary = Boolean(selectedApplication && impactSummary);
-  const canExportRankedImpacts = Boolean(selectedApplication && rankedImpacts.length > 0);
+  const canExportRankedImpacts = Boolean(
+    selectedApplication && rankedImpacts.length > 0,
+  );
 
   const onExportImpactSummaryCsvClick = () => {
     if (!selectedApplication || !impactSummary) return;
@@ -856,22 +1003,29 @@ const DependencyView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    !DIAGRAMS_ENABLED || !catalogDefined ? (
-      <div style={{ padding: 16 }}>
-        <Alert
-          type="warning"
-          showIcon
-          message="Define catalog data before creating views."
-        />
-      </div>
-    ) : (
+  return !DIAGRAMS_ENABLED || !catalogDefined ? (
+    <div style={{ padding: 16 }}>
+      <Alert
+        type="warning"
+        showIcon
+        message="Define catalog data before creating views."
+      />
+    </div>
+  ) : (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '16px 16px 0', display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div
+        style={{
+          padding: '16px 16px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+        }}
+      >
         <h1 style={{ margin: 0 }}>{viewDefinition.title}</h1>
 
         <Tag>
-          Time Horizon: {timeHorizon ?? '1–3 years'} (analysis depth cap {horizonWindow.maxAnalysisDepth})
+          Time Horizon: {timeHorizon ?? '1–3 years'} (analysis depth cap{' '}
+          {horizonWindow.maxAnalysisDepth})
         </Tag>
 
         {selectedViewId === 'application-dependency-impact' && (
@@ -910,7 +1064,11 @@ const DependencyView: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button type="button" onClick={onLoadDependenciesCsvClick} disabled={applications.length === 0}>
+              <button
+                type="button"
+                onClick={onLoadDependenciesCsvClick}
+                disabled={applications.length === 0}
+              >
                 Load Dependencies CSV
               </button>
               <input
@@ -926,22 +1084,43 @@ const DependencyView: React.FC = () => {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button type="button" onClick={onExportImpactSummaryCsvClick} disabled={!canExportImpactSummary}>
+          <button
+            type="button"
+            onClick={onExportImpactSummaryCsvClick}
+            disabled={!canExportImpactSummary}
+          >
             Export Impact Summary CSV
           </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button type="button" onClick={onExportRankedImpactsCsvClick} disabled={!canExportRankedImpacts}>
+          <button
+            type="button"
+            onClick={onExportRankedImpactsCsvClick}
+            disabled={!canExportRankedImpacts}
+          >
             Export Ranked Impacts CSV
           </button>
         </div>
       </div>
 
       <div style={{ padding: '12px 16px 0' }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>EA Repository Imports</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <button type="button" onClick={onImportCapabilitiesCsvClick} disabled={!canImportCapabilities}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+          EA Repository Imports
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            alignItems: 'center',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onImportCapabilitiesCsvClick}
+            disabled={!canImportCapabilities}
+          >
             Import Capabilities CSV
           </button>
           <input
@@ -963,7 +1142,10 @@ const DependencyView: React.FC = () => {
             onChange={onApplicationsEaCsvSelected}
           />
 
-          <button type="button" onClick={onImportApplicationDependenciesEaCsvClick}>
+          <button
+            type="button"
+            onClick={onImportApplicationDependenciesEaCsvClick}
+          >
             Import Application Dependencies CSV
           </button>
           <input
@@ -1007,7 +1189,11 @@ const DependencyView: React.FC = () => {
             onChange={onApplicationStructureCsvSelected}
           />
 
-          <button type="button" onClick={onImportProgrammesCsvClick} disabled={!canImportProgrammes}>
+          <button
+            type="button"
+            onClick={onImportProgrammesCsvClick}
+            disabled={!canImportProgrammes}
+          >
             Import Programmes CSV
           </button>
           <input
@@ -1018,7 +1204,11 @@ const DependencyView: React.FC = () => {
             onChange={onProgrammesCsvSelected}
           />
 
-          <button type="button" onClick={onImportProgrammeMappingsCsvClick} disabled={!canImportProgrammes}>
+          <button
+            type="button"
+            onClick={onImportProgrammeMappingsCsvClick}
+            disabled={!canImportProgrammes}
+          >
             Import Programme Mappings CSV
           </button>
           <input
@@ -1031,7 +1221,9 @@ const DependencyView: React.FC = () => {
         </div>
 
         {eaImportStatus ? (
-          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>{eaImportStatus}</div>
+          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>
+            {eaImportStatus}
+          </div>
         ) : null}
       </div>
 
@@ -1046,8 +1238,17 @@ const DependencyView: React.FC = () => {
               maxWidth: 920,
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>EA Repository import failed</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              EA Repository import failed
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                fontSize: 12,
+              }}
+            >
               {eaImportErrors.map((msg, idx) => (
                 <div key={`${idx}-${msg}`}>{msg}</div>
               ))}
@@ -1067,8 +1268,17 @@ const DependencyView: React.FC = () => {
               maxWidth: 920,
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Applications CSV validation failed</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              Applications CSV validation failed
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                fontSize: 12,
+              }}
+            >
               {applicationsCsvErrors.map((msg, idx) => (
                 <div key={`${idx}-${msg}`}>{msg}</div>
               ))}
@@ -1088,8 +1298,17 @@ const DependencyView: React.FC = () => {
               maxWidth: 920,
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Dependencies CSV validation failed</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              Dependencies CSV validation failed
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                fontSize: 12,
+              }}
+            >
               {dependenciesCsvErrors.map((msg, idx) => (
                 <div key={`${idx}-${msg}`}>{msg}</div>
               ))}
@@ -1098,8 +1317,22 @@ const DependencyView: React.FC = () => {
         </div>
       ) : null}
 
-      <div style={{ padding: 16, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ height: '70vh', border: '3px solid red', background: '#fff', flex: 1 }}>
+      <div
+        style={{
+          padding: 16,
+          display: 'flex',
+          gap: 16,
+          alignItems: 'flex-start',
+        }}
+      >
+        <div
+          style={{
+            height: '70vh',
+            border: '3px solid red',
+            background: '#fff',
+            flex: 1,
+          }}
+        >
           <GraphView
             depth={depth}
             eaRepository={eaRepository}
@@ -1111,7 +1344,8 @@ const DependencyView: React.FC = () => {
               if (node.objectType !== 'Application') return;
 
               // Only the Application Dependency / Impact view has the impact mode behavior.
-              if (selectedViewId === 'application-dependency-impact') setGraphViewMode('impact');
+              if (selectedViewId === 'application-dependency-impact')
+                setGraphViewMode('impact');
               setSelectedDependency(undefined);
 
               const application = applicationById.get(node.id);
@@ -1140,15 +1374,18 @@ const DependencyView: React.FC = () => {
                 applications.map((n) => [n.id, n.name] as const),
               );
               const strengthByEdge = new Map(
-                dependencies.map((e) => [
-                  `${e.from}->${e.to}`,
-                  e.dependencyStrength,
-                ] as const),
+                dependencies.map(
+                  (e) => [`${e.from}->${e.to}`, e.dependencyStrength] as const,
+                ),
               );
 
               const impactCountsByTarget = new Map<
                 string,
-                { totalPaths: number; hardPathCount: number; softOnlyPathCount: number }
+                {
+                  totalPaths: number;
+                  hardPathCount: number;
+                  softOnlyPathCount: number;
+                }
               >();
 
               let maxDependencyDepthObserved = 0;
@@ -1156,12 +1393,19 @@ const DependencyView: React.FC = () => {
               for (const path of nextPaths) {
                 if (!path || path.length < 2) continue;
 
-                maxDependencyDepthObserved = Math.max(maxDependencyDepthObserved, path.length - 1);
+                maxDependencyDepthObserved = Math.max(
+                  maxDependencyDepthObserved,
+                  path.length - 1,
+                );
 
                 const targetId = path[path.length - 1];
                 let counts = impactCountsByTarget.get(targetId);
                 if (!counts) {
-                  counts = { totalPaths: 0, hardPathCount: 0, softOnlyPathCount: 0 };
+                  counts = {
+                    totalPaths: 0,
+                    hardPathCount: 0,
+                    softOnlyPathCount: 0,
+                  };
                   impactCountsByTarget.set(targetId, counts);
                 }
 
@@ -1169,7 +1413,8 @@ const DependencyView: React.FC = () => {
                 for (let i = 1; i < path.length; i += 1) {
                   const from = path[i - 1];
                   const to = path[i];
-                  const strength = strengthByEdge.get(`${from}->${to}`) ?? 'soft';
+                  const strength =
+                    strengthByEdge.get(`${from}->${to}`) ?? 'soft';
                   if (strength === 'hard') {
                     hasHard = true;
                     break;
@@ -1181,13 +1426,16 @@ const DependencyView: React.FC = () => {
                 else counts.softOnlyPathCount += 1;
               }
 
-              const bySeverityLabel: Record<'High' | 'Medium' | 'Low', number> = {
-                High: 0,
-                Medium: 0,
-                Low: 0,
-              };
+              const bySeverityLabel: Record<'High' | 'Medium' | 'Low', number> =
+                {
+                  High: 0,
+                  Medium: 0,
+                  Low: 0,
+                };
 
-              const nextRankedImpacts: Array<RankedImpactItem & { _index: number }> = [];
+              const nextRankedImpacts: Array<
+                RankedImpactItem & { _index: number }
+              > = [];
               let idx = 0;
 
               for (const [applicationId, counts] of impactCountsByTarget) {
@@ -1223,29 +1471,45 @@ const DependencyView: React.FC = () => {
               );
 
               setImpactSummary({
-                totalImpactedApplications: Array.from(impactCountsByTarget.keys()).filter(
-                  (id) => id !== application.id,
-                ).length,
+                totalImpactedApplications: Array.from(
+                  impactCountsByTarget.keys(),
+                ).filter((id) => id !== application.id).length,
                 bySeverityLabel,
                 maxDependencyDepthObserved,
               });
             }}
             onSelectEdge={(edge) => {
-              if (selectedViewId !== 'application-dependency-impact' && selectedViewId !== 'application-landscape') return;
+              if (
+                selectedViewId !== 'application-dependency-impact' &&
+                selectedViewId !== 'application-landscape'
+              )
+                return;
 
               const sourceApp = applicationById.get(edge.fromId);
               const targetApp = applicationById.get(edge.toId);
               if (!sourceApp || !targetApp) return;
 
-              const toDependencyType = (value: unknown): DependencyMetadata['dependencyType'] => {
-                if (value === 'sync' || value === 'async' || value === 'batch' || value === 'data' || value === 'auth') return value;
+              const toDependencyType = (
+                value: unknown,
+              ): DependencyMetadata['dependencyType'] => {
+                if (
+                  value === 'sync' ||
+                  value === 'async' ||
+                  value === 'batch' ||
+                  value === 'data' ||
+                  value === 'auth'
+                )
+                  return value;
                 return undefined;
               };
 
-              const dependencyType = toDependencyType(edge.attributes?.dependencyType);
+              const dependencyType = toDependencyType(
+                edge.attributes?.dependencyType,
+              );
 
               const dependencyStrength =
-                edge.attributes?.dependencyStrength === 'hard' || edge.attributes?.dependencyStrength === 'soft'
+                edge.attributes?.dependencyStrength === 'hard' ||
+                edge.attributes?.dependencyStrength === 'soft'
                   ? (edge.attributes.dependencyStrength as 'hard' | 'soft')
                   : undefined;
 
@@ -1270,12 +1534,73 @@ const DependencyView: React.FC = () => {
           datasetInfo={datasetInfo}
           applicationsForLookup={applications}
           graphViewMode={graphViewMode}
-          rootApplication={selectedApplication ? { id: selectedApplication.id, name: selectedApplication.name } : undefined}
+          rootApplication={
+            selectedApplication
+              ? { id: selectedApplication.id, name: selectedApplication.name }
+              : undefined
+          }
           impactDepth={depth}
         />
       </div>
     </div>
-    )
+  );
+};
+
+const DependencyView: React.FC = () => {
+  const location = useLocation();
+
+  const [catalogDefined, setCatalogDefined] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ea.catalogDefined') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const onDefined = () => {
+      try {
+        setCatalogDefined(localStorage.getItem('ea.catalogDefined') === 'true');
+      } catch {
+        setCatalogDefined(false);
+      }
+    };
+    window.addEventListener('ea:catalogDefined', onDefined as EventListener);
+    return () =>
+      window.removeEventListener(
+        'ea:catalogDefined',
+        onDefined as EventListener,
+      );
+  }, []);
+
+  const selectedViewId = useMemo<EaViewId>(() => {
+    const path = location.pathname;
+    if (path.startsWith('/diagrams/capability-map')) return 'capability-map';
+    if (path.startsWith('/diagrams/application-technology'))
+      return 'technology-hosting';
+    if (path.startsWith('/diagrams/application-dependency'))
+      return 'application-dependency-impact';
+    if (path.startsWith('/diagrams/technology-landscape'))
+      return 'technology-hosting';
+    if (path.startsWith('/diagrams/application-landscape'))
+      return 'application-landscape';
+    return 'application-dependency-impact';
+  }, [location.pathname]);
+
+  const { eaRepository, metadata, setEaRepository, trySetEaRepository } =
+    useEaRepository();
+  if (!eaRepository) return null;
+
+  return (
+    <_DependencyViewInner
+      catalogDefined={catalogDefined}
+      setCatalogDefined={setCatalogDefined}
+      selectedViewId={selectedViewId}
+      eaRepository={eaRepository}
+      metadata={metadata}
+      setEaRepository={setEaRepository}
+      trySetEaRepository={trySetEaRepository}
+    />
   );
 };
 

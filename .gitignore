@@ -39,3 +39,6 @@ screenshot
 .firebase
 
 build
+
+# Electron build output
+release/

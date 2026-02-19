@@ -1,4 +1,4 @@
-import { EaRepository, type EaObject, type EaRelationship } from './eaRepository';
+import type { EaObject, EaRelationship, EaRepository } from './eaRepository';
 
 export type EaImportApplySuccess = { ok: true; nextRepository: EaRepository };
 export type EaImportApplyFailure = { ok: false; errors: string[] };

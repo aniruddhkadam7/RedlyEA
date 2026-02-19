@@ -1,9 +1,12 @@
-import { validateArchitectureRepository } from '../analysis/RepositoryValidation';
 import { validateRelationshipRepository } from '../analysis/RelationshipValidation';
-import { createRelationshipRepository, type RelationshipRepository } from '../repository/RelationshipRepository';
+import { validateArchitectureRepository } from '../analysis/RepositoryValidation';
 import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import {
+  createRelationshipRepository,
+  type RelationshipRepository,
+} from '../repository/RelationshipRepository';
 
 export type RepositoryHealthFinding = {
   severity: 'Info' | 'Warning' | 'Error';
@@ -20,7 +23,9 @@ export type RepositoryHealthSummary = {
   findings: RepositoryHealthFinding[];
 };
 
-const byId = (relationships: RelationshipRepository): Map<string, BaseArchitectureRelationship[]> => {
+const byId = (
+  relationships: RelationshipRepository,
+): Map<string, BaseArchitectureRelationship[]> => {
   const map = new Map<string, BaseArchitectureRelationship[]>();
   for (const rel of relationships.getAllRelationships()) {
     const out = map.get(rel.sourceElementId) ?? [];
@@ -36,9 +41,18 @@ const byId = (relationships: RelationshipRepository): Map<string, BaseArchitectu
 
 const elementLayer = (
   element: BaseArchitectureElement | null,
-): 'Business' | 'Application' | 'Technology' | 'Implementation & Migration' | 'Governance' | 'Unknown' => {
+):
+  | 'Business'
+  | 'Application'
+  | 'Technology'
+  | 'Implementation & Migration'
+  | 'Governance'
+  | 'Unknown' => {
   if (!element) return 'Unknown';
-  const layer = typeof (element as any).layer === 'string' ? String((element as any).layer).trim() : '';
+  const layer =
+    typeof (element as any).layer === 'string'
+      ? String((element as any).layer).trim()
+      : '';
   if (
     layer === 'Business' ||
     layer === 'Application' ||
@@ -77,7 +91,7 @@ const elementLayer = (
 const collectRequiredRelationshipFindings = (
   elements: ArchitectureRepository,
   relationships: RelationshipRepository,
-  observedAt: string,
+  _observedAt: string,
 ): RepositoryHealthFinding[] => {
   const relsByElement = byId(relationships);
   const findings: RepositoryHealthFinding[] = [];
@@ -88,7 +102,8 @@ const collectRequiredRelationshipFindings = (
       (r) =>
         r.relationshipType === 'SUPPORTED_BY' &&
         r.sourceElementId === cap.id &&
-        (r.targetElementType === 'ApplicationService' || r.targetElementType === 'Application'),
+        (r.targetElementType === 'ApplicationService' ||
+          r.targetElementType === 'Application'),
     );
     if (!supported) {
       findings.push({
@@ -103,7 +118,10 @@ const collectRequiredRelationshipFindings = (
   for (const svc of elements.getElementsByType('applicationServices')) {
     const rels = relsByElement.get(svc.id) ?? [];
     const providesOutgoing = rels.filter(
-      (r) => r.relationshipType === 'PROVIDED_BY' && r.sourceElementId === svc.id && r.sourceElementType === 'ApplicationService',
+      (r) =>
+        r.relationshipType === 'PROVIDED_BY' &&
+        r.sourceElementId === svc.id &&
+        r.sourceElementType === 'ApplicationService',
     );
     if (providesOutgoing.length !== 1) {
       findings.push({
@@ -118,7 +136,10 @@ const collectRequiredRelationshipFindings = (
   for (const app of elements.getElementsByType('applications')) {
     const rels = relsByElement.get(app.id) ?? [];
     const hosted = rels.some(
-      (r) => r.relationshipType === 'DEPLOYED_ON' && r.sourceElementId === app.id && r.targetElementType === 'Technology',
+      (r) =>
+        r.relationshipType === 'DEPLOYED_ON' &&
+        r.sourceElementId === app.id &&
+        r.targetElementType === 'Technology',
     );
     if (!hosted) {
       findings.push({
@@ -133,7 +154,10 @@ const collectRequiredRelationshipFindings = (
   for (const project of elements.getElementsByType('projects')) {
     const rels = relsByElement.get(project.id) ?? [];
     const implementsAny = rels.some(
-      (r) => r.relationshipType === 'IMPLEMENTS' && r.sourceElementId === project.id && r.targetElementType === 'Application',
+      (r) =>
+        r.relationshipType === 'IMPLEMENTS' &&
+        r.sourceElementId === project.id &&
+        r.targetElementType === 'Application',
     );
     if (!implementsAny) {
       findings.push({
@@ -151,7 +175,7 @@ const collectRequiredRelationshipFindings = (
 const collectOrphanFindings = (
   elements: ArchitectureRepository,
   relationships: RelationshipRepository,
-  observedAt: string,
+  _observedAt: string,
 ): RepositoryHealthFinding[] => {
   const relsByElement = byId(relationships);
   const findings: RepositoryHealthFinding[] = [];
@@ -159,7 +183,10 @@ const collectOrphanFindings = (
   for (const cap of elements.getElementsByType('capabilities')) {
     const rels = relsByElement.get(cap.id) ?? [];
     const owned = rels.some(
-      (r) => r.relationshipType === 'OWNS' && r.targetElementId === cap.id && r.sourceElementType === 'Enterprise',
+      (r) =>
+        r.relationshipType === 'OWNS' &&
+        r.targetElementId === cap.id &&
+        r.sourceElementType === 'Enterprise',
     );
     if (!owned) {
       findings.push({
@@ -176,12 +203,14 @@ const collectOrphanFindings = (
     const linkedToBusinessService = rels.some(
       (r) =>
         (r.sourceElementId === app.id || r.targetElementId === app.id) &&
-        (r.sourceElementType === 'BusinessService' || r.targetElementType === 'BusinessService'),
+        (r.sourceElementType === 'BusinessService' ||
+          r.targetElementType === 'BusinessService'),
     );
     const linkedToApplicationService = rels.some(
       (r) =>
         (r.sourceElementId === app.id || r.targetElementId === app.id) &&
-        (r.sourceElementType === 'ApplicationService' || r.targetElementType === 'ApplicationService'),
+        (r.sourceElementType === 'ApplicationService' ||
+          r.targetElementType === 'ApplicationService'),
     );
     if (!linkedToBusinessService && !linkedToApplicationService) {
       findings.push({
@@ -196,7 +225,10 @@ const collectOrphanFindings = (
   for (const tech of elements.getElementsByType('technologies')) {
     const rels = relsByElement.get(tech.id) ?? [];
     const hasApp = rels.some(
-      (r) => r.relationshipType === 'DEPLOYED_ON' && r.targetElementId === tech.id && r.sourceElementType === 'Application',
+      (r) =>
+        r.relationshipType === 'DEPLOYED_ON' &&
+        r.targetElementId === tech.id &&
+        r.sourceElementType === 'Application',
     );
     if (!hasApp) {
       findings.push({
@@ -241,7 +273,10 @@ const collectCrossLayerFindings = (
       });
     }
 
-    if ((source?.elementType ?? '') === 'Project' && targetLayer === 'Technology') {
+    if (
+      (source?.elementType ?? '') === 'Project' &&
+      targetLayer === 'Technology'
+    ) {
       findings.push({
         severity: 'Error',
         message: `Invalid cross-layer relationship (Project -> Technology): ${source?.name ?? rel.sourceElementId} -> ${target?.name ?? rel.targetElementId}.`,
@@ -261,10 +296,15 @@ export function summarizeRepositoryHealth(input: {
 }): RepositoryHealthSummary {
   const now = input.now ?? new Date();
   const observedAt = now.toISOString();
-  const relationshipRepo = input.relationships ?? createRelationshipRepository(input.elements);
+  const relationshipRepo =
+    input.relationships ?? createRelationshipRepository(input.elements);
 
   const repoReport = validateArchitectureRepository(input.elements, now);
-  const relReport = validateRelationshipRepository(input.elements, relationshipRepo, now);
+  const relReport = validateRelationshipRepository(
+    input.elements,
+    relationshipRepo,
+    now,
+  );
 
   const findings: RepositoryHealthFinding[] = [];
 
@@ -278,8 +318,12 @@ export function summarizeRepositoryHealth(input: {
   }
 
   for (const f of relReport.findings) {
-    const subjectId = f.subjectKind === 'Relationship' ? f.subjectId : f.subjectId;
-    const subjectType = f.subjectKind === 'Relationship' ? `Relationship:${f.relationshipType ?? 'Unknown'}` : f.subjectType;
+    const subjectId =
+      f.subjectKind === 'Relationship' ? f.subjectId : f.subjectId;
+    const subjectType =
+      f.subjectKind === 'Relationship'
+        ? `Relationship:${f.relationshipType ?? 'Unknown'}`
+        : f.subjectType;
     findings.push({
       severity: f.severity,
       message: f.message,
@@ -288,11 +332,23 @@ export function summarizeRepositoryHealth(input: {
     });
   }
 
-  findings.push(...collectRequiredRelationshipFindings(input.elements, relationshipRepo, observedAt));
-  findings.push(...collectOrphanFindings(input.elements, relationshipRepo, observedAt));
+  findings.push(
+    ...collectRequiredRelationshipFindings(
+      input.elements,
+      relationshipRepo,
+      observedAt,
+    ),
+  );
+  findings.push(
+    ...collectOrphanFindings(input.elements, relationshipRepo, observedAt),
+  );
   findings.push(...collectCrossLayerFindings(input.elements, relationshipRepo));
 
-  const bySeverity: Record<'Info' | 'Warning' | 'Error', number> = { Info: 0, Warning: 0, Error: 0 };
+  const bySeverity: Record<'Info' | 'Warning' | 'Error', number> = {
+    Info: 0,
+    Warning: 0,
+    Error: 0,
+  };
   for (const f of findings) {
     bySeverity[f.severity] = (bySeverity[f.severity] ?? 0) + 1;
   }
@@ -307,7 +363,8 @@ export function summarizeRepositoryHealth(input: {
     bySeverity,
     findings: findings.sort(
       (a, b) =>
-        (b.severity === 'Error' ? 2 : b.severity === 'Warning' ? 1 : 0) - (a.severity === 'Error' ? 2 : a.severity === 'Warning' ? 1 : 0) ||
+        (b.severity === 'Error' ? 2 : b.severity === 'Warning' ? 1 : 0) -
+          (a.severity === 'Error' ? 2 : a.severity === 'Warning' ? 1 : 0) ||
         a.subjectType.localeCompare(b.subjectType) ||
         a.subjectId.localeCompare(b.subjectId) ||
         a.message.localeCompare(b.message),

@@ -15,9 +15,13 @@
  */
 
 import React from 'react';
-import type { ConnectionResolution, DirectRelationship, IndirectPath } from './types';
 import type { RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
 import { CONNECTION_FEEDBACK_COLORS } from './connectionVisualFeedback';
+import type {
+  ConnectionResolution,
+  DirectRelationship,
+  IndirectPath,
+} from './types';
 
 // ─── Types ───────────────────────────────────────────────────────────
 export type ConnectionPaletteSelection =
@@ -51,7 +55,8 @@ const PALETTE_STYLES = {
     display: 'grid' as const,
     gap: 4,
     pointerEvents: 'auto' as const,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   header: {
     fontSize: 11,
@@ -178,22 +183,24 @@ function formatIndirectChain(path: IndirectPath): string {
 }
 
 // ─── Component ───────────────────────────────────────────────────────
-export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = ({
-  resolution,
-  position,
-  onSelect,
-  onDismiss,
-}) => {
+export const InlineConnectionPalette: React.FC<
+  InlineConnectionPaletteProps
+> = ({ resolution, position, onSelect, onDismiss }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [focusIndex, setFocusIndex] = React.useState(0);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
-  const isDark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark';
+  const isDark =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-theme') === 'dark';
   const s = isDark ? { ...PALETTE_STYLES, ...DARK_OVERRIDES } : PALETTE_STYLES;
 
   // Build flat list of all options for keyboard navigation.
   const options = React.useMemo(() => {
-    const all: Array<{ kind: 'direct'; rel: DirectRelationship } | { kind: 'indirect'; path: IndirectPath }> = [];
+    const all: Array<
+      | { kind: 'direct'; rel: DirectRelationship }
+      | { kind: 'indirect'; path: IndirectPath }
+    > = [];
     for (const rel of resolution.directRelationships) {
       all.push({ kind: 'direct', rel });
     }
@@ -206,14 +213,24 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
   // Keyboard navigation.
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onDismiss(); return; }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIndex((i) => Math.min(i + 1, options.length - 1)); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIndex((i) => Math.max(i - 1, 0)); }
+      if (e.key === 'Escape') {
+        onDismiss();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusIndex((i) => Math.min(i + 1, options.length - 1));
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusIndex((i) => Math.max(i - 1, 0));
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
         const opt = options[focusIndex];
         if (!opt) return;
-        if (opt.kind === 'direct') onSelect({ kind: 'direct', type: opt.rel.type });
+        if (opt.kind === 'direct')
+          onSelect({ kind: 'direct', type: opt.rel.type });
         else onSelect({ kind: 'indirect', path: opt.path });
       }
     };
@@ -224,7 +241,10 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
   // Click-outside dismiss.
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         onDismiss();
       }
     };
@@ -257,9 +277,7 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
       </div>
 
       {/* Direct relationships */}
-      {hasDirect && hasIndirect && (
-        <div style={s.sectionLabel}>Direct</div>
-      )}
+      {hasDirect && hasIndirect && <div style={s.sectionLabel}>Direct</div>}
       {resolution.directRelationships.map((rel) => {
         optionIdx++;
         const idx = optionIdx;
@@ -273,7 +291,9 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
             aria-selected={isFocused}
             style={{
               ...s.directOption,
-              ...(isHovered || isFocused ? (s as typeof PALETTE_STYLES).directOptionHover : {}),
+              ...(isHovered || isFocused
+                ? (s as typeof PALETTE_STYLES).directOptionHover
+                : {}),
               ...(isFocused ? PALETTE_STYLES.focusRing : {}),
             }}
             onClick={() => onSelect({ kind: 'direct', type: rel.type })}
@@ -281,7 +301,9 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
             onMouseLeave={() => setHoveredIndex(null)}
             onFocus={() => setFocusIndex(idx)}
           >
-            <span style={PALETTE_STYLES.dot(CONNECTION_FEEDBACK_COLORS.directValid)} />
+            <span
+              style={PALETTE_STYLES.dot(CONNECTION_FEEDBACK_COLORS.directValid)}
+            />
             <span>{formatLabel(rel.type)}</span>
           </button>
         );
@@ -294,20 +316,22 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
       {hasIndirect && !hasDirect && (
         <div style={s.sectionLabel}>Indirect paths</div>
       )}
-      {resolution.indirectPaths.map((path, pathIdx) => {
+      {resolution.indirectPaths.map((path, _pathIdx) => {
         optionIdx++;
         const idx = optionIdx;
         const isFocused = focusIndex === idx;
         const isHovered = hoveredIndex === idx;
         return (
           <button
-            key={`indirect-${path.intermediateTypes.join('-')}-${path.hops.map(h => h.relationshipType).join('-')}`}
+            key={`indirect-${path.intermediateTypes.join('-')}-${path.hops.map((h) => h.relationshipType).join('-')}`}
             type="button"
             role="option"
             aria-selected={isFocused}
             style={{
               ...s.indirectOption,
-              ...(isHovered || isFocused ? (s as typeof PALETTE_STYLES).indirectOptionHover : {}),
+              ...(isHovered || isFocused
+                ? (s as typeof PALETTE_STYLES).indirectOptionHover
+                : {}),
               ...(isFocused ? PALETTE_STYLES.focusRing : {}),
             }}
             onClick={() => onSelect({ kind: 'indirect', path })}
@@ -316,7 +340,11 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
             onFocus={() => setFocusIndex(idx)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={PALETTE_STYLES.dot(CONNECTION_FEEDBACK_COLORS.indirectValid)} />
+              <span
+                style={PALETTE_STYLES.dot(
+                  CONNECTION_FEEDBACK_COLORS.indirectValid,
+                )}
+              />
               <span>{formatIndirectLabel(path)}</span>
             </div>
             <div style={s.pathChain}>{formatIndirectChain(path)}</div>
@@ -326,7 +354,14 @@ export const InlineConnectionPalette: React.FC<InlineConnectionPaletteProps> = (
 
       {/* No path — actionable suggestion */}
       {!hasDirect && !hasIndirect && resolution.noPathSuggestion && (
-        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.5)', padding: '4px 4px 2px', lineHeight: 1.5 }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'rgba(0,0,0,0.5)',
+            padding: '4px 4px 2px',
+            lineHeight: 1.5,
+          }}
+        >
           {resolution.noPathSuggestion}
         </div>
       )}

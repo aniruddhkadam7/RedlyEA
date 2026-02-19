@@ -1,14 +1,12 @@
-import React from 'react';
-
 import { DoubleLeftOutlined, RobotOutlined } from '@ant-design/icons';
 import { Button, Layout, Space, Tooltip, theme } from 'antd';
-
-import { useEaProject } from '@/ea/EaProjectContext';
-import CopilotPanel from './CopilotPanel';
-import { trackCopilotEvent } from '@/copilot/telemetry';
+import React from 'react';
 import { CopilotContextProvider } from '@/copilot/CopilotContextProvider';
-import CopilotCommandPalette from './CopilotCommandPalette';
 import { getCopilotPanelComponent } from '@/copilot/extension';
+import { trackCopilotEvent } from '@/copilot/telemetry';
+import { useEaProject } from '@/ea/EaProjectContext';
+import CopilotCommandPalette from './CopilotCommandPalette';
+import CopilotPanel from './CopilotPanel';
 
 export type CopilotDockProps = {
   children: React.ReactNode;
@@ -18,7 +16,8 @@ const DEFAULT_WIDTH = 420;
 const MIN_WIDTH = 320;
 const MAX_WIDTH = 720;
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
 
 const readBool = (key: string, fallback: boolean) => {
   try {
@@ -52,14 +51,21 @@ const CopilotDock: React.FC<CopilotDockProps> = ({ children }) => {
   const { token } = theme.useToken();
   const { project } = useEaProject();
 
-  const PanelComponent = React.useMemo(() => getCopilotPanelComponent() ?? CopilotPanel, []);
+  const PanelComponent = React.useMemo(
+    () => getCopilotPanelComponent() ?? CopilotPanel,
+    [],
+  );
 
   const projectKey = project?.id ? `project:${project.id}` : 'project:none';
   const openKey = `ea.copilot.open:${projectKey}`;
   const widthKey = `ea.copilot.width:${projectKey}`;
 
-  const [open, setOpen] = React.useState<boolean>(() => readBool(openKey, true));
-  const [width, setWidth] = React.useState<number>(() => clamp(readNumber(widthKey, DEFAULT_WIDTH), MIN_WIDTH, MAX_WIDTH));
+  const [open, setOpen] = React.useState<boolean>(() =>
+    readBool(openKey, true),
+  );
+  const [width, setWidth] = React.useState<number>(() =>
+    clamp(readNumber(widthKey, DEFAULT_WIDTH), MIN_WIDTH, MAX_WIDTH),
+  );
   const [isDragging, setIsDragging] = React.useState(false);
 
   const widthRef = React.useRef(width);
@@ -105,7 +111,11 @@ const CopilotDock: React.FC<CopilotDockProps> = ({ children }) => {
     const onMove = (e: PointerEvent) => {
       if (!draggingRef.current.active) return;
       const delta = draggingRef.current.startX - e.clientX;
-      const nextWidth = clamp(draggingRef.current.startWidth + delta, MIN_WIDTH, MAX_WIDTH);
+      const nextWidth = clamp(
+        draggingRef.current.startWidth + delta,
+        MIN_WIDTH,
+        MAX_WIDTH,
+      );
       pendingWidthRef.current = nextWidth;
       if (rafRef.current !== null) return;
       rafRef.current = window.requestAnimationFrame(applyPendingWidth);
@@ -153,7 +163,13 @@ const CopilotDock: React.FC<CopilotDockProps> = ({ children }) => {
       <div style={{ height: '100%', position: 'relative' }}>
         <CopilotCommandPalette />
 
-        <Layout style={{ height: '100%', minHeight: 0, background: token.colorBgLayout }}>
+        <Layout
+          style={{
+            height: '100%',
+            minHeight: 0,
+            background: token.colorBgLayout,
+          }}
+        >
           <Layout.Content
             style={{
               height: '100%',
@@ -211,7 +227,11 @@ const CopilotDock: React.FC<CopilotDockProps> = ({ children }) => {
                   // Best-effort only.
                 }
 
-                draggingRef.current = { startX: e.clientX, startWidth: width, active: true };
+                draggingRef.current = {
+                  startX: e.clientX,
+                  startWidth: width,
+                  active: true,
+                };
               }}
             />
 

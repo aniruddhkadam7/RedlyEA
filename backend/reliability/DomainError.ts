@@ -32,10 +32,18 @@ export class DomainError extends Error {
 }
 
 export const isDomainError = (err: unknown): err is DomainError =>
-  Boolean(err) && typeof err === 'object' && (err as any).name === 'DomainError' && typeof (err as any).code === 'string';
+  Boolean(err) &&
+  typeof err === 'object' &&
+  (err as any).name === 'DomainError' &&
+  typeof (err as any).code === 'string';
 
 export const asDomainError = (err: unknown): DomainError => {
   if (isDomainError(err)) return err;
   const message = err instanceof Error ? err.message : 'Unexpected error.';
-  return new DomainError({ code: 'UNKNOWN_ERROR', message, retryable: false, cause: err });
+  return new DomainError({
+    code: 'UNKNOWN_ERROR',
+    message,
+    retryable: false,
+    cause: err,
+  });
 };

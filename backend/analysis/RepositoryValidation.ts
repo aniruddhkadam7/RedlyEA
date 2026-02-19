@@ -1,5 +1,5 @@
-import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
 import type { Application } from '../repository/Application';
+import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
 import type { Capability } from '../repository/Capability';
 import type { Technology } from '../repository/Technology';
 
@@ -33,9 +33,11 @@ export type RepositoryValidationReport = {
   };
 };
 
-const isBlank = (value: unknown): boolean => typeof value !== 'string' || value.trim().length === 0;
+const isBlank = (value: unknown): boolean =>
+  typeof value !== 'string' || value.trim().length === 0;
 
-const makeFindingId = (checkId: ValidationCheckId, elementId: string) => `${checkId}:${elementId}`;
+const makeFindingId = (checkId: ValidationCheckId, elementId: string) =>
+  `${checkId}:${elementId}`;
 
 const increment = (obj: Record<string, number>, key: string) => {
   obj[key] = (obj[key] ?? 0) + 1;
@@ -43,15 +45,25 @@ const increment = (obj: Record<string, number>, key: string) => {
 
 function capabilityMissingOwner(capability: Capability): boolean {
   // Governance: "owner" is treated as a complete ownership tuple.
-  return isBlank(capability.ownerRole) || isBlank(capability.ownerName) || isBlank(capability.owningUnit);
+  return (
+    isBlank(capability.ownerRole) ||
+    isBlank(capability.ownerName) ||
+    isBlank(capability.owningUnit)
+  );
 }
 
 function applicationMissingLifecycle(application: Application): boolean {
   // Base lifecycle fields are mandatory but may be unpopulated (empty strings) in early stages.
-  return isBlank(application.lifecycleStatus) || isBlank(application.lifecycleStartDate);
+  return (
+    isBlank(application.lifecycleStatus) ||
+    isBlank(application.lifecycleStartDate)
+  );
 }
 
-function technologyPastSupportEndDate(technology: Technology, nowMs: number): boolean {
+function technologyPastSupportEndDate(
+  technology: Technology,
+  nowMs: number,
+): boolean {
   const parsed = Date.parse(technology.supportEndDate);
   if (Number.isNaN(parsed)) return false;
   return parsed < nowMs;
@@ -64,7 +76,10 @@ function technologyPastSupportEndDate(technology: Technology, nowMs: number): bo
  * - No blocking
  * - No persistence
  */
-export function validateArchitectureRepository(repo: ArchitectureRepository, now: Date = new Date()): RepositoryValidationReport {
+export function validateArchitectureRepository(
+  repo: ArchitectureRepository,
+  now: Date = new Date(),
+): RepositoryValidationReport {
   const observedAt = now.toISOString();
   const nowMs = now.getTime();
 
@@ -76,7 +91,8 @@ export function validateArchitectureRepository(repo: ArchitectureRepository, now
         id: makeFindingId('CAPABILITY_MISSING_OWNER', capability.id),
         checkId: 'CAPABILITY_MISSING_OWNER',
         severity: 'Warning',
-        message: 'Capability is missing ownership details (owner role, owner name, and/or owning unit).',
+        message:
+          'Capability is missing ownership details (owner role, owner name, and/or owning unit).',
         elementId: capability.id,
         elementType: capability.elementType,
         collection: 'capabilities',
@@ -91,7 +107,8 @@ export function validateArchitectureRepository(repo: ArchitectureRepository, now
         id: makeFindingId('APPLICATION_MISSING_LIFECYCLE', application.id),
         checkId: 'APPLICATION_MISSING_LIFECYCLE',
         severity: 'Warning',
-        message: 'Application is missing lifecycle information (lifecycle status and/or lifecycle start date).',
+        message:
+          'Application is missing lifecycle information (lifecycle status and/or lifecycle start date).',
         elementId: application.id,
         elementType: application.elementType,
         collection: 'applications',
@@ -115,7 +132,11 @@ export function validateArchitectureRepository(repo: ArchitectureRepository, now
     }
   }
 
-  const bySeverity: Record<ValidationSeverity, number> = { Info: 0, Warning: 0, Error: 0 };
+  const bySeverity: Record<ValidationSeverity, number> = {
+    Info: 0,
+    Warning: 0,
+    Error: 0,
+  };
   const byCheckId: Partial<Record<ValidationCheckId, number>> = {};
   for (const finding of findings) {
     increment(bySeverity, finding.severity);

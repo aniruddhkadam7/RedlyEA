@@ -14,19 +14,19 @@
  */
 
 import {
-  type ObjectType,
-  type RelationshipType,
-  RELATIONSHIP_TYPE_DEFINITIONS,
-  OBJECT_TYPE_DEFINITIONS,
   type EaRelationshipTypeDefinition,
+  OBJECT_TYPE_DEFINITIONS,
+  type ObjectType,
+  RELATIONSHIP_TYPE_DEFINITIONS,
+  type RelationshipType,
 } from '@/pages/dependency-view/utils/eaMetaModel';
 
 import type {
   ConnectionResolution,
-  DirectRelationship,
-  IndirectPath,
-  IndirectHop,
   ConnectionResolutionKind,
+  DirectRelationship,
+  IndirectHop,
+  IndirectPath,
 } from './types';
 
 // ─── Canonical EA Path Patterns ──────────────────────────────────────
@@ -42,18 +42,33 @@ const CANONICAL_PATTERNS: ReadonlyArray<{
   { from: 'Capability', to: 'BusinessProcess', via: 'REALIZED_BY', score: 100 },
   { from: 'Capability', to: 'Application', via: 'SUPPORTED_BY', score: 95 },
   { from: 'SubCapability', to: 'Application', via: 'SUPPORTED_BY', score: 94 },
-  { from: 'BusinessService', to: 'ApplicationService', via: 'SUPPORTED_BY', score: 93 },
+  {
+    from: 'BusinessService',
+    to: 'ApplicationService',
+    via: 'SUPPORTED_BY',
+    score: 93,
+  },
   // Business → Application
   { from: 'BusinessProcess', to: 'Application', via: 'SERVED_BY', score: 90 },
   { from: 'Application', to: 'ApplicationService', via: 'EXPOSES', score: 85 },
-  { from: 'ApplicationService', to: 'Application', via: 'PROVIDED_BY', score: 84 },
+  {
+    from: 'ApplicationService',
+    to: 'Application',
+    via: 'PROVIDED_BY',
+    score: 84,
+  },
   // Application → Technology
   { from: 'Application', to: 'Technology', via: 'DEPLOYED_ON', score: 80 },
   { from: 'Application', to: 'Server', via: 'DEPLOYED_ON', score: 80 },
   { from: 'Application', to: 'Container', via: 'DEPLOYED_ON', score: 80 },
   { from: 'Application', to: 'CloudService', via: 'DEPLOYED_ON', score: 80 },
   // Composition
-  { from: 'CapabilityCategory', to: 'Capability', via: 'COMPOSED_OF', score: 75 },
+  {
+    from: 'CapabilityCategory',
+    to: 'Capability',
+    via: 'COMPOSED_OF',
+    score: 75,
+  },
   { from: 'Capability', to: 'SubCapability', via: 'COMPOSED_OF', score: 75 },
   // Ownership
   { from: 'Enterprise', to: 'Department', via: 'HAS', score: 70 },
@@ -70,7 +85,11 @@ for (const p of CANONICAL_PATTERNS) {
   canonicalLookup.set(`${p.from}|${p.to}|${p.via}`, p.score);
 }
 
-function getCanonicalScore(from: ObjectType, to: ObjectType, via: RelationshipType): number {
+function getCanonicalScore(
+  from: ObjectType,
+  to: ObjectType,
+  via: RelationshipType,
+): number {
   return canonicalLookup.get(`${from}|${to}|${via}`) ?? 0;
 }
 
@@ -82,10 +101,16 @@ function formatRelationshipLabel(type: RelationshipType): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatPathLabel(sourceType: ObjectType, _targetType: ObjectType, hops: IndirectHop[]): string {
+function formatPathLabel(
+  sourceType: ObjectType,
+  _targetType: ObjectType,
+  hops: IndirectHop[],
+): string {
   const parts: string[] = [sourceType];
   for (const hop of hops) {
-    parts.push(`→ [${formatRelationshipLabel(hop.relationshipType)}] → ${hop.toType}`);
+    parts.push(
+      `→ [${formatRelationshipLabel(hop.relationshipType)}] → ${hop.toType}`,
+    );
   }
   return parts.join(' ');
 }
@@ -150,7 +175,12 @@ const CANONICAL_BRIDGES: ReadonlyArray<{
   { from: 'BusinessProcess', via: 'Application', to: 'Technology', score: 80 },
   { from: 'BusinessProcess', via: 'Application', to: 'Server', score: 80 },
   // BusinessService → Application through ApplicationService
-  { from: 'BusinessService', via: 'ApplicationService', to: 'Application', score: 88 },
+  {
+    from: 'BusinessService',
+    via: 'ApplicationService',
+    to: 'Application',
+    score: 88,
+  },
   // Enterprise → Application through Capability
   { from: 'Enterprise', via: 'Capability', to: 'Application', score: 75 },
   // Programme → Technology through Application
@@ -178,7 +208,8 @@ export function findIndirectPaths(
   const allTypes = Object.keys(OBJECT_TYPE_DEFINITIONS) as ObjectType[];
 
   for (const intermediateType of allTypes) {
-    if (intermediateType === sourceType && intermediateType === targetType) continue;
+    if (intermediateType === sourceType && intermediateType === targetType)
+      continue;
 
     // Find relationships: source → intermediate
     for (const [key1, def1] of Object.entries(RELATIONSHIP_TYPE_DEFINITIONS)) {
@@ -186,7 +217,9 @@ export function findIndirectPaths(
       if (!isEndpointMatch(def1, sourceType, intermediateType)) continue;
 
       // Find relationships: intermediate → target
-      for (const [key2, def2] of Object.entries(RELATIONSHIP_TYPE_DEFINITIONS)) {
+      for (const [key2, def2] of Object.entries(
+        RELATIONSHIP_TYPE_DEFINITIONS,
+      )) {
         const rel2 = key2 as RelationshipType;
         if (!isEndpointMatch(def2, intermediateType, targetType)) continue;
 
@@ -208,7 +241,9 @@ export function findIndirectPaths(
           },
         ];
 
-        const bridgeScore = bridgeLookup.get(`${sourceType}|${intermediateType}|${targetType}`) ?? 0;
+        const bridgeScore =
+          bridgeLookup.get(`${sourceType}|${intermediateType}|${targetType}`) ??
+          0;
         const hop1Score = getCanonicalScore(sourceType, intermediateType, rel1);
         const hop2Score = getCanonicalScore(intermediateType, targetType, rel2);
         const totalScore = bridgeScore + hop1Score + hop2Score;
@@ -233,7 +268,10 @@ export function findIndirectPaths(
 }
 
 // ─── No-Path Suggestions ─────────────────────────────────────────────
-function buildNoPathSuggestion(sourceType: ObjectType, targetType: ObjectType): string {
+function buildNoPathSuggestion(
+  sourceType: ObjectType,
+  targetType: ObjectType,
+): string {
   const sLayer = OBJECT_TYPE_DEFINITIONS[sourceType].layer;
   const tLayer = OBJECT_TYPE_DEFINITIONS[targetType].layer;
 
@@ -244,13 +282,19 @@ function buildNoPathSuggestion(sourceType: ObjectType, targetType: ObjectType): 
   // Suggest canonical bridging patterns.
   const suggestions: string[] = [];
   if (sLayer === 'Business' && tLayer === 'Technology') {
-    suggestions.push('Add an Application element to bridge Business and Technology layers.');
+    suggestions.push(
+      'Add an Application element to bridge Business and Technology layers.',
+    );
   }
   if (sLayer === 'Technology' && tLayer === 'Business') {
-    suggestions.push('Add an Application element to bridge Technology and Business layers.');
+    suggestions.push(
+      'Add an Application element to bridge Technology and Business layers.',
+    );
   }
   if (sLayer === 'Governance') {
-    suggestions.push(`Governance elements (${sourceType}) typically constrain rather than connect directly. Consider using a Programme or Project to trace delivery.`);
+    suggestions.push(
+      `Governance elements (${sourceType}) typically constrain rather than connect directly. Consider using a Programme or Project to trace delivery.`,
+    );
   }
 
   return suggestions.length > 0
@@ -279,7 +323,9 @@ export function resolveConnection(
   // Step 1: Direct relationships.
   let directRelationships = findDirectRelationships(sourceType, targetType);
   if (viewpointFilter) {
-    directRelationships = directRelationships.filter((d) => viewpointFilter.has(d.type));
+    directRelationships = directRelationships.filter((d) =>
+      viewpointFilter.has(d.type),
+    );
   }
 
   // Step 2: Indirect paths.
@@ -354,7 +400,13 @@ export function resolveConnectionsForSource(
   const map = new Map<string, ConnectionResolution>();
   for (const target of targets) {
     if (target.id === sourceId) continue;
-    const resolution = resolveConnection(sourceId, target.id, sourceType, target.type, viewpointFilter);
+    const resolution = resolveConnection(
+      sourceId,
+      target.id,
+      sourceType,
+      target.type,
+      viewpointFilter,
+    );
     map.set(target.id, resolution);
   }
   return map;

@@ -10,7 +10,10 @@
  *   5) Show inline chooser when multiple paths exist
  */
 
-import type { ObjectType, RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
+import type {
+  ObjectType,
+  RelationshipType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 
 // ─── Direct Relationship ─────────────────────────────────────────────
 /** A direct, single-hop relationship between source and target. */
@@ -49,7 +52,11 @@ export type IndirectPath = {
 };
 
 // ─── Resolution Result ───────────────────────────────────────────────
-export type ConnectionResolutionKind = 'auto-create' | 'choose-direct' | 'choose-any' | 'no-path';
+export type ConnectionResolutionKind =
+  | 'auto-create'
+  | 'choose-direct'
+  | 'choose-any'
+  | 'no-path';
 
 export type ConnectionResolution = {
   sourceId: string;
@@ -83,7 +90,10 @@ export type ConnectionResolution = {
 };
 
 // ─── Visual Feedback ─────────────────────────────────────────────────
-export type ConnectionFeedbackKind = 'direct-valid' | 'indirect-valid' | 'neutral';
+export type ConnectionFeedbackKind =
+  | 'direct-valid'
+  | 'indirect-valid'
+  | 'neutral';
 
 export type ConnectionVisualFeedback = {
   kind: ConnectionFeedbackKind;

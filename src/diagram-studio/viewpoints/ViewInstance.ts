@@ -1,6 +1,9 @@
 export type ViewScope =
   | { readonly kind: 'EntireRepository' }
-  | { readonly kind: 'ManualSelection'; readonly elementIds: readonly string[] };
+  | {
+      readonly kind: 'ManualSelection';
+      readonly elementIds: readonly string[];
+    };
 
 export type ViewAnnotation = {
   id: string;

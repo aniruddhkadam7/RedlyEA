@@ -1,5 +1,5 @@
-import type { RepositoryPermission, RepositoryRole } from './accessControl';
-import type { GovernanceMode } from './repositoryMetadata';
+import type { RepositoryPermission, RepositoryRole } from "./accessControl";
+import type { GovernanceMode } from "./repositoryMetadata";
 
 /**
  * Element Creation Policy
@@ -51,7 +51,7 @@ export interface ElementCreationGuard {
 }
 
 export type RepositoryInitializationState = {
-  status: 'initialized' | 'uninitialized';
+  status: "initialized" | "uninitialized";
   reason: string | null;
 };
 
@@ -60,18 +60,18 @@ export interface InitializationGuard {
   reason?: string;
 }
 
-export type EffectiveGovernanceMode = GovernanceMode | 'Unknown';
+export type EffectiveGovernanceMode = GovernanceMode | "Unknown";
 
 export type ModelingAccessDecision =
   | {
-      access: 'read-only';
+      access: "read-only";
       governanceMode: EffectiveGovernanceMode;
       reason: string;
     }
   | {
-      access: 'write';
+      access: "write";
       governanceMode: GovernanceMode;
-      validation: 'blocking' | 'advisory';
+      validation: "blocking" | "advisory";
       reason: string;
     };
 
@@ -84,17 +84,17 @@ export type ContextLockGuard =
 export const CONTEXT_LOCKED: ContextLockGuard = {
   locked: true,
   reason:
-    'Context is locked (Baseline/Plateau/Roadmap). All roles are read-only; governance is not consulted.',
+    "Context is locked (Baseline/Plateau/Roadmap). All roles are read-only; governance is not consulted.",
 };
 
 export type PermissionChainOutcome =
   | {
       ok: true;
       governanceMode: GovernanceMode;
-      validation: 'blocking' | 'advisory';
+      validation: "blocking" | "advisory";
       reason: string;
     }
-  | { ok: false; failedAt: 'context-lock' | 'role-permission'; reason: string };
+  | { ok: false; failedAt: "context-lock" | "role-permission"; reason: string };
 
 /**
  * Check if element creation is allowed from the given source.
@@ -107,7 +107,7 @@ export function validateElementCreationSource(
     return { ok: true, source };
   }
 
-  if (source === 'explorer-context-menu') {
+  if (source === "explorer") {
     return {
       ok: false,
       source,
@@ -115,28 +115,36 @@ export function validateElementCreationSource(
     };
   }
 
-  if (source === 'canvas') {
+  if (source === "explorer-context-menu") {
     return {
       ok: false,
       source,
-      reason:
-        'Element creation on canvas is not allowed. Use Explorer context menu instead.',
+      reason: 'Use the Explorer "+" button or Toolbox to create elements.',
     };
   }
 
-  if (source === 'ai-agent') {
+  if (source === "canvas") {
     return {
       ok: false,
       source,
       reason:
-        'AI-generated canvas elements must be reverted. Use Explorer context menu to create elements.',
+        "Element creation on canvas is not allowed. Use Explorer context menu instead.",
+    };
+  }
+
+  if (source === "ai-agent") {
+    return {
+      ok: false,
+      source,
+      reason:
+        "AI-generated canvas elements must be reverted. Use Explorer context menu to create elements.",
     };
   }
 
   return {
     ok: false,
     source,
-    reason: 'Unknown element creation source. Use Explorer context menu.',
+    reason: "Unknown element creation source. Use Explorer context menu.",
   };
 }
 
@@ -146,15 +154,13 @@ export function validateElementCreationSource(
 export const ELEMENT_CREATION_POLICY = {
   allowedSources: ['toolbox', 'explorer'] as const,
   blockedSources: [
-    'explorer-context-menu',
-    'canvas',
-    'ai-agent',
-    'drag-drop',
-    'double-click',
-    'keyboard',
+    "explorer",
+    "explorer-context-menu",
+    "canvas",
+    "ai-agent",
   ] as const,
-  diagramMode: 'toolbox-create' as const,
-  requiredFields: ['id', 'type', 'elementType', 'createdAt', 'name'] as const,
+  diagramMode: "toolbox-create" as const,
+  requiredFields: ["id", "type", "elementType", "createdAt", "name"] as const,
 } as const;
 
 /**
@@ -162,15 +168,15 @@ export const ELEMENT_CREATION_POLICY = {
  */
 export function guardInitializationForModeling(
   initialization: RepositoryInitializationState | null | undefined,
-  action: 'create' | 'import' | 'bulk-edit',
+  action: "create" | "import" | "bulk-edit",
 ): InitializationGuard {
-  if (!initialization || initialization.status === 'initialized') {
+  if (!initialization || initialization.status === "initialized") {
     return { ok: true };
   }
 
   const reason =
     initialization.reason ||
-    'Repository is UNINITIALIZED. Initialize the Enterprise root to unlock modeling.';
+    "Repository is UNINITIALIZED. Initialize the Enterprise root to unlock modeling.";
   return {
     ok: false,
     reason,
@@ -186,10 +192,10 @@ export function evaluateModelingAccessWithGovernance(
   _governanceMode: GovernanceMode | null | undefined,
 ): ModelingAccessDecision {
   return {
-    access: 'write',
-    governanceMode: 'Advisory',
-    validation: 'advisory',
-    reason: 'Full access mode — governance restrictions removed.',
+    access: "write",
+    governanceMode: "Advisory",
+    validation: "advisory",
+    reason: "Full access mode — governance restrictions removed.",
   };
 }
 
@@ -206,18 +212,18 @@ export function enforceOrderedPermissionChain(args: {
   if (args.contextLock.locked) {
     return {
       ok: false,
-      failedAt: 'context-lock',
+      failedAt: "context-lock",
       reason:
         args.contextLock.reason ||
-        'Action blocked: context is locked (baseline/plateau/roadmap). All roles are read-only.',
+        "Action blocked: context is locked (baseline/plateau/roadmap). All roles are read-only.",
     };
   }
 
   return {
     ok: true,
-    governanceMode: 'Advisory',
-    validation: 'advisory',
+    governanceMode: "Advisory",
+    validation: "advisory",
     reason:
-      'Full access mode — governance restrictions removed. Only context lock is enforced.',
+      "Full access mode — governance restrictions removed. Only context lock is enforced.",
   };
 }

@@ -10,8 +10,8 @@ import { FormattedMessage, useIntl } from '@umijs/max';
 import { useRequest } from 'ahooks';
 import { Modal } from 'antd';
 import React, { cloneElement, useCallback, useState } from 'react';
-import { updateRule } from '@/services/ant-design-pro/api';
 import { message } from '@/ea/eaConsole';
+import { updateRule } from '@/services/ant-design-pro/api';
 
 export type FormValueType = {
   target?: string;

@@ -71,7 +71,10 @@ export type ImportMappingPolicy = {
   onUnmappedField: Extract<ImportResolutionStrategy, 'reject' | 'ignore'>;
 
   /** Default behavior for missing required target fields. */
-  onMissingRequiredField: Extract<ImportResolutionStrategy, 'reject' | 'ignore'>;
+  onMissingRequiredField: Extract<
+    ImportResolutionStrategy,
+    'reject' | 'ignore'
+  >;
 
   /** Conflict behavior when incoming ids collide with existing ids or within the batch. */
   onIdConflict: ImportIdConflictResolution;
@@ -142,11 +145,19 @@ const sortIssues = (a: ImportMappingIssue, b: ImportMappingIssue) =>
   (a.to ?? '').localeCompare(b.to ?? '') ||
   a.message.localeCompare(b.message);
 
-const sortUnsupportedFields = (a: CanonicalUnsupportedField, b: CanonicalUnsupportedField) =>
-  a.path.localeCompare(b.path) || a.reason.localeCompare(b.reason) || (a.message ?? '').localeCompare(b.message ?? '');
+const sortUnsupportedFields = (
+  a: CanonicalUnsupportedField,
+  b: CanonicalUnsupportedField,
+) =>
+  a.path.localeCompare(b.path) ||
+  a.reason.localeCompare(b.reason) ||
+  (a.message ?? '').localeCompare(b.message ?? '');
 
 const getDeep = (obj: Record<string, unknown>, path: string): unknown => {
-  const parts = (path ?? '').split('.').map((p) => p.trim()).filter(Boolean);
+  const parts = (path ?? '')
+    .split('.')
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length === 0) return undefined;
 
   let current: unknown = obj;
@@ -158,8 +169,15 @@ const getDeep = (obj: Record<string, unknown>, path: string): unknown => {
   return current;
 };
 
-const setDeep = (obj: Record<string, unknown>, path: string, value: unknown) => {
-  const parts = (path ?? '').split('.').map((p) => p.trim()).filter(Boolean);
+const setDeep = (
+  obj: Record<string, unknown>,
+  path: string,
+  value: unknown,
+) => {
+  const parts = (path ?? '')
+    .split('.')
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length === 0) return;
 
   let current: Record<string, unknown> = obj;
@@ -189,7 +207,9 @@ type FlattenedEntry = { path: string; value: unknown };
  * - { owner: { name: 'x' } } => $.owner.name
  * - { tags: ['a','b'] } => $.tags[0], $.tags[1]
  */
-const flattenToJsonPathLeaves = (record: Record<string, unknown>): FlattenedEntry[] => {
+const flattenToJsonPathLeaves = (
+  record: Record<string, unknown>,
+): FlattenedEntry[] => {
   const out: FlattenedEntry[] = [];
 
   const visit = (value: unknown, path: string) => {
@@ -235,12 +255,18 @@ const flattenToJsonPathLeaves = (record: Record<string, unknown>): FlattenedEntr
   return out.sort((a, b) => a.path.localeCompare(b.path));
 };
 
-const getIdConflictSet = (targetKind: ImportTargetKind, existingIds?: ImportMappingResolverInput['existingIds']) => {
-  if (targetKind === 'Relationship') return existingIds?.relationshipIds ?? new Set<string>();
+const getIdConflictSet = (
+  targetKind: ImportTargetKind,
+  existingIds?: ImportMappingResolverInput['existingIds'],
+) => {
+  if (targetKind === 'Relationship')
+    return existingIds?.relationshipIds ?? new Set<string>();
   return existingIds?.elementIds ?? new Set<string>();
 };
 
-const normalizeReason = (reason: CanonicalUnsupportedFieldReason): CanonicalUnsupportedFieldReason => {
+const normalizeReason = (
+  reason: CanonicalUnsupportedFieldReason,
+): CanonicalUnsupportedFieldReason => {
   switch (reason) {
     case 'UNMAPPED':
     case 'UNSUPPORTED':
@@ -318,7 +344,6 @@ export function resolveImportMapping<T extends { id?: unknown }>(
     const leaves = flattenToJsonPathLeaves(record);
 
     for (const { path: fromPath, value } of leaves) {
-
       const rule = ruleByFrom.get(fromPath);
       if (rule) {
         if (rule.strategy === 'ignore') {
@@ -388,8 +413,13 @@ export function resolveImportMapping<T extends { id?: unknown }>(
 
     // Missing required target fields.
     for (const required of plan.requiredTargetFields ?? []) {
-      const v = required.includes('.') ? getDeep(out, required) : (out as any)[required];
-      const missing = v === undefined || v === null || (typeof v === 'string' && v.trim().length === 0);
+      const v = required.includes('.')
+        ? getDeep(out, required)
+        : (out as any)[required];
+      const missing =
+        v === undefined ||
+        v === null ||
+        (typeof v === 'string' && v.trim().length === 0);
       if (!missing) continue;
 
       if (plan.policy.onMissingRequiredField === 'reject') {

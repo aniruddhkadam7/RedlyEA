@@ -5,9 +5,11 @@ import type {
   ReviewSubjectKind,
 } from './ArchitectureReview';
 
-const normalizeId = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown) =>
+  typeof value === 'string' ? value.trim() : '';
 
-const isAllowedKind = (k: string): k is ReviewSubjectKind => k === 'View' || k === 'ImpactAnalysis';
+const isAllowedKind = (k: string): k is ReviewSubjectKind =>
+  k === 'View' || k === 'ImpactAnalysis';
 
 const isAllowedState = (s: string): s is ArchitectureReviewState =>
   s === 'Not Reviewed' || s === 'Reviewed' || s === 'Review Findings Accepted';
@@ -16,7 +18,8 @@ const makeKey = (kind: ReviewSubjectKind, id: string) => `${kind}:${id}`;
 
 const notifyReviewsChanged = () => {
   try {
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('ea:reviewsChanged'));
+    if (typeof window !== 'undefined')
+      window.dispatchEvent(new Event('ea:reviewsChanged'));
   } catch {
     // Best-effort only.
   }
@@ -25,7 +28,10 @@ const notifyReviewsChanged = () => {
 export class ArchitectureReviewStore {
   private readonly byKey = new Map<string, ArchitectureReviewRecord>();
 
-  get(subjectKind: ReviewSubjectKind, subjectId: string): ArchitectureReviewRecord | null {
+  get(
+    subjectKind: ReviewSubjectKind,
+    subjectId: string,
+  ): ArchitectureReviewRecord | null {
     const id = normalizeId(subjectId);
     if (!id) return null;
     return this.byKey.get(makeKey(subjectKind, id)) ?? null;
@@ -53,7 +59,8 @@ export class ArchitectureReviewStore {
     }
 
     const reviewer = normalizeId(args.input.reviewer) || 'unknown';
-    const reviewNotes = typeof args.input.reviewNotes === 'string' ? args.input.reviewNotes : '';
+    const reviewNotes =
+      typeof args.input.reviewNotes === 'string' ? args.input.reviewNotes : '';
 
     const reviewDate = (() => {
       const raw = normalizeId(args.input.reviewDate);

@@ -3,7 +3,7 @@ export class SeededRandom {
 
   constructor(seed: number) {
     // Force into uint32.
-    this.state = (seed >>> 0) || 0x12345678;
+    this.state = seed >>> 0 || 0x12345678;
   }
 
   /** xorshift32 */
@@ -23,7 +23,8 @@ export class SeededRandom {
 
   nextInt(maxExclusive: number): number {
     const m = Math.trunc(maxExclusive);
-    if (!Number.isFinite(m) || m <= 0) throw new Error('nextInt(maxExclusive) requires maxExclusive > 0');
+    if (!Number.isFinite(m) || m <= 0)
+      throw new Error('nextInt(maxExclusive) requires maxExclusive > 0');
     return Math.floor(this.nextFloat() * m);
   }
 

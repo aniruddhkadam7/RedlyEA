@@ -1,4 +1,7 @@
-import type { ImpactAnalysisAuditRecord, ImpactAnalysisParameters } from './ImpactAudit';
+import type {
+  ImpactAnalysisAuditRecord,
+  ImpactAnalysisParameters,
+} from './ImpactAudit';
 
 const normalizeId = (value: string) => (value ?? '').trim();
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -46,7 +49,9 @@ export class ImpactAuditTrail {
         rootElementType: String(run.parameters.rootElementType ?? '').trim(),
         direction: run.parameters.direction,
         maxDepth: Math.max(0, Math.trunc(run.parameters.maxDepth)),
-        includedRelationshipTypes: (run.parameters.includedRelationshipTypes ?? [])
+        includedRelationshipTypes: (
+          run.parameters.includedRelationshipTypes ?? []
+        )
           .map((t) => String(t ?? '').trim())
           .filter((t) => t.length > 0)
           .slice()

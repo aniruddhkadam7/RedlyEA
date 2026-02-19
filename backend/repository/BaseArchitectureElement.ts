@@ -1,4 +1,9 @@
-export type ArchitectureLayer = 'Business' | 'Application' | 'Technology' | 'Implementation & Migration' | 'Governance';
+export type ArchitectureLayer =
+  | 'Business'
+  | 'Application'
+  | 'Technology'
+  | 'Implementation & Migration'
+  | 'Governance';
 
 export type LifecycleStatus = 'Planned' | 'Active' | 'Deprecated' | 'Retired';
 

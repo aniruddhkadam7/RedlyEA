@@ -1,7 +1,11 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 import { telemetry } from '../telemetry/Telemetry';
-import { asDomainError, DomainError, type DomainErrorCode } from './DomainError';
+import {
+  asDomainError,
+  type DomainError,
+  type DomainErrorCode,
+} from './DomainError';
 
 export type PublicApiError = {
   errorId: string;
@@ -36,7 +40,6 @@ const httpStatusFor = (code: DomainErrorCode): number => {
       return 504;
     case 'DATA_INTEGRITY_ERROR':
       return 409;
-    case 'UNKNOWN_ERROR':
     default:
       return 500;
   }
@@ -57,13 +60,15 @@ const publicMessageFor = (err: DomainError): string => {
       return err.message || 'Invalid request.';
     case 'CONCURRENCY_LIMIT':
       return err.message || 'Too many concurrent requests.';
-    case 'UNKNOWN_ERROR':
     default:
       return 'Unexpected error.';
   }
 };
 
-export function mapErrorToApiResponse(err: unknown, context: { operation: string }): {
+export function mapErrorToApiResponse(
+  err: unknown,
+  context: { operation: string },
+): {
   status: number;
   body: ApiErrorResponse;
 } {

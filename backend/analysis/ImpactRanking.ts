@@ -1,5 +1,5 @@
-import type { ImpactSeverityScore } from './ImpactSeverityScore';
 import type { ImpactedElementEvidence } from './ImpactedElementDeriver';
+import type { ImpactSeverityScore } from './ImpactSeverityScore';
 
 export type ImpactRankedElement = {
   elementId: string;
@@ -38,7 +38,9 @@ export class ImpactRanking {
     }
 
     const decorated = (params.evidenceByElement ?? [])
-      .filter((e) => normalizeId(e.elementId) && normalizeId(e.elementId) !== rootId)
+      .filter(
+        (e) => normalizeId(e.elementId) && normalizeId(e.elementId) !== rootId,
+      )
       .map((e, originalIndex) => {
         const elementId = normalizeId(e.elementId);
         const score = scoreByElementId.get(elementId);
@@ -57,13 +59,19 @@ export class ImpactRanking {
       });
 
     decorated.sort((a, b) => {
-      if (a._computedScore !== b._computedScore) return b._computedScore - a._computedScore;
-      if (a._maxDepthObserved !== b._maxDepthObserved) return b._maxDepthObserved - a._maxDepthObserved;
+      if (a._computedScore !== b._computedScore)
+        return b._computedScore - a._computedScore;
+      if (a._maxDepthObserved !== b._maxDepthObserved)
+        return b._maxDepthObserved - a._maxDepthObserved;
       if (a._totalPaths !== b._totalPaths) return b._totalPaths - a._totalPaths;
       return a._originalIndex - b._originalIndex;
     });
 
-    return decorated.map(({ elementId, evidence, score }) => ({ elementId, evidence, score }));
+    return decorated.map(({ elementId, evidence, score }) => ({
+      elementId,
+      evidence,
+      score,
+    }));
   }
 }
 

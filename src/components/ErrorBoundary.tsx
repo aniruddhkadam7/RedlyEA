@@ -1,5 +1,5 @@
-import React from 'react';
 import { Button, Result, Typography } from 'antd';
+import React from 'react';
 
 type ErrorBoundaryProps = {
   children: React.ReactNode;
@@ -18,7 +18,10 @@ type ErrorBoundaryState = {
  * Catches any unhandled error in the component tree below it and renders a
  * recovery UI instead of blanking the entire application.
  */
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -30,7 +33,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     // eslint-disable-next-line no-console
-    console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
+    console.error(
+      '[ErrorBoundary] Uncaught error:',
+      error,
+      info.componentStack,
+    );
   }
 
   private handleReload = () => {
@@ -46,7 +53,15 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f5f5' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            background: '#f5f5f5',
+          }}
+        >
           <Result
             status="error"
             title="Something went wrong"
@@ -64,7 +79,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
               <Typography.Paragraph
                 type="secondary"
                 copyable
-                style={{ maxWidth: 600, margin: '0 auto', fontSize: 12, fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+                style={{
+                  maxWidth: 600,
+                  margin: '0 auto',
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                }}
               >
                 {this.state.error.message}
               </Typography.Paragraph>

@@ -1,0 +1,12 @@
+ignoredBuiltDependencies:
+  - '@scarf/scarf'
+  - core-js
+  - core-js-pure
+  - electron
+  - es5-ext
+  - esbuild
+  - less
+  - lzma-native
+  - puppeteer-core
+  - sharp
+  - unrs-resolver

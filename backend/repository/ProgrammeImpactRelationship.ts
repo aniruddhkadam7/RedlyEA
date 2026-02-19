@@ -4,7 +4,10 @@ export type ImpactType = 'Create' | 'Modify' | 'Retire';
 
 export type ExpectedChangeMagnitude = 'High' | 'Medium' | 'Low';
 
-export type ProgrammeImpactTargetElementType = 'Capability' | 'Application' | 'Technology';
+export type ProgrammeImpactTargetElementType =
+  | 'Capability'
+  | 'Application'
+  | 'Technology';
 
 /**
  * Programme → (Capability | Application | Technology) impact relationship.

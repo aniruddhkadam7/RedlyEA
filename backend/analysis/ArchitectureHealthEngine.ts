@@ -3,11 +3,14 @@ import type { BaseArchitectureElement } from '../repository/BaseArchitectureElem
 import type { RelationshipRepository } from '../repository/RelationshipRepository';
 import type { Technology } from '../repository/Technology';
 
-import type { ValidationFinding, ValidationSeverity } from '../validation/ValidationFinding';
+import type {
+  ValidationFinding,
+  ValidationSeverity,
+} from '../validation/ValidationFinding';
 
 import {
-  deriveHealthTrend,
   type ArchitectureHealthMetrics,
+  deriveHealthTrend,
   type HealthTrend,
 } from './ArchitectureHealthMetrics';
 
@@ -82,7 +85,9 @@ const parseDateMs = (iso: string | undefined): number | null => {
   return Number.isNaN(ms) ? null : ms;
 };
 
-const listAllElements = (repo: ArchitectureRepository): BaseArchitectureElement[] => {
+const listAllElements = (
+  repo: ArchitectureRepository,
+): BaseArchitectureElement[] => {
   // Deterministic order by stable collection sequence + stable sort by id.
   const all = [
     ...repo.getElementsByType('capabilities'),
@@ -91,11 +96,15 @@ const listAllElements = (repo: ArchitectureRepository): BaseArchitectureElement[
     ...repo.getElementsByType('technologies'),
     ...repo.getElementsByType('programmes'),
   ];
-  all.sort((a, b) => a.id.localeCompare(b.id) || a.elementType.localeCompare(b.elementType));
+  all.sort(
+    (a, b) =>
+      a.id.localeCompare(b.id) || a.elementType.localeCompare(b.elementType),
+  );
   return all;
 };
 
-const severityRank = (s: ValidationSeverity): number => (s === 'Error' ? 3 : s === 'Warning' ? 2 : 1);
+const severityRank = (s: ValidationSeverity): number =>
+  s === 'Error' ? 3 : s === 'Warning' ? 2 : 1;
 
 /**
  * ArchitectureHealthEngine
@@ -110,7 +119,10 @@ const severityRank = (s: ValidationSeverity): number => (s === 'Error' ? 3 : s =
  * - No presentation formatting/normalization.
  */
 export class ArchitectureHealthEngine {
-  private readonly historyByScope = new Map<string, ArchitectureHealthSnapshot[]>();
+  private readonly historyByScope = new Map<
+    string,
+    ArchitectureHealthSnapshot[]
+  >();
 
   /** Read-only: returns a shallow copy of the history for the scope. */
   getHistory(scopeKey?: string): ArchitectureHealthSnapshot[] {
@@ -129,7 +141,9 @@ export class ArchitectureHealthEngine {
     this.historyByScope.delete(key);
   }
 
-  evaluate(input: ArchitectureHealthEngineEvaluateInput): ArchitectureHealthSnapshot {
+  evaluate(
+    input: ArchitectureHealthEngineEvaluateInput,
+  ): ArchitectureHealthSnapshot {
     const now = input.now ?? new Date();
     const observedAt = now.toISOString();
     const scopeKey = normalizeScopeKey(input.scopeKey);
@@ -177,7 +191,9 @@ export class ArchitectureHealthEngine {
     // ---- Orphans: elements with zero relationships (incoming+outgoing) ----
     let orphanedElementsCount = 0;
     for (const e of allElements) {
-      const relCount = input.relationships.getRelationshipsForElement(e.id).length;
+      const relCount = input.relationships.getRelationshipsForElement(
+        e.id,
+      ).length;
       if (relCount === 0) orphanedElementsCount += 1;
     }
 
@@ -186,7 +202,8 @@ export class ArchitectureHealthEngine {
     const nowMs = now.getTime();
     let lifecycleRiskCount = 0;
     for (const e of allElements) {
-      const isRiskStatus = e.lifecycleStatus === 'Deprecated' || e.lifecycleStatus === 'Retired';
+      const isRiskStatus =
+        e.lifecycleStatus === 'Deprecated' || e.lifecycleStatus === 'Retired';
       const endMs = parseDateMs(e.lifecycleEndDate);
       const isPastEndDate = endMs !== null && endMs < nowMs;
       if (isRiskStatus || isPastEndDate) lifecycleRiskCount += 1;
@@ -198,9 +215,11 @@ export class ArchitectureHealthEngine {
     for (const tech of input.elements.getElementsByType('technologies')) {
       const supportEndMs = parseDateMs((tech as Technology).supportEndDate);
       const isPastSupportEnd = supportEndMs !== null && supportEndMs < nowMs;
-      const isHighObsolescenceRisk = (tech as Technology).obsolescenceRisk === 'High';
+      const isHighObsolescenceRisk =
+        (tech as Technology).obsolescenceRisk === 'High';
 
-      if (isPastSupportEnd || isHighObsolescenceRisk) technologyObsolescenceCount += 1;
+      if (isPastSupportEnd || isHighObsolescenceRisk)
+        technologyObsolescenceCount += 1;
     }
 
     // ---- Score (explicit weights) ----
@@ -208,18 +227,37 @@ export class ArchitectureHealthEngine {
     // To keep all weighting transparent, we apply weights here, not hidden behind a default.
     const effectiveTotal = Math.max(1, totalElements);
 
-    const errorPenalty = weights.errorPenaltyPoints * (elementsWithErrors / effectiveTotal);
-    const warningPenalty = weights.warningPenaltyPoints * (elementsWithWarnings / effectiveTotal);
-    const orphanPenalty = weights.orphanPenaltyPoints * (orphanedElementsCount / effectiveTotal);
-    const lifecyclePenalty = weights.lifecycleRiskPenaltyPoints * (lifecycleRiskCount / effectiveTotal);
-    const techPenalty = weights.technologyObsolescencePenaltyPoints * (technologyObsolescenceCount / effectiveTotal);
+    const errorPenalty =
+      weights.errorPenaltyPoints * (elementsWithErrors / effectiveTotal);
+    const warningPenalty =
+      weights.warningPenaltyPoints * (elementsWithWarnings / effectiveTotal);
+    const orphanPenalty =
+      weights.orphanPenaltyPoints * (orphanedElementsCount / effectiveTotal);
+    const lifecyclePenalty =
+      weights.lifecycleRiskPenaltyPoints *
+      (lifecycleRiskCount / effectiveTotal);
+    const techPenalty =
+      weights.technologyObsolescencePenaltyPoints *
+      (technologyObsolescenceCount / effectiveTotal);
 
     const scoreFromWeights = Math.round(
-      Math.max(0, Math.min(100, 100 - (errorPenalty + warningPenalty + orphanPenalty + lifecyclePenalty + techPenalty))),
+      Math.max(
+        0,
+        Math.min(
+          100,
+          100 -
+            (errorPenalty +
+              warningPenalty +
+              orphanPenalty +
+              lifecyclePenalty +
+              techPenalty),
+        ),
+      ),
     );
 
     const history = this.historyByScope.get(scopeKey) ?? [];
-    const previous = history.length > 0 ? history[history.length - 1] : undefined;
+    const previous =
+      history.length > 0 ? history[history.length - 1] : undefined;
     const previousScore = previous?.metrics.overallHealthScore;
 
     const stableTrendDelta = input.stableTrendDelta ?? 2;
@@ -235,7 +273,9 @@ export class ArchitectureHealthEngine {
       elementsWithWarnings: toNonNegativeInteger(elementsWithWarnings),
       orphanedElementsCount: toNonNegativeInteger(orphanedElementsCount),
       lifecycleRiskCount: toNonNegativeInteger(lifecycleRiskCount),
-      technologyObsolescenceCount: toNonNegativeInteger(technologyObsolescenceCount),
+      technologyObsolescenceCount: toNonNegativeInteger(
+        technologyObsolescenceCount,
+      ),
       overallHealthScore: scoreFromWeights,
       healthTrend,
     };
@@ -247,14 +287,20 @@ export class ArchitectureHealthEngine {
       weightsUsed: weights,
       stableTrendDelta,
       previousOverallHealthScore: previousScore,
-      deltaFromPrevious: previousScore === undefined ? undefined : scoreFromWeights - previousScore,
+      deltaFromPrevious:
+        previousScore === undefined
+          ? undefined
+          : scoreFromWeights - previousScore,
     };
 
     const nextHistory = [...history, snapshot];
     const maxHistory = input.maxHistory ?? 50;
 
     // Trim oldest snapshots deterministically.
-    const trimmed = maxHistory > 0 && nextHistory.length > maxHistory ? nextHistory.slice(-maxHistory) : nextHistory;
+    const trimmed =
+      maxHistory > 0 && nextHistory.length > maxHistory
+        ? nextHistory.slice(-maxHistory)
+        : nextHistory;
     this.historyByScope.set(scopeKey, trimmed);
 
     return snapshot;

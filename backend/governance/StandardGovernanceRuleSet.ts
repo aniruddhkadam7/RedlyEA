@@ -36,7 +36,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Application' REQUIRE ownerRole, ownerName, owningUnit are non-empty strings",
     severity: 'Warning',
-    rationale: 'Ownership establishes accountability for investment, risk decisions, and change approvals.',
+    rationale:
+      'Ownership establishes accountability for investment, risk decisions, and change approvals.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -51,7 +52,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Application' REQUIRE lifecycleStatus is one of {Planned, Active, Deprecated, Retired}",
     severity: 'Warning',
-    rationale: 'Lifecycle status is required for roadmap planning and reliable impact analysis.',
+    rationale:
+      'Lifecycle status is required for roadmap planning and reliable impact analysis.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -66,7 +68,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Capability' REQUIRE strategicImportance is one of {High, Medium, Low}",
     severity: 'Warning',
-    rationale: 'Strategic importance supports prioritization, investment decisions, and value-stream alignment.',
+    rationale:
+      'Strategic importance supports prioritization, investment decisions, and value-stream alignment.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -83,7 +86,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Relationship WHERE relationshipType IN {'INTEGRATES_WITH'} AND status='Approved' REQUIRE source.lifecycleStatus != 'Retired' AND target.lifecycleStatus != 'Retired'",
     severity: 'Error',
-    rationale: 'Active dependencies on retired items break trust in dependency graphs and invalidate impact conclusions.',
+    rationale:
+      'Active dependencies on retired items break trust in dependency graphs and invalidate impact conclusions.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -99,7 +103,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Relationship WHERE relationshipType='DEPLOYED_ON' AND status='Approved' REQUIRE NOT (target.lifecycleStatus='Deprecated' AND source.lifecycleStatus='Active')",
     severity: 'Error',
-    rationale: 'Hosting active applications on deprecated technology increases operational risk and undermines platform standards.',
+    rationale:
+      'Hosting active applications on deprecated technology increases operational risk and undermines platform standards.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -115,7 +120,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Application' IF lifecycleEndDate is set AND lifecycleEndDate < today THEN flag",
     severity: 'Warning',
-    rationale: 'Past-end-date applications require decision: retire, extend, or migrate to reduce unmanaged risk.',
+    rationale:
+      'Past-end-date applications require decision: retire, extend, or migrate to reduce unmanaged risk.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -130,7 +136,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Technology' IF supportEndDate is set AND supportEndDate < today THEN flag",
     severity: 'Warning',
-    rationale: 'Out-of-support technology increases operational and security risk and should trigger remediation planning.',
+    rationale:
+      'Out-of-support technology increases operational and security risk and should trigger remediation planning.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -140,14 +147,16 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
   // --- Risk ---
   freezeRule({
     ruleId: 'df2c3a6c-0b18-4d6b-9e5c-6a2d7c2a0f3e',
-    ruleName: 'Mission-critical applications with only soft dependencies must be flagged',
+    ruleName:
+      'Mission-critical applications with only soft dependencies must be flagged',
     ruleCategory: 'Risk',
     applicableElementTypes: ['Application'],
     applicableRelationshipTypes: ['INTEGRATES_WITH'],
     ruleExpression:
       "FOR Element WHERE elementType='Application' AND businessCriticality='Mission-Critical' REQUIRE EXISTS outgoing relationshipType IN {'INTEGRATES_WITH'} WITH dependencyStrength='Hard'",
     severity: 'Warning',
-    rationale: 'Mission-critical systems typically require at least one hard dependency classification to reflect operational coupling and impact.',
+    rationale:
+      'Mission-critical systems typically require at least one hard dependency classification to reflect operational coupling and impact.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,
@@ -162,7 +171,8 @@ export const STANDARD_GOVERNANCE_RULE_SET = Object.freeze([
     ruleExpression:
       "FOR Element WHERE elementType='Application' IF technicalDebtLevel='High' AND businessCriticality IN {'Mission-Critical','High'} THEN flag",
     severity: 'Warning',
-    rationale: 'High technical debt in critical applications elevates incident risk and constrains change capacity.',
+    rationale:
+      'High technical debt in critical applications elevates incident risk and constrains change capacity.',
     ownerRole: 'EA Governance Board',
     enabled: true,
     createdAt: BASELINE_CREATED_AT,

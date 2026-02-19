@@ -1,7 +1,7 @@
 import {
   OBJECT_TYPES,
-  RELATIONSHIP_TYPES,
   type ObjectType,
+  RELATIONSHIP_TYPES,
   type RelationshipType,
 } from '@/pages/dependency-view/utils/eaMetaModel';
 
@@ -29,25 +29,33 @@ export type ViewpointId =
 
 const normalizeId = (value: string): string => value.trim().toLowerCase();
 
-const freezeViewpoint = (viewpoint: ViewpointDefinition): ViewpointDefinition => {
+const freezeViewpoint = (
+  viewpoint: ViewpointDefinition,
+): ViewpointDefinition => {
   validateViewpoint(viewpoint);
   return Object.freeze({
     ...viewpoint,
     allowedElementTypes: Object.freeze([...viewpoint.allowedElementTypes]),
-    allowedRelationshipTypes: Object.freeze([...viewpoint.allowedRelationshipTypes]),
+    allowedRelationshipTypes: Object.freeze([
+      ...viewpoint.allowedRelationshipTypes,
+    ]),
   });
 };
 
 const validateViewpoint = (viewpoint: ViewpointDefinition): void => {
   viewpoint.allowedElementTypes.forEach((type) => {
     if (!OBJECT_TYPES.includes(type)) {
-      throw new Error(`Unknown element type in viewpoint ${viewpoint.id}: ${type}`);
+      throw new Error(
+        `Unknown element type in viewpoint ${viewpoint.id}: ${type}`,
+      );
     }
   });
 
   viewpoint.allowedRelationshipTypes.forEach((type) => {
     if (!RELATIONSHIP_TYPES.includes(type)) {
-      throw new Error(`Unknown relationship type in viewpoint ${viewpoint.id}: ${type}`);
+      throw new Error(
+        `Unknown relationship type in viewpoint ${viewpoint.id}: ${type}`,
+      );
     }
   });
 };
@@ -60,7 +68,8 @@ const BUILT_IN_VIEWPOINTS: readonly ViewpointDefinition[] = Object.freeze(
       allowedElementTypes: ['Capability', 'SubCapability'],
       allowedRelationshipTypes: ['COMPOSED_OF', 'DECOMPOSES_TO'],
       defaultLayout: 'dagre',
-      description: 'Hierarchical capability map focused on capability and sub-capability decomposition.',
+      description:
+        'Hierarchical capability map focused on capability and sub-capability decomposition.',
     },
     {
       id: 'application-landscape',
@@ -68,7 +77,8 @@ const BUILT_IN_VIEWPOINTS: readonly ViewpointDefinition[] = Object.freeze(
       allowedElementTypes: ['Application', 'ApplicationService'],
       allowedRelationshipTypes: ['DEPENDS_ON', 'EXPOSES', 'PROVIDED_BY'],
       defaultLayout: 'grid',
-      description: 'Grid layout for application and application-service relationships (dependencies and provision).',
+      description:
+        'Grid layout for application and application-service relationships (dependencies and provision).',
     },
     {
       id: 'technology-landscape',
@@ -76,12 +86,17 @@ const BUILT_IN_VIEWPOINTS: readonly ViewpointDefinition[] = Object.freeze(
       allowedElementTypes: ['Technology'],
       allowedRelationshipTypes: ['CONNECTS_TO'],
       defaultLayout: 'layered',
-      description: 'Layered technology-centric view of connectivity relationships.',
+      description:
+        'Layered technology-centric view of connectivity relationships.',
     },
     {
       id: 'capability-map',
       name: 'Capability Map',
-      allowedElementTypes: ['CapabilityCategory', 'Capability', 'SubCapability'],
+      allowedElementTypes: [
+        'CapabilityCategory',
+        'Capability',
+        'SubCapability',
+      ],
       allowedRelationshipTypes: ['DECOMPOSES_TO', 'COMPOSED_OF'],
       defaultLayout: 'dagre',
       description: 'Hierarchical view of business capabilities and categories.',
@@ -92,7 +107,8 @@ const BUILT_IN_VIEWPOINTS: readonly ViewpointDefinition[] = Object.freeze(
       allowedElementTypes: ['Capability', 'SubCapability', 'Application'],
       allowedRelationshipTypes: ['SUPPORTED_BY'],
       defaultLayout: 'dagre',
-      description: 'Cross-layer alignment from capabilities to the applications that support them.',
+      description:
+        'Cross-layer alignment from capabilities to the applications that support them.',
     },
     {
       id: 'application-dependency',
@@ -100,31 +116,58 @@ const BUILT_IN_VIEWPOINTS: readonly ViewpointDefinition[] = Object.freeze(
       allowedElementTypes: ['Application', 'Technology'],
       allowedRelationshipTypes: ['INTEGRATES_WITH', 'DEPLOYED_ON'],
       defaultLayout: 'elkjs',
-      description: 'Operational view of application-to-application dependencies and deployment.',
+      description:
+        'Operational view of application-to-application dependencies and deployment.',
     },
     {
       id: 'service-traceability',
       name: 'Service Traceability',
-      allowedElementTypes: ['Application', 'ApplicationService', 'BusinessService'],
-      allowedRelationshipTypes: ['EXPOSES', 'PROVIDED_BY', 'SUPPORTS', 'CONSUMES', 'DEPENDS_ON', 'USED_BY'],
+      allowedElementTypes: [
+        'Application',
+        'ApplicationService',
+        'BusinessService',
+      ],
+      allowedRelationshipTypes: [
+        'EXPOSES',
+        'PROVIDED_BY',
+        'SUPPORTS',
+        'CONSUMES',
+        'DEPENDS_ON',
+        'USED_BY',
+      ],
       defaultLayout: 'elkjs',
-      description: 'Traceability across business services, application services, and their dependencies.',
+      description:
+        'Traceability across business services, application services, and their dependencies.',
     },
     {
       id: 'delivery-traceability',
       name: 'Delivery Traceability',
-      allowedElementTypes: ['Programme', 'Project', 'Capability', 'SubCapability', 'Application'],
+      allowedElementTypes: [
+        'Programme',
+        'Project',
+        'Capability',
+        'SubCapability',
+        'Application',
+      ],
       allowedRelationshipTypes: ['DELIVERS', 'IMPACTS', 'IMPLEMENTS'],
       defaultLayout: 'dagre',
-      description: 'Change delivery lineage from programme to project to delivered capabilities and applications.',
+      description:
+        'Change delivery lineage from programme to project to delivered capabilities and applications.',
     },
     {
       id: 'enterprise-ownership',
       name: 'Enterprise Ownership',
-      allowedElementTypes: ['Enterprise', 'Department', 'Capability', 'Application', 'Programme'],
+      allowedElementTypes: [
+        'Enterprise',
+        'Department',
+        'Capability',
+        'Application',
+        'Programme',
+      ],
       allowedRelationshipTypes: ['OWNS', 'HAS'],
       defaultLayout: 'dagre',
-      description: 'Enterprise accountability graph (ownership and department structure).',
+      description:
+        'Enterprise accountability graph (ownership and department structure).',
     },
   ].map((vp) => freezeViewpoint(vp)),
 );
@@ -146,7 +189,7 @@ export class ViewpointRegistry {
   }
 
   static require(viewpointId: string): ViewpointDefinition {
-    const viewpoint = this.get(viewpointId);
+    const viewpoint = ViewpointRegistry.get(viewpointId);
     if (!viewpoint) {
       throw new Error(`Unknown viewpoint: ${viewpointId}`);
     }

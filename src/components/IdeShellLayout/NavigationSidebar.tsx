@@ -53,7 +53,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                 <span className={styles.navigationSidebarIconSlot}>
                   {item.icon ?? null}
                 </span>
-                <span className={styles.navigationSidebarLabel}>{item.label}</span>
+                <span className={styles.navigationSidebarLabel}>
+                  {item.label}
+                </span>
                 {item.actions ? (
                   <span
                     className={styles.navigationSidebarActions}

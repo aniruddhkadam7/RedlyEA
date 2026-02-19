@@ -1,5 +1,5 @@
-import { ViewRepository } from '../ViewRepository';
 import type { ViewDefinition } from '../ViewDefinition';
+import { ViewRepository } from '../ViewRepository';
 
 const makeView = (overrides?: Partial<ViewDefinition>): ViewDefinition => {
   const now = new Date('2026-01-11T00:00:00.000Z').toISOString();

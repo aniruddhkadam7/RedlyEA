@@ -1,14 +1,15 @@
 import type { ArchitectureRepository } from '../repository/ArchitectureRepository';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
-import type { RelationshipRepository } from '../repository/RelationshipRepository';
 import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-
-import type { GovernanceRule } from './GovernanceRule';
+import type { RelationshipRepository } from '../repository/RelationshipRepository';
 import type { ValidationFinding } from '../validation/ValidationFinding';
+import type { GovernanceRule } from './GovernanceRule';
 
-const isBlank = (value: unknown): boolean => typeof value !== 'string' || value.trim().length === 0;
+const isBlank = (value: unknown): boolean =>
+  typeof value !== 'string' || value.trim().length === 0;
 
-const normalizeId = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+const normalizeId = (value: unknown): string =>
+  typeof value === 'string' ? value.trim() : '';
 
 const parseDateMs = (value: unknown): number | null => {
   if (typeof value !== 'string') return null;
@@ -16,9 +17,12 @@ const parseDateMs = (value: unknown): number | null => {
   return Number.isNaN(ms) ? null : ms;
 };
 
-const severityRank = (s: ValidationFinding['severity']): number => (s === 'Error' ? 3 : s === 'Warning' ? 2 : 1);
+const severityRank = (s: ValidationFinding['severity']): number =>
+  s === 'Error' ? 3 : s === 'Warning' ? 2 : 1;
 
-const sortFindingsDeterministically = (findings: ValidationFinding[]): ValidationFinding[] => {
+const sortFindingsDeterministically = (
+  findings: ValidationFinding[],
+): ValidationFinding[] => {
   return findings.sort(
     (a, b) =>
       severityRank(b.severity) - severityRank(a.severity) ||
@@ -29,7 +33,9 @@ const sortFindingsDeterministically = (findings: ValidationFinding[]): Validatio
   );
 };
 
-const listAllElements = (repo: ArchitectureRepository): BaseArchitectureElement[] => {
+const listAllElements = (
+  repo: ArchitectureRepository,
+): BaseArchitectureElement[] => {
   const all = [
     ...repo.getElementsByType('capabilities'),
     ...repo.getElementsByType('businessProcesses'),
@@ -48,7 +54,9 @@ const listAllElements = (repo: ArchitectureRepository): BaseArchitectureElement[
   return all;
 };
 
-const listAllRelationships = (relationships: RelationshipRepository): BaseArchitectureRelationship[] => {
+const listAllRelationships = (
+  relationships: RelationshipRepository,
+): BaseArchitectureRelationship[] => {
   const all = relationships.getAllRelationships();
   all.sort(
     (a, b) =>
@@ -83,7 +91,7 @@ export class GovernanceValidationEngine {
     const detectedAt = now.toISOString();
 
     const rules = [...input.rules]
-      .filter((r) => Boolean(r && r.enabled))
+      .filter((r) => Boolean(r?.enabled))
       .sort((a, b) => a.ruleId.localeCompare(b.ruleId));
 
     const elements = listAllElements(input.elements);
@@ -91,7 +99,9 @@ export class GovernanceValidationEngine {
 
     const findings: ValidationFinding[] = [];
 
-    const addFinding = (f: Omit<ValidationFinding, 'detectedAt' | 'detectedBy'>) => {
+    const addFinding = (
+      f: Omit<ValidationFinding, 'detectedAt' | 'detectedBy'>,
+    ) => {
       findings.push({
         ...f,
         detectedAt,
@@ -113,7 +123,12 @@ export class GovernanceValidationEngine {
         case 'b9f0b0a8-0c0a-4b4b-9c7c-7c7243a6b032': {
           for (const e of elements) {
             if (e.elementType !== 'Application') continue;
-            if (!isBlank(e.ownerRole) && !isBlank(e.ownerName) && !isBlank(e.owningUnit)) continue;
+            if (
+              !isBlank(e.ownerRole) &&
+              !isBlank(e.ownerName) &&
+              !isBlank(e.owningUnit)
+            )
+              continue;
 
             addFinding({
               findingId: `${rule.ruleId}:${e.id}`,
@@ -150,9 +165,15 @@ export class GovernanceValidationEngine {
         case 'c4c0a50a-6f7e-4f3b-9c58-1d9c6d2c6a1f': {
           for (const e of elements) {
             if (e.elementType !== 'Capability') continue;
-            const strategicImportance = (e as unknown as { strategicImportance?: unknown }).strategicImportance;
-            const value = typeof strategicImportance === 'string' ? strategicImportance.trim() : '';
-            if (value === 'High' || value === 'Medium' || value === 'Low') continue;
+            const strategicImportance = (
+              e as unknown as { strategicImportance?: unknown }
+            ).strategicImportance;
+            const value =
+              typeof strategicImportance === 'string'
+                ? strategicImportance.trim()
+                : '';
+            if (value === 'High' || value === 'Medium' || value === 'Low')
+              continue;
 
             addFinding({
               findingId: `${rule.ruleId}:${e.id}`,
@@ -160,7 +181,8 @@ export class GovernanceValidationEngine {
               affectedElementId: e.id,
               affectedElementType: e.elementType,
               severity: rule.severity,
-              message: 'Capability is missing strategicImportance (expected High | Medium | Low).',
+              message:
+                'Capability is missing strategicImportance (expected High | Medium | Low).',
             });
           }
           break;
@@ -202,8 +224,12 @@ export class GovernanceValidationEngine {
             const target = byId.get(normalizeId(rel.targetElementId)) ?? null;
             if (!source || !target) continue;
 
-            const isActiveApp = source.elementType === 'Application' && source.lifecycleStatus === 'Active';
-            const isDeprecatedTech = target.elementType === 'Technology' && target.lifecycleStatus === 'Deprecated';
+            const isActiveApp =
+              source.elementType === 'Application' &&
+              source.lifecycleStatus === 'Active';
+            const isDeprecatedTech =
+              target.elementType === 'Technology' &&
+              target.lifecycleStatus === 'Deprecated';
             if (!isActiveApp || !isDeprecatedTech) continue;
 
             addFinding({
@@ -244,7 +270,9 @@ export class GovernanceValidationEngine {
           const nowMs = now.getTime();
           for (const e of elements) {
             if (e.elementType !== 'Technology') continue;
-            const supportEndDate = (e as unknown as { supportEndDate?: unknown }).supportEndDate;
+            const supportEndDate = (
+              e as unknown as { supportEndDate?: unknown }
+            ).supportEndDate;
             const endMs = parseDateMs(supportEndDate);
             if (endMs === null) continue;
             if (endMs >= nowMs) continue;
@@ -263,9 +291,14 @@ export class GovernanceValidationEngine {
 
         // Mission-critical applications with only soft dependencies must be flagged
         case 'df2c3a6c-0b18-4d6b-9e5c-6a2d7c2a0f3e': {
-          const outgoingDependsOn = relationships.filter((r) => r.relationshipType === 'INTEGRATES_WITH');
+          const outgoingDependsOn = relationships.filter(
+            (r) => r.relationshipType === 'INTEGRATES_WITH',
+          );
 
-          const outgoingByAppId = new Map<string, BaseArchitectureRelationship[]>();
+          const outgoingByAppId = new Map<
+            string,
+            BaseArchitectureRelationship[]
+          >();
           for (const r of outgoingDependsOn) {
             const from = normalizeId(r.sourceElementId);
             if (!from) continue;
@@ -276,14 +309,20 @@ export class GovernanceValidationEngine {
 
           for (const e of elements) {
             if (e.elementType !== 'Application') continue;
-            const criticality = (e as unknown as { businessCriticality?: unknown }).businessCriticality;
+            const criticality = (
+              e as unknown as { businessCriticality?: unknown }
+            ).businessCriticality;
             if (criticality !== 'Mission-Critical') continue;
 
             const deps = outgoingByAppId.get(e.id) ?? [];
             if (deps.length === 0) continue; // "only soft dependencies" implies there are dependencies.
 
             const strengths = deps
-              .map((rel) => (rel as unknown as { dependencyStrength?: unknown }).dependencyStrength)
+              .map(
+                (rel) =>
+                  (rel as unknown as { dependencyStrength?: unknown })
+                    .dependencyStrength,
+              )
               .map((v) => (typeof v === 'string' ? v.trim() : ''))
               .filter((v) => v.length > 0);
 
@@ -296,7 +335,8 @@ export class GovernanceValidationEngine {
               affectedElementId: e.id,
               affectedElementType: e.elementType,
               severity: rule.severity,
-              message: 'Mission-critical application has dependencies but none are classified as Hard (only Soft/unspecified).',
+              message:
+                'Mission-critical application has dependencies but none are classified as Hard (only Soft/unspecified).',
             });
           }
           break;
@@ -307,11 +347,17 @@ export class GovernanceValidationEngine {
           for (const e of elements) {
             if (e.elementType !== 'Application') continue;
 
-            const technicalDebtLevel = (e as unknown as { technicalDebtLevel?: unknown }).technicalDebtLevel;
-            const businessCriticality = (e as unknown as { businessCriticality?: unknown }).businessCriticality;
+            const technicalDebtLevel = (
+              e as unknown as { technicalDebtLevel?: unknown }
+            ).technicalDebtLevel;
+            const businessCriticality = (
+              e as unknown as { businessCriticality?: unknown }
+            ).businessCriticality;
 
             const highDebt = technicalDebtLevel === 'High';
-            const highCriticality = businessCriticality === 'Mission-Critical' || businessCriticality === 'High';
+            const highCriticality =
+              businessCriticality === 'Mission-Critical' ||
+              businessCriticality === 'High';
 
             if (!highDebt || !highCriticality) continue;
 

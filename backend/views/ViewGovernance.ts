@@ -35,15 +35,18 @@ export type ViewGovernanceReport = {
 
 const ENTERPRISE_MAX_VIEW_DEPTH = 6;
 
-const isBlank = (value: unknown): boolean => typeof value !== 'string' || value.trim().length === 0;
+const isBlank = (value: unknown): boolean =>
+  typeof value !== 'string' || value.trim().length === 0;
 
 const increment = (obj: Record<string, number>, key: string) => {
   obj[key] = (obj[key] ?? 0) + 1;
 };
 
-const makeFindingId = (checkId: ViewGovernanceCheckId, subjectId: string) => `${checkId}:${subjectId}`;
+const makeFindingId = (checkId: ViewGovernanceCheckId, subjectId: string) =>
+  `${checkId}:${subjectId}`;
 
-const isRetired = (e: BaseArchitectureElement | null): boolean => Boolean(e && e.lifecycleStatus === 'Retired');
+const isRetired = (e: BaseArchitectureElement | null): boolean =>
+  Boolean(e && e.lifecycleStatus === 'Retired');
 
 /**
  * Passive governance checks for view definitions.
@@ -70,7 +73,8 @@ export function evaluateViewGovernance(
       id: makeFindingId('VIEW_MISSING_DESCRIPTION', view.id),
       checkId: 'VIEW_MISSING_DESCRIPTION',
       severity: 'Warning',
-      message: 'View is missing a description. Add intent/context to support governance and reuse.',
+      message:
+        'View is missing a description. Add intent/context to support governance and reuse.',
       observedAt,
       viewId: view.id,
       viewType: view.viewType,
@@ -81,7 +85,10 @@ export function evaluateViewGovernance(
   }
 
   // 2) Depth exceeds enterprise maximum.
-  if (typeof view.maxDepth === 'number' && view.maxDepth > ENTERPRISE_MAX_VIEW_DEPTH) {
+  if (
+    typeof view.maxDepth === 'number' &&
+    view.maxDepth > ENTERPRISE_MAX_VIEW_DEPTH
+  ) {
     findings.push({
       id: makeFindingId('VIEW_DEPTH_EXCEEDS_MAX', view.id),
       checkId: 'VIEW_DEPTH_EXCEEDS_MAX',
@@ -116,13 +123,19 @@ export function evaluateViewGovernance(
   for (const e of retiredElements) retiredById.set(e.id, e);
 
   const retiredList = Array.from(retiredById.values()).sort(
-    (a, b) => a.elementType.localeCompare(b.elementType) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+    (a, b) =>
+      a.elementType.localeCompare(b.elementType) ||
+      a.name.localeCompare(b.name) ||
+      a.id.localeCompare(b.id),
   );
 
   if (retiredList.length > 0) {
     for (const e of retiredList) {
       findings.push({
-        id: makeFindingId('VIEW_REFERENCES_RETIRED_ELEMENTS', `${view.id}:${e.id}`),
+        id: makeFindingId(
+          'VIEW_REFERENCES_RETIRED_ELEMENTS',
+          `${view.id}:${e.id}`,
+        ),
         checkId: 'VIEW_REFERENCES_RETIRED_ELEMENTS',
         severity: 'Warning',
         message: `View includes a Retired element: ${e.elementType} "${e.name}" (${e.id}).`,
@@ -136,12 +149,16 @@ export function evaluateViewGovernance(
     }
   }
 
-  findings.sort((a, b) =>
-    a.checkId.localeCompare(b.checkId) || a.subjectKind.localeCompare(b.subjectKind) || a.subjectId.localeCompare(b.subjectId),
+  findings.sort(
+    (a, b) =>
+      a.checkId.localeCompare(b.checkId) ||
+      a.subjectKind.localeCompare(b.subjectKind) ||
+      a.subjectId.localeCompare(b.subjectId),
   );
 
   const byCheckId: Partial<Record<ViewGovernanceCheckId, number>> = {};
-  for (const f of findings) increment(byCheckId as Record<string, number>, f.checkId);
+  for (const f of findings)
+    increment(byCheckId as Record<string, number>, f.checkId);
 
   return {
     observedAt,

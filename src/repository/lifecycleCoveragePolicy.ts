@@ -4,7 +4,10 @@ import type { LifecycleCoverage } from './repositoryMetadata';
 
 export type LifecycleState = 'As-Is' | 'To-Be';
 
-const TO_BE_OBJECT_TYPES: ReadonlySet<ObjectType> = new Set(['Programme', 'Project']);
+const TO_BE_OBJECT_TYPES: ReadonlySet<ObjectType> = new Set([
+  'Programme',
+  'Project',
+]);
 
 export const isToBeObjectType = (type: ObjectType): boolean => {
   return TO_BE_OBJECT_TYPES.has(type);

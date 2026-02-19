@@ -14,9 +14,9 @@ import {
   SettingOutlined,
   SunFilled,
   UserOutlined,
-} from '@ant-design/icons';
-import { ProCard } from '@ant-design/pro-components';
-import { history, useLocation, useModel } from '@umijs/max';
+} from "@ant-design/icons";
+import { ProCard } from "@ant-design/pro-components";
+import { history, useLocation, useModel } from "@umijs/max";
 import {
   Alert,
   Avatar,
@@ -24,7 +24,6 @@ import {
   Collapse,
   Descriptions,
   Empty,
-  Input,
   Layout,
   Radio,
   Space,
@@ -33,29 +32,29 @@ import {
   Tooltip,
   Typography,
   theme,
-} from 'antd';
-import React from 'react';
-import { getAnalysisResult } from '@/analysis/analysisResultsStore';
-import CatalogInspectorGrid from '@/components/catalog/CatalogInspectorGrid';
-import EAConsolePanel from '@/components/EAConsole/EAConsolePanel';
-import IdeMenuBar from '@/components/IdeMenuBar/IdeMenuBar';
-import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import { resolveViewScope } from '@/diagram-studio/viewpoints/resolveViewScope';
-import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
-import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
+} from "antd";
+import React from "react";
+import { getAnalysisResult } from "@/analysis/analysisResultsStore";
+import CatalogInspectorGrid from "@/components/catalog/CatalogInspectorGrid";
+import EAConsolePanel from "@/components/EAConsole/EAConsolePanel";
+import IdeMenuBar from "@/components/IdeMenuBar/IdeMenuBar";
+import { ViewStore } from "@/diagram-studio/view-runtime/ViewStore";
+import { resolveViewScope } from "@/diagram-studio/viewpoints/resolveViewScope";
+import type { ViewInstance } from "@/diagram-studio/viewpoints/ViewInstance";
+import { ViewpointRegistry } from "@/diagram-studio/viewpoints/ViewpointRegistry";
 import {
   type DesignWorkspace,
   type DesignWorkspaceLayoutEdge,
   type DesignWorkspaceLayoutNode,
   DesignWorkspaceStore,
-} from '@/ea/DesignWorkspaceStore';
-import { useEaProject } from '@/ea/EaProjectContext';
-import { useEaRepository } from '@/ea/EaRepositoryContext';
-import { message } from '@/ea/eaConsole';
+} from "@/ea/DesignWorkspaceStore";
+import { useEaProject } from "@/ea/EaProjectContext";
+import { useEaRepository } from "@/ea/EaRepositoryContext";
+import { message } from "@/ea/eaConsole";
 // governance removed
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { IDE_COMMAND_EVENT, type IdeCommand } from '@/ide/ideCommands';
-import type { RepositoryRole } from '@/repository/accessControl';
+import { useIdeSelection } from "@/ide/IdeSelectionContext";
+import { IDE_COMMAND_EVENT, type IdeCommand } from "@/ide/ideCommands";
+import type { RepositoryRole } from "@/repository/accessControl";
 import {
   isGapAnalysisAllowedForLifecycleCoverage,
   isRoadmapAllowedForLifecycleCoverage,
@@ -82,30 +81,30 @@ import styles from './style.module.less';
 import ViewDefinitionTab from './ViewDefinitionTab';
 
 type ActivityKey =
-  | 'catalog'
-  | 'explorer'
-  | 'diagrams'
-  | 'analysis'
-  | 'metamodel'
-  | 'settings';
+  | "catalog"
+  | "explorer"
+  | "diagrams"
+  | "analysis"
+  | "metamodel"
+  | "settings";
 
 type TabItem = {
   key: string;
   label: string;
-  kind: 'route' | 'workspace';
+  kind: "route" | "workspace";
   content?: React.ReactNode;
 };
 
-type PanelDock = 'bottom' | 'right';
+type PanelDock = "bottom" | "right";
 
 // Increased for legibility (logo + menu) per user request.
 // NOTE: This intentionally exceeds VS Code's default header height.
 const TOP_MENU_BAR_HEIGHT_WEB = 44;
 const TOP_MENU_BAR_HEIGHT_DESKTOP = 34;
-const DESKTOP_HEADER_BG_LIGHT = '#1b2a55';
-const DESKTOP_HEADER_FG_LIGHT = '#f3f6ff';
-const DESKTOP_HEADER_BG_DARK = '#111827';
-const DESKTOP_HEADER_FG_DARK = '#e5e7eb';
+const DESKTOP_HEADER_BG_LIGHT = "#1b2a55";
+const DESKTOP_HEADER_FG_LIGHT = "#f3f6ff";
+const DESKTOP_HEADER_BG_DARK = "#111827";
+const DESKTOP_HEADER_FG_DARK = "#e5e7eb";
 const STATUS_BAR_HEIGHT = 22;
 const BOTTOM_PALETTE_HEIGHT = 320;
 
@@ -115,25 +114,25 @@ const BOTTOM_PALETTE_HEIGHT = 320;
 const ThemeToggleButton: React.FC = () => {
   const { isDark, toggleTheme } = useAppTheme();
   return (
-    <Tooltip title={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}>
+    <Tooltip title={isDark ? "Switch to Light theme" : "Switch to Dark theme"}>
       <button
         type="button"
         onClick={toggleTheme}
         aria-label="Toggle theme"
         style={
           {
-            WebkitAppRegion: 'no-drag',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 6px',
+            WebkitAppRegion: "no-drag",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: "2px 6px",
             fontSize: 14,
             lineHeight: 1,
-            color: 'inherit',
+            color: "inherit",
             opacity: 0.85,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           } as React.CSSProperties
         }
       >
@@ -161,48 +160,48 @@ const LOGO_INSET = 2;
 
 type OpenWorkspaceTabArgs =
   | {
-      type: 'catalog';
+      type: "catalog";
       catalog: CatalogKind;
     }
   | {
-      type: 'object';
+      type: "object";
       objectId: string;
       objectType: string;
       name: string;
     }
   | {
-      type: 'analysis';
+      type: "analysis";
       kind: AnalysisKind;
     }
   | {
-      type: 'impact-element';
+      type: "impact-element";
       elementId: string;
       elementName: string;
       elementType: string;
     }
   | {
-      type: 'analysisResult';
+      type: "analysisResult";
       resultId: string;
     }
   | {
-      type: 'view';
+      type: "view";
       viewId: string;
     }
   | {
-      type: 'studio-view';
+      type: "studio-view";
       viewId: string;
       readOnly?: boolean;
     }
   | {
-      type: 'baseline';
+      type: "baseline";
       baselineId: string;
     }
   | {
-      type: 'plateau';
+      type: "plateau";
       plateauId: string;
     }
   | {
-      type: 'roadmap';
+      type: "roadmap";
       roadmapId: string;
     }
   | {
@@ -222,7 +221,7 @@ type IdeShellApi = {
   studioMode: boolean;
   requestStudioViewSwitch: (
     viewId: string,
-    opts?: { openMode?: 'new' | 'replace'; readOnly?: boolean },
+    opts?: { openMode?: "new" | "replace"; readOnly?: boolean },
   ) => void;
 };
 
@@ -230,7 +229,7 @@ const IdeShellContext = React.createContext<IdeShellApi | null>(null);
 
 export const useIdeShell = () => {
   const ctx = React.useContext(IdeShellContext);
-  if (!ctx) throw new Error('useIdeShell must be used within IdeShellLayout');
+  if (!ctx) throw new Error("useIdeShell must be used within IdeShellLayout");
   return ctx;
 };
 
@@ -239,35 +238,35 @@ const ACTIVITY_ITEMS: Array<{
   title: string;
   icon: React.ReactNode;
 }> = [
-  { key: 'catalog', title: 'Catalog', icon: <ClusterOutlined /> },
-  { key: 'explorer', title: 'Explorer', icon: <FolderOpenOutlined /> },
-  { key: 'diagrams', title: 'Diagrams', icon: <DeploymentUnitOutlined /> },
-  { key: 'analysis', title: 'Analysis', icon: <FundOutlined /> },
-  { key: 'metamodel', title: 'Metamodel', icon: <NodeIndexOutlined /> },
-  { key: 'settings', title: 'Settings', icon: <SettingOutlined /> },
+  { key: "catalog", title: "Catalog", icon: <ClusterOutlined /> },
+  { key: "explorer", title: "Explorer", icon: <FolderOpenOutlined /> },
+  { key: "diagrams", title: "Diagrams", icon: <DeploymentUnitOutlined /> },
+  { key: "analysis", title: "Analysis", icon: <FundOutlined /> },
+  { key: "metamodel", title: "Metamodel", icon: <NodeIndexOutlined /> },
+  { key: "settings", title: "Settings", icon: <SettingOutlined /> },
 ];
 
 const ROUTE_TITLES: Record<string, string> = {
-  '/applications': 'Applications',
-  '/governance': 'Governance & Assurance',
-  '/impact-analysis': 'Impact Analysis',
-  '/diagrams/application-dependency': 'Application Dependency Views',
-  '/diagrams/application-landscape': 'Application Landscape',
-  '/diagrams/capability-map': 'Capability Map',
-  '/diagrams/application-technology': 'Application Technology',
-  '/diagrams/technology-landscape': 'Technology Landscape',
-  '/views/create': 'Create View',
+  "/applications": "Applications",
+  "/governance": "Governance & Assurance",
+  "/impact-analysis": "Impact Analysis",
+  "/diagrams/application-dependency": "Application Dependency Views",
+  "/diagrams/application-landscape": "Application Landscape",
+  "/diagrams/capability-map": "Capability Map",
+  "/diagrams/application-technology": "Application Technology",
+  "/diagrams/technology-landscape": "Technology Landscape",
+  "/views/create": "Create View",
 };
 
 const titleForPath = (pathname: string) => {
   if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
-  if (pathname === '/' || !pathname) return 'Home';
-  const last = pathname.split('/').filter(Boolean).pop();
-  if (!last) return 'Workspace';
+  if (pathname === "/" || !pathname) return "Home";
+  const last = pathname.split("/").filter(Boolean).pop();
+  if (!last) return "Workspace";
   return last
-    .split('-')
+    .split("-")
     .map((p) => (p ? p[0].toUpperCase() + p.slice(1) : p))
-    .join(' ');
+    .join(" ");
 };
 
 export type IdeShellLayoutProps = {
@@ -285,7 +284,7 @@ const PlaceholderPanel: React.FC<{ title: string; subtitle?: string }> = ({
     <div className={styles.placeholder}>
       <Typography.Text strong>{title}</Typography.Text>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-        {subtitle ?? 'Placeholder panel (no business logic).'}
+        {subtitle ?? "Placeholder panel (no business logic)."}
       </Typography.Paragraph>
     </div>
   );
@@ -295,15 +294,15 @@ const WorkspaceEmptyState: React.FC<{
   title?: string;
   description?: string;
 }> = ({
-  title = 'No content',
-  description = 'Open an item from the Explorer or navigate to a view.',
+  title = "No content",
+  description = "Open an item from the Explorer or navigate to a view.",
 }) => {
   return (
     <div
       style={{
-        height: '100%',
-        display: 'grid',
-        placeItems: 'center',
+        height: "100%",
+        display: "grid",
+        placeItems: "center",
         padding: 24,
       }}
     >
@@ -327,12 +326,12 @@ const createViewWorkspace = (args: {
     repositoryName: args.repositoryName,
     name: args.view.name,
     description: args.view.description,
-    status: args.readOnly ? 'COMMITTED' : 'DRAFT',
+    status: args.readOnly ? "COMMITTED" : "DRAFT",
     createdBy: args.currentUserLabel,
     createdAt: args.view.createdAt ?? now,
     updatedAt: now,
     repositoryUpdatedAt: args.repositoryUpdatedAt,
-    mode: 'ITERATIVE',
+    mode: "ITERATIVE" as const,
     stagedElements: [],
     stagedRelationships: [],
     layout: { nodes: [], edges: [] },
@@ -374,13 +373,13 @@ const StudioViewInspector: React.FC<{ view: ViewInstance }> = ({ view }) => {
     [view],
   );
   const filterEntries = React.useMemo(() => {
-    if (!filters || typeof filters !== 'object')
+    if (!filters || typeof filters !== "object")
       return [] as Array<[string, unknown]>;
     return Object.entries(filters as Record<string, unknown>);
   }, [filters]);
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Typography.Text strong>View metadata</Typography.Text>
       <Descriptions size="small" column={1} bordered>
         <Descriptions.Item label="Name">{view.name}</Descriptions.Item>
@@ -392,16 +391,16 @@ const StudioViewInspector: React.FC<{ view: ViewInstance }> = ({ view }) => {
 
       <Collapse
         ghost
-        defaultActiveKey={['legend', 'filters']}
+        defaultActiveKey={["legend", "filters"]}
         items={[
           {
-            key: 'legend',
-            label: 'Legend',
+            key: "legend",
+            label: "Legend",
             children: (
               <Space
                 direction="vertical"
                 size="small"
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               >
                 <div>
                   <Typography.Text strong>Element types</Typography.Text>
@@ -431,13 +430,13 @@ const StudioViewInspector: React.FC<{ view: ViewInstance }> = ({ view }) => {
             ),
           },
           {
-            key: 'filters',
-            label: 'Filters',
+            key: "filters",
+            label: "Filters",
             children: filterEntries.length ? (
               <Descriptions size="small" column={1} bordered>
                 {filterEntries.map(([key, value]) => (
                   <Descriptions.Item key={key} label={key}>
-                    {typeof value === 'string' ? value : JSON.stringify(value)}
+                    {typeof value === "string" ? value : JSON.stringify(value)}
                   </Descriptions.Item>
                 ))}
               </Descriptions>
@@ -458,12 +457,12 @@ const StudioViewTab: React.FC<{ viewId: string; readOnly?: boolean }> = ({
   readOnly,
 }) => {
   const { metadata } = useEaRepository();
-  const { initialState } = useModel('@@initialState');
-  const repositoryName = metadata?.repositoryName || 'default';
+  const { initialState } = useModel("@@initialState");
+  const repositoryName = metadata?.repositoryName || "default";
   const currentUserLabel =
     initialState?.currentUser?.name ||
     initialState?.currentUser?.userid ||
-    'Unknown user';
+    "Unknown user";
 
   const [view, setView] = React.useState<ViewInstance | null>(
     () => ViewStore.get(viewId) ?? null,
@@ -475,7 +474,7 @@ const StudioViewTab: React.FC<{ viewId: string; readOnly?: boolean }> = ({
             view,
             repositoryName,
             currentUserLabel,
-            repositoryUpdatedAt: metadata?.updatedAt,
+            repositoryUpdatedAt: metadata?.createdAt,
             readOnly,
           })
         : null,
@@ -484,8 +483,8 @@ const StudioViewTab: React.FC<{ viewId: string; readOnly?: boolean }> = ({
   React.useEffect(() => {
     const refresh = () => setView(ViewStore.get(viewId) ?? null);
     refresh();
-    window.addEventListener('ea:viewsChanged', refresh);
-    return () => window.removeEventListener('ea:viewsChanged', refresh);
+    window.addEventListener("ea:viewsChanged", refresh);
+    return () => window.removeEventListener("ea:viewsChanged", refresh);
   }, [viewId]);
 
   React.useEffect(() => {
@@ -496,7 +495,7 @@ const StudioViewTab: React.FC<{ viewId: string; readOnly?: boolean }> = ({
           view,
           repositoryName,
           currentUserLabel,
-          repositoryUpdatedAt: metadata?.updatedAt,
+          repositoryUpdatedAt: metadata?.createdAt,
           readOnly,
         });
       }
@@ -504,10 +503,10 @@ const StudioViewTab: React.FC<{ viewId: string; readOnly?: boolean }> = ({
         ...prev,
         name: view.name,
         description: view.description,
-        status: readOnly ? 'COMMITTED' : 'DRAFT',
+        status: readOnly ? "COMMITTED" : "DRAFT",
       };
     });
-  }, [currentUserLabel, metadata?.updatedAt, readOnly, repositoryName, view]);
+  }, [currentUserLabel, metadata?.createdAt, readOnly, repositoryName, view]);
 
   if (!view || !workspace) {
     return (
@@ -538,12 +537,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const { token } = theme.useToken();
   const { isDark } = useAppTheme();
   const location = useLocation();
-  const pathname = location.pathname || '/';
-  const { initialState } = useModel('@@initialState');
+  const pathname = location.pathname || "/";
+  const { initialState } = useModel("@@initialState");
   const currentUserLabel =
     initialState?.currentUser?.name ||
     initialState?.currentUser?.userid ||
-    'Unknown user';
+    "Unknown user";
   const runtimeEnv = initialState?.runtimeEnv;
   const isDesktop = runtimeEnv?.isDesktop ?? false;
   const topMenuBarHeight = isDesktop
@@ -567,93 +566,93 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   } = useIdeSelection();
   const { project } = useEaProject();
   const { eaRepository, metadata } = useEaRepository();
-  const repositoryName = metadata?.repositoryName || 'default';
-  const userRole: RepositoryRole = 'Owner';
+  const repositoryName = metadata?.repositoryName || "default";
+  const userRole: RepositoryRole = "Owner";
   const canModel = true;
   const canEditView = true;
   const cssVars = React.useMemo(() => {
     const baseVars: Record<string, string> = {
-      '--ide-bg-layout': token.colorBgLayout,
-      '--ide-bg-container': token.colorBgContainer,
-      '--ide-bg-panel': token.colorBgElevated,
-      '--ide-bg-sidebar': token.colorBgContainer,
-      '--ide-border': token.colorBorderSecondary,
-      '--ide-border-subtle': token.colorBorderSecondary,
-      '--ide-header-bg': token.colorBgElevated,
-      '--ide-rail-bg': token.colorFillTertiary,
-      '--ide-control-hover': token.colorFillSecondary,
-      '--ide-resizer-hover': token.colorFillSecondary,
-      '--ide-tab-inactive-bg': token.colorFillTertiary,
-      '--ide-table-header-bg': token.colorFillQuaternary,
-      '--ide-table-header-text': token.colorTextSecondary,
-      '--ide-table-body-text': token.colorText,
-      '--ide-table-meta-text': token.colorTextSecondary,
-      '--ide-rail-icon': token.colorTextSecondary,
-      '--ide-rail-icon-active': token.colorText,
-      '--ide-rail-active-bg': token.colorBgTextHover,
-      '--ide-shadow-subtle': '0 1px 2px rgba(0,0,0,0.04)',
+      "--ide-bg-layout": token.colorBgLayout,
+      "--ide-bg-container": token.colorBgContainer,
+      "--ide-bg-panel": token.colorBgElevated,
+      "--ide-bg-sidebar": token.colorBgContainer,
+      "--ide-border": token.colorBorderSecondary,
+      "--ide-border-subtle": token.colorBorderSecondary,
+      "--ide-header-bg": token.colorBgElevated,
+      "--ide-rail-bg": token.colorFillTertiary,
+      "--ide-control-hover": token.colorFillSecondary,
+      "--ide-resizer-hover": token.colorFillSecondary,
+      "--ide-tab-inactive-bg": token.colorFillTertiary,
+      "--ide-table-header-bg": token.colorFillQuaternary,
+      "--ide-table-header-text": token.colorTextSecondary,
+      "--ide-table-body-text": token.colorText,
+      "--ide-table-meta-text": token.colorTextSecondary,
+      "--ide-rail-icon": token.colorTextSecondary,
+      "--ide-rail-icon-active": token.colorText,
+      "--ide-rail-active-bg": token.colorBgTextHover,
+      "--ide-shadow-subtle": "0 1px 2px rgba(0,0,0,0.04)",
       // Explorer tree visuals must be neutral (no primary blue selection).
       // Use the text hover/active background tokens, which are designed to be subtle and neutral.
-      '--ide-tree-hover-bg': token.colorBgTextHover,
-      '--ide-tree-selected-bg':
+      "--ide-tree-hover-bg": token.colorBgTextHover,
+      "--ide-tree-selected-bg":
         (token as any).colorBgTextActive ?? token.colorBgTextHover,
-      '--ide-tree-text': token.colorText,
-      '--ide-tree-muted': token.colorTextTertiary,
-      '--ide-tree-accent': token.colorTextSecondary,
-      '--ide-tree-line': token.colorBorder,
-      '--ide-tree-icon-folder': token.colorWarning,
-      '--ide-tree-icon-component': token.colorError,
-      '--ide-tree-icon-catalogue': token.colorWarningText,
-      '--ide-tree-icon-matrix': token.colorInfo,
-      '--ide-tree-icon-diagram':
+      "--ide-tree-text": token.colorText,
+      "--ide-tree-muted": token.colorTextTertiary,
+      "--ide-tree-accent": token.colorTextSecondary,
+      "--ide-tree-line": token.colorBorder,
+      "--ide-tree-icon-folder": token.colorWarning,
+      "--ide-tree-icon-component": token.colorError,
+      "--ide-tree-icon-catalogue": token.colorWarningText,
+      "--ide-tree-icon-matrix": token.colorInfo,
+      "--ide-tree-icon-diagram":
         (token as any).colorGeekblue ?? token.colorPrimary,
-      '--ide-tree-icon-connection': token.colorInfo,
-      '--ide-tree-icon-framework': token.colorSuccess,
-      '--ide-tree-icon-metamodel':
+      "--ide-tree-icon-connection": token.colorInfo,
+      "--ide-tree-icon-framework": token.colorSuccess,
+      "--ide-tree-icon-metamodel":
         (token as any).colorGeekblue ?? token.colorPrimary,
-      '--ide-text': token.colorText,
-      '--ide-text-secondary': token.colorTextSecondary,
-      '--ide-text-tertiary': token.colorTextTertiary,
-      '--ide-fill-secondary': token.colorFillSecondary,
-      '--ide-bg-elevated': token.colorBgElevated,
-      '--ide-topbar-height': isDesktop
-        ? 'env(titlebar-area-height, 34px)'
+      "--ide-text": token.colorText,
+      "--ide-text-secondary": token.colorTextSecondary,
+      "--ide-text-tertiary": token.colorTextTertiary,
+      "--ide-fill-secondary": token.colorFillSecondary,
+      "--ide-bg-elevated": token.colorBgElevated,
+      "--ide-topbar-height": isDesktop
+        ? "env(titlebar-area-height, 34px)"
         : `${topMenuBarHeight}px`,
-      '--ide-statusbar-height': `${STATUS_BAR_HEIGHT}px`,
+      "--ide-statusbar-height": `${STATUS_BAR_HEIGHT}px`,
     };
 
     if (!isDark) {
       return {
         ...baseVars,
-        '--ide-bg-layout': '#ffffff',
-        '--ide-bg-container': '#ffffff',
-        '--ide-bg-panel': '#e7ebf1',
-        '--ide-bg-sidebar': '#e7ebf1',
-        '--ide-border': '#e3e6ea',
-        '--ide-border-subtle': '#e8ecf1',
-        '--ide-header-bg': '#ffffff',
-        '--ide-rail-bg': '#1b2a55',
-        '--ide-control-hover': '#eef2f6',
-        '--ide-resizer-hover': '#e8ecf1',
-        '--ide-tab-inactive-bg': '#f3f5f8',
-        '--ide-table-header-bg': '#eef2f6',
-        '--ide-table-header-text': '#344054',
-        '--ide-table-body-text': '#1f2937',
-        '--ide-table-meta-text': '#6b7280',
-        '--ide-rail-icon': '#f3f6ff',
-        '--ide-rail-icon-active': '#ffffff',
-        '--ide-rail-active-bg': '#243a75',
-        '--ide-text': '#1f2937',
-        '--ide-text-secondary': '#6b7280',
-        '--ide-text-tertiary': '#94a3b8',
-        '--ide-tree-icon-folder': '#c9a227',
-        '--ide-tree-icon-component': '#c45151',
-        '--ide-tree-icon-catalogue': '#b88343',
-        '--ide-tree-icon-matrix': '#4d84d6',
-        '--ide-tree-icon-diagram': '#5f7fc9',
-        '--ide-tree-icon-connection': '#3f7ed1',
-        '--ide-tree-icon-framework': '#5a9a74',
-        '--ide-tree-icon-metamodel': '#5f77a8',
+        "--ide-bg-layout": "#ffffff",
+        "--ide-bg-container": "#ffffff",
+        "--ide-bg-panel": "#e7ebf1",
+        "--ide-bg-sidebar": "#e7ebf1",
+        "--ide-border": "#e3e6ea",
+        "--ide-border-subtle": "#e8ecf1",
+        "--ide-header-bg": "#ffffff",
+        "--ide-rail-bg": "#1b2a55",
+        "--ide-control-hover": "#eef2f6",
+        "--ide-resizer-hover": "#e8ecf1",
+        "--ide-tab-inactive-bg": "#f3f5f8",
+        "--ide-table-header-bg": "#eef2f6",
+        "--ide-table-header-text": "#344054",
+        "--ide-table-body-text": "#1f2937",
+        "--ide-table-meta-text": "#6b7280",
+        "--ide-rail-icon": "#f3f6ff",
+        "--ide-rail-icon-active": "#ffffff",
+        "--ide-rail-active-bg": "#243a75",
+        "--ide-text": "#1f2937",
+        "--ide-text-secondary": "#6b7280",
+        "--ide-text-tertiary": "#94a3b8",
+        "--ide-tree-icon-folder": "#c9a227",
+        "--ide-tree-icon-component": "#c45151",
+        "--ide-tree-icon-catalogue": "#b88343",
+        "--ide-tree-icon-matrix": "#4d84d6",
+        "--ide-tree-icon-diagram": "#5f7fc9",
+        "--ide-tree-icon-connection": "#3f7ed1",
+        "--ide-tree-icon-framework": "#5a9a74",
+        "--ide-tree-icon-metamodel": "#5f77a8",
       };
     }
 
@@ -665,14 +664,14 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     return {
       id: generateWorkspaceId(),
       repositoryName,
-      name: 'Untitled Workspace',
-      description: '',
-      status: 'DRAFT',
-      createdBy: currentUserLabel || 'unknown',
+      name: "Untitled Workspace",
+      description: "",
+      status: "DRAFT" as const,
+      createdBy: currentUserLabel || "unknown",
       createdAt: now,
       updatedAt: now,
-      repositoryUpdatedAt: metadata?.updatedAt,
-      mode: 'ITERATIVE',
+      repositoryUpdatedAt: metadata?.createdAt,
+      mode: "ITERATIVE" as const,
       stagedElements: [],
       stagedRelationships: [],
       layout: { nodes: [], edges: [] },
@@ -680,17 +679,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   }, [
     currentUserLabel,
     generateWorkspaceId,
-    metadata?.updatedAt,
+    metadata?.createdAt,
     repositoryName,
   ]);
 
   const triggerCreateView = React.useCallback(() => {
-    window.dispatchEvent(new CustomEvent('ea:studio.view.create'));
+    window.dispatchEvent(new CustomEvent("ea:studio.view.create"));
   }, []);
 
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(() => {
     try {
-      return localStorage.getItem('ide.sidebar.open') !== 'false';
+      return localStorage.getItem("ide.sidebar.open") !== "false";
     } catch {
       return true;
     }
@@ -702,7 +701,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const [bottomPanelOpen, setBottomPanelOpen] = React.useState<boolean>(() => {
     try {
-      return localStorage.getItem('ide.bottom.open') === 'true';
+      return localStorage.getItem("ide.bottom.open") === "true";
     } catch {
       return false;
     }
@@ -713,16 +712,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const [panelDock, setPanelDock] = React.useState<PanelDock>(() => {
     try {
-      const raw = localStorage.getItem('ide.panel.dock');
-      return raw === 'right' ? 'right' : 'bottom';
+      const raw = localStorage.getItem("ide.panel.dock");
+      return raw === "right" ? "right" : "bottom";
     } catch {
-      return 'bottom';
+      return "bottom";
     }
   });
 
   const [rightPanelWidth, setRightPanelWidth] = React.useState<number>(() => {
     try {
-      const raw = Number(localStorage.getItem('ide.panel.right.width'));
+      const raw = Number(localStorage.getItem("ide.panel.right.width"));
       if (
         Number.isFinite(raw) &&
         raw >= RIGHT_PANEL_MIN_WIDTH &&
@@ -737,30 +736,30 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const [activity, setActivity] = React.useState<ActivityKey>(() => {
     try {
-      const raw = localStorage.getItem('ide.activity');
+      const raw = localStorage.getItem("ide.activity");
       const valid = ACTIVITY_ITEMS.some((a) => a.key === raw);
-      const next = (valid ? (raw as ActivityKey) : null) ?? 'explorer';
+      const next = (valid ? (raw as ActivityKey) : null) ?? "explorer";
       // Metamodel is advanced: do not auto-open on app start.
-      return next === 'metamodel' ? 'explorer' : next;
+      return next === "metamodel" ? "explorer" : next;
     } catch {
-      return 'explorer';
+      return "explorer";
     }
   });
   const [tabs, setTabs] = React.useState<TabItem[]>([]);
   const [activeKey, setActiveKey] = React.useState<string | null>(null);
   const [panelMode, setPanelMode] = React.useState<
-    'properties' | 'agent' | 'console'
-  >('properties');
+    "properties" | "agent" | "console"
+  >("properties");
   const [bottomPanelMode, setBottomPanelMode] = React.useState<
-    'inspector' | 'console' | 'agent'
-  >('inspector');
+    "inspector" | "console" | "agent"
+  >("inspector");
   const [studioMode, setStudioMode] = React.useState(false);
   const [activeWorkspace, setActiveWorkspace] =
     React.useState<DesignWorkspace | null>(null);
   const [pendingStudioViewSwitchId, setPendingStudioViewSwitchId] =
     React.useState<string | null>(null);
-  const [viewSwitchMode, setViewSwitchMode] = React.useState<'read' | 'edit'>(
-    canEditView ? 'edit' : 'read',
+  const [viewSwitchMode, setViewSwitchMode] = React.useState<"read" | "edit">(
+    canEditView ? "edit" : "read",
   );
   const [pendingStudioViewOpen, setPendingStudioViewOpen] = React.useState<{
     viewId: string;
@@ -769,9 +768,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   } | null>(null);
   const hierarchyEditingEnabled = React.useMemo(() => {
     if (!activeKey) return true;
-    if (activeKey.startsWith('baseline:')) return false;
-    if (activeKey.startsWith('plateau:')) return false;
-    if (activeKey.startsWith('roadmap:')) return false;
+    if (activeKey.startsWith("baseline:")) return false;
+    if (activeKey.startsWith("plateau:")) return false;
+    if (activeKey.startsWith("roadmap:")) return false;
     return true;
   }, [activeKey]);
 
@@ -782,22 +781,22 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   } | null>(null);
 
   React.useEffect(() => {
-    if (pathname.startsWith('/views/')) return;
+    if (pathname.startsWith("/views/")) return;
     // IDE rule: left panel selections / route changes must not replace the active editor
     // unless the current active editor is a route tab (or there are no tabs yet).
     setTabs((prev) => {
       // If there are no tabs, create an initial route tab so the shell isn't "tab-less" on first load.
       if (prev.length === 0)
         return [
-          { key: pathname, label: titleForPath(pathname), kind: 'route' },
+          { key: pathname, label: titleForPath(pathname), kind: "route" },
         ];
 
       // If the user is currently focused on a route tab, ensure the new route exists.
-      if ((activeKey ?? '').startsWith('/')) {
+      if ((activeKey ?? "").startsWith("/")) {
         if (prev.some((t) => t.key === pathname)) return prev;
         return [
           ...prev,
-          { key: pathname, label: titleForPath(pathname), kind: 'route' },
+          { key: pathname, label: titleForPath(pathname), kind: "route" },
         ];
       }
 
@@ -811,24 +810,24 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         return pathname;
       }
       // Keep active route tab in sync with navigation, but never steal focus from workspace tabs.
-      return prev.startsWith('/') ? pathname : prev;
+      return prev.startsWith("/") ? pathname : prev;
     });
   }, [activeKey, pathname]);
 
   React.useEffect(() => {
     if (!activeKey) {
-      setActiveDocument({ kind: 'workspace', key: '' });
+      setActiveDocument({ kind: "workspace", key: "" });
       return;
     }
 
-    const kind = activeKey.startsWith('/') ? 'route' : 'workspace';
-    const key = kind === 'route' ? pathname : activeKey;
+    const kind = activeKey.startsWith("/") ? "route" : "workspace";
+    const key = kind === "route" ? pathname : activeKey;
     setActiveDocument({ kind, key });
   }, [activeKey, pathname, setActiveDocument]);
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('ide.activity', activity);
+      localStorage.setItem("ide.activity", activity);
     } catch {
       // Best-effort only.
     }
@@ -836,7 +835,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('ide.sidebar.open', sidebarOpen ? 'true' : 'false');
+      localStorage.setItem("ide.sidebar.open", sidebarOpen ? "true" : "false");
     } catch {
       // Best-effort only.
     }
@@ -844,7 +843,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('ide.sidebar.width', String(sidebarWidth));
+      localStorage.setItem("ide.sidebar.width", String(sidebarWidth));
     } catch {
       // Best-effort only.
     }
@@ -853,8 +852,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   React.useEffect(() => {
     try {
       localStorage.setItem(
-        'ide.bottom.open',
-        bottomPanelOpen ? 'true' : 'false',
+        "ide.bottom.open",
+        bottomPanelOpen ? "true" : "false",
       );
     } catch {
       // Best-effort only.
@@ -863,7 +862,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('ide.panel.dock', panelDock);
+      localStorage.setItem("ide.panel.dock", panelDock);
     } catch {
       // Best-effort only.
     }
@@ -871,7 +870,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('ide.panel.right.width', String(rightPanelWidth));
+      localStorage.setItem("ide.panel.right.width", String(rightPanelWidth));
     } catch {
       // Best-effort only.
     }
@@ -880,11 +879,11 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   React.useEffect(() => {
     if (!studioMode) return;
     if (
-      panelMode !== 'properties' &&
-      panelMode !== 'agent' &&
-      panelMode !== 'console'
+      panelMode !== "properties" &&
+      panelMode !== "agent" &&
+      panelMode !== "console"
     )
-      setPanelMode('properties');
+      setPanelMode("properties");
   }, [panelMode, studioMode]);
 
   React.useEffect(() => {
@@ -894,20 +893,20 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   React.useEffect(() => {
     if (!pendingStudioViewSwitchId) return;
-    setViewSwitchMode(canEditView ? 'edit' : 'read');
+    setViewSwitchMode(canEditView ? "edit" : "read");
   }, [canEditView, pendingStudioViewSwitchId]);
   const requestStudioViewSwitch = React.useCallback(
     (
       viewId: string,
-      opts?: { openMode?: 'new' | 'replace'; readOnly?: boolean },
+      opts?: { openMode?: "new" | "replace"; readOnly?: boolean },
     ) => {
       if (!viewId) return;
       if (opts?.openMode) {
         const readOnly =
-          opts?.readOnly ?? (viewSwitchMode === 'read' || !canEditView);
+          opts?.readOnly ?? (viewSwitchMode === "read" || !canEditView);
         try {
           window.dispatchEvent(
-            new CustomEvent('ea:studio.view.open', {
+            new CustomEvent("ea:studio.view.open", {
               detail: { viewId, readOnly, openMode: opts.openMode },
             }),
           );
@@ -917,7 +916,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         return;
       }
       setPendingStudioViewSwitchId(viewId);
-      setViewSwitchMode(canEditView ? 'edit' : 'read');
+      setViewSwitchMode(canEditView ? "edit" : "read");
     },
     [canEditView, viewSwitchMode],
   );
@@ -930,7 +929,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       viewId: pendingStudioViewSwitchId,
       view,
       viewpointName:
-        viewpoint?.name ?? view?.viewpointId ?? 'Unknown viewpoint',
+        viewpoint?.name ?? view?.viewpointId ?? "Unknown viewpoint",
     };
   }, [pendingStudioViewSwitchId]);
 
@@ -939,12 +938,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   }, []);
 
   const openPendingStudioViewSwitch = React.useCallback(
-    (openMode: 'new' | 'replace') => {
+    (openMode: "new" | "replace") => {
       if (!pendingStudioViewSwitchId) return;
-      const readOnly = viewSwitchMode === 'read' || !canEditView;
+      const readOnly = viewSwitchMode === "read" || !canEditView;
       try {
         window.dispatchEvent(
-          new CustomEvent('ea:studio.view.open', {
+          new CustomEvent("ea:studio.view.open", {
             detail: { viewId: pendingStudioViewSwitchId, readOnly, openMode },
           }),
         );
@@ -962,11 +961,11 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     if (list.length > 0) {
       const candidate = list[0];
       const normalized =
-        candidate.mode === 'ITERATIVE'
+        candidate.mode === "ITERATIVE"
           ? candidate
           : {
               ...candidate,
-              mode: 'ITERATIVE' as const,
+              mode: "ITERATIVE" as const,
               updatedAt: new Date().toISOString(),
             };
       if (normalized !== candidate)
@@ -984,7 +983,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       const saved = DesignWorkspaceStore.save(repositoryName, next);
       setActiveWorkspace(saved);
       try {
-        window.dispatchEvent(new Event('ea:workspacesChanged'));
+        window.dispatchEvent(new Event("ea:workspacesChanged"));
       } catch {
         // Best-effort only.
       }
@@ -999,11 +998,11 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       if (list.length > 0) {
         const candidate = list[0];
         const normalized =
-          candidate.mode === 'ITERATIVE'
+          candidate.mode === "ITERATIVE"
             ? candidate
             : {
                 ...candidate,
-                mode: 'ITERATIVE' as const,
+                mode: "ITERATIVE" as const,
                 updatedAt: new Date().toISOString(),
               };
         if (normalized !== candidate)
@@ -1022,100 +1021,100 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     (args: OpenWorkspaceTabArgs) => {
       // Deactivate Studio when opening any non-studio workspace tab.
       // Studio's unmount handler will auto-save the workspace & views.
-      if (args.type !== 'studio-view') {
+      if (args.type !== "studio-view") {
         setStudioMode(false);
         try {
-          window.dispatchEvent(new Event('ea:repositoryChanged'));
-          window.dispatchEvent(new Event('ea:relationshipsChanged'));
-          window.dispatchEvent(new Event('ea:viewsChanged'));
+          window.dispatchEvent(new Event("ea:repositoryChanged"));
+          window.dispatchEvent(new Event("ea:relationshipsChanged"));
+          window.dispatchEvent(new Event("ea:viewsChanged"));
         } catch {
           // Best-effort only.
         }
       }
 
-      if (args.type === 'catalog') {
-        if (metadata?.architectureScope === 'Programme') {
+      if (args.type === "catalog") {
+        if (metadata?.architectureScope === "Programme") {
           const allowed: ReadonlySet<string> = new Set([
-            'programmes',
-            'projects',
-            'capabilities',
-            'applications',
+            "programmes",
+            "projects",
+            "capabilities",
+            "applications",
             // Hidden by default in Explorer, but can be enabled later.
-            'technologies',
-            'infrastructureServices',
+            "technologies",
+            "infrastructureServices",
           ]);
           if (!allowed.has(args.catalog)) {
             message.warning(
-              'Programme scope: only Programmes, Projects, impacted Capabilities, and impacted Applications catalogs are available.',
+              "Programme scope: only Programmes, Projects, impacted Capabilities, and impacted Applications catalogs are available.",
             );
             return;
           }
         }
 
-        if (metadata?.architectureScope === 'Domain') {
+        if (metadata?.architectureScope === "Domain") {
           const allowed: ReadonlySet<string> = new Set([
-            'capabilities',
-            'businessServices',
-            'applications',
-            'applicationServices',
-            'interfaces',
+            "capabilities",
+            "businessServices",
+            "applications",
+            "applicationServices",
+            "interfaces",
           ]);
           if (!allowed.has(args.catalog)) {
             message.warning(
-              'Domain scope is focused: only Capabilities, Business Services, Applications, and Application Services catalogs are available.',
+              "Domain scope is focused: only Capabilities, Business Services, Applications, and Application Services catalogs are available.",
             );
             return;
           }
         }
 
         try {
-          localStorage.setItem('ea.catalogDefined', 'true');
-          window.dispatchEvent(new Event('ea:catalogDefined'));
+          localStorage.setItem("ea.catalogDefined", "true");
+          window.dispatchEvent(new Event("ea:catalogDefined"));
         } catch {
           // Best-effort only.
         }
 
         const governanceKinds: ReadonlySet<string> = new Set([
-          'principles',
-          'requirements',
-          'standards',
+          "principles",
+          "requirements",
+          "standards",
         ]);
         if (governanceKinds.has(args.catalog)) {
           message.warning(
-            'Governance catalogs are not available in the structured catalog yet.',
+            "Governance catalogs are not available in the structured catalog yet.",
           );
           return;
         }
 
         const domain:
-          | 'business'
-          | 'application'
-          | 'data'
-          | 'technology'
-          | 'implementation' = (() => {
+          | "business"
+          | "application"
+          | "data"
+          | "technology"
+          | "implementation" = (() => {
           switch (args.catalog) {
-            case 'enterprises':
-            case 'capabilities':
-            case 'businessServices':
-            case 'processes':
-            case 'departments':
-              return 'business';
-            case 'applications':
-            case 'applicationServices':
-            case 'interfaces':
-              return 'application';
-            case 'programmes':
-            case 'projects':
-              return 'implementation';
-            case 'nodes':
-            case 'compute':
-            case 'runtime':
-            case 'databases':
-            case 'infrastructureServices':
-            case 'technologies':
-              return 'technology';
+            case "enterprises":
+            case "capabilities":
+            case "businessServices":
+            case "processes":
+            case "departments":
+              return "business";
+            case "applications":
+            case "applicationServices":
+            case "interfaces":
+              return "application";
+            case "programmes":
+            case "projects":
+              return "implementation";
+            case "nodes":
+            case "compute":
+            case "runtime":
+            case "databases":
+            case "infrastructureServices":
+            case "technologies":
+              return "technology";
             default:
-              return 'business';
+              return "business";
           }
         })();
 
@@ -1123,10 +1122,10 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         return;
       }
 
-      if (args.type === 'object') {
+      if (args.type === "object") {
         try {
-          localStorage.setItem('ea.catalogDefined', 'true');
-          window.dispatchEvent(new Event('ea:catalogDefined'));
+          localStorage.setItem("ea.catalogDefined", "true");
+          window.dispatchEvent(new Event("ea:catalogDefined"));
         } catch {
           // Best-effort only.
         }
@@ -1143,25 +1142,25 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'analysis') {
+      if (args.type === "analysis") {
         if (
-          metadata?.architectureScope === 'Domain' &&
-          (args.kind === 'roadmap' || args.kind === 'gap')
+          metadata?.architectureScope === "Domain" &&
+          (args.kind === "roadmap" || args.kind === "gap")
         ) {
           message.warning(
-            'Domain scope: Roadmap and Gap Analysis are hidden to keep the workspace focused.',
+            "Domain scope: Roadmap and Gap Analysis are hidden to keep the workspace focused.",
           );
           return;
         }
 
         if (
-          args.kind === 'roadmap' &&
+          args.kind === "roadmap" &&
           !isRoadmapAllowedForLifecycleCoverage(metadata?.lifecycleCoverage)
         ) {
           message.warning(
@@ -1171,7 +1170,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         }
 
         if (
-          args.kind === 'gap' &&
+          args.kind === "gap" &&
           !isGapAnalysisAllowedForLifecycleCoverage(metadata?.lifecycleCoverage)
         ) {
           message.warning(
@@ -1182,24 +1181,24 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         const key = `analysis:${args.kind}`;
         const label =
-          args.kind === 'impact'
-            ? 'Impact Analysis'
-            : args.kind === 'dependency'
-              ? 'Dependency Analysis'
-              : args.kind === 'roadmap'
-                ? 'Roadmap'
-                : 'Gap Analysis';
+          args.kind === "impact"
+            ? "Impact Analysis"
+            : args.kind === "dependency"
+              ? "Dependency Analysis"
+              : args.kind === "roadmap"
+                ? "Roadmap"
+                : "Gap Analysis";
         const content = <AnalysisTab kind={args.kind} />;
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'impact-element') {
+      if (args.type === "impact-element") {
         const key = `impact-element:${args.elementId}`;
         const label = `Impact Analysis - ${args.elementName || args.elementId}`;
         setActiveImpactElement({ id: args.elementId, type: args.elementType });
@@ -1217,17 +1216,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'analysisResult') {
+      if (args.type === "analysisResult") {
         const key = `analysisResult:${args.resultId}`;
         const content = <AnalysisResultTab resultId={args.resultId} />;
 
-        let label = 'Analysis Result';
+        let label = "Analysis Result";
         try {
           const rec = getAnalysisResult(args.resultId);
           if (rec?.title) label = rec.title;
@@ -1237,17 +1236,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'view') {
+      if (args.type === "view") {
         const key = `view:${args.viewId}`;
         const content = <ViewDefinitionTab viewId={args.viewId} />;
 
-        let label = 'View';
+        let label = "View";
         try {
           const view = getViewRepository().getViewById(args.viewId);
           if (view?.name) label = view.name;
@@ -1257,33 +1256,33 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'studio-view') {
+      if (args.type === "studio-view") {
         const sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
         const key = `studio:view:${args.viewId}:${sessionId}`;
         const view = ViewStore.get(args.viewId);
-        const label = view?.name ? `${view.name} (Studio)` : 'Studio View';
+        const label = view?.name ? `${view.name} (Studio)` : "Studio View";
         const content = (
           <StudioViewTab viewId={args.viewId} readOnly={args.readOnly} />
         );
 
         setTabs((prev) => [
           ...prev,
-          { key, label, kind: 'workspace', content },
+          { key, label, kind: "workspace", content },
         ]);
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'baseline') {
+      if (args.type === "baseline") {
         const key = `baseline:${args.baselineId}`;
         const content = <BaselineViewerTab baselineId={args.baselineId} />;
-        let label = 'Baseline';
+        let label = "Baseline";
         try {
           const baseline = getBaselineById(args.baselineId);
           if (baseline?.name) label = baseline.name;
@@ -1293,16 +1292,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'plateau') {
+      if (args.type === "plateau") {
         const key = `plateau:${args.plateauId}`;
         const content = <PlateauViewerTab plateauId={args.plateauId} />;
-        let label = 'Plateau';
+        let label = "Plateau";
         try {
           const plateau = getPlateauById(args.plateauId);
           if (plateau?.name) label = plateau.name;
@@ -1312,16 +1311,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
       }
 
-      if (args.type === 'roadmap') {
+      if (args.type === "roadmap") {
         const key = `roadmap:${args.roadmapId}`;
         const content = <RoadmapViewerTab roadmapId={args.roadmapId} />;
-        let label = 'Roadmap';
+        let label = "Roadmap";
         try {
           const roadmap = getRoadmapById(args.roadmapId);
           if (roadmap?.name) label = roadmap.name;
@@ -1331,7 +1330,20 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
         setTabs((prev) => {
           if (prev.some((t) => t.key === key)) return prev;
-          return [...prev, { key, label, kind: 'workspace', content }];
+          return [...prev, { key, label, kind: "workspace", content }];
+        });
+        setActiveKey(key);
+        return;
+      }
+
+      if (args.type === "model-library") {
+        const key = "model-library";
+        const label = "Model Library";
+        const content = <ModelLibraryTab />;
+
+        setTabs((prev) => {
+          if (prev.some((t) => t.key === key)) return prev;
+          return [...prev, { key, label, kind: "workspace", content }];
         });
         setActiveKey(key);
         return;
@@ -1356,26 +1368,26 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   React.useEffect(() => {
     // One-time startup behavior after creating a repository.
     try {
-      const intent = localStorage.getItem('ea.startup.open.v1');
+      const intent = localStorage.getItem("ea.startup.open.v1");
       if (!intent) return;
       if (!metadata || !project) return;
 
       const intentToCatalog: Partial<Record<string, CatalogKind>> = {
-        'business.enterprises': 'enterprises',
-        'business.capabilities': 'capabilities',
-        'application.applications': 'applications',
-        'implmig.programmes': 'programmes',
+        "business.enterprises": "enterprises",
+        "business.capabilities": "capabilities",
+        "application.applications": "applications",
+        "implmig.programmes": "programmes",
       };
 
       const catalog = intentToCatalog[intent];
       if (!catalog) return;
 
       // Consume intent before opening to prevent loops.
-      localStorage.removeItem('ea.startup.open.v1');
+      localStorage.removeItem("ea.startup.open.v1");
 
-      setActivity('explorer');
-      openWorkspaceTab({ type: 'catalog', catalog });
-      if (pathname !== '/workspace') history.push('/workspace');
+      setActivity("explorer");
+      openWorkspaceTab({ type: "catalog", catalog });
+      if (pathname !== "/workspace") history.push("/workspace");
     } catch {
       // Best-effort only.
     }
@@ -1383,8 +1395,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const openRouteTab = React.useCallback(
     (path: string) => {
-      const key = path || '/';
-      if (key === '/views/create') {
+      const key = path || "/";
+      if (key === "/views/create") {
         triggerCreateView();
         return;
       }
@@ -1393,34 +1405,34 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       // Studio's unmount handler will auto-save the workspace & views.
       setStudioMode(false);
       try {
-        window.dispatchEvent(new Event('ea:repositoryChanged'));
-        window.dispatchEvent(new Event('ea:relationshipsChanged'));
-        window.dispatchEvent(new Event('ea:viewsChanged'));
+        window.dispatchEvent(new Event("ea:repositoryChanged"));
+        window.dispatchEvent(new Event("ea:relationshipsChanged"));
+        window.dispatchEvent(new Event("ea:viewsChanged"));
       } catch {
         // Best-effort only.
       }
 
       setTabs((prev) => {
         if (prev.some((t) => t.key === key)) return prev;
-        return [...prev, { key, label: titleForPath(key), kind: 'route' }];
+        return [...prev, { key, label: titleForPath(key), kind: "route" }];
       });
       setActiveKey(key);
-      if (key.startsWith('/') && key !== pathname) history.push(key);
+      if (key.startsWith("/") && key !== pathname) history.push(key);
     },
     [pathname, triggerCreateView],
   );
 
   React.useEffect(() => {
-    if (!pathname.startsWith('/views/')) return;
+    if (!pathname.startsWith("/views/")) return;
     openRouteTab(pathname);
   }, [openRouteTab, pathname]);
 
   React.useEffect(() => {
     if (!studioMode) return;
-    if (selection.selectedSource !== 'Diagram') return;
+    if (selection.selectedSource !== "Diagram") return;
     if (!selection.selectedElementId || !selection.selectedElementType) return;
-    setPanelDock('bottom');
-    setBottomPanelMode('inspector');
+    setPanelDock("bottom");
+    setBottomPanelMode("inspector");
     setBottomPanelOpen(true);
   }, [
     selection.selectedElementId,
@@ -1449,18 +1461,18 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
           id: targetId,
           type: targetType,
           source: opts?.dock
-            ? 'Explorer'
-            : (selection.selectedSource ?? 'Explorer'),
+            ? "Explorer"
+            : (selection.selectedSource ?? "Explorer"),
         });
       }
       if (studioMode) {
         setPendingStudioViewSwitchId(null);
       }
-      setPanelMode('properties');
-      if (opts?.dock === 'bottom') {
-        setBottomPanelMode('inspector');
+      setPanelMode("properties");
+      if (opts?.dock === "bottom") {
+        setBottomPanelMode("inspector");
       }
-      setPanelDock(opts?.dock ?? 'right');
+      setPanelDock(opts?.dock ?? "right");
       setPropertiesReadOnly(Boolean(opts?.readOnly));
       setBottomPanelOpen(true);
     },
@@ -1491,7 +1503,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         }
 
         setActiveKey(fallback.key);
-        if (fallback.kind === 'route' && fallback.key !== pathname)
+        if (fallback.kind === "route" && fallback.key !== pathname)
           history.push(fallback.key);
         return next;
       });
@@ -1500,33 +1512,33 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   );
 
   const sidebarTitleText =
-    ACTIVITY_ITEMS.find((a) => a.key === activity)?.title ?? 'Repository';
+    ACTIVITY_ITEMS.find((a) => a.key === activity)?.title ?? "Repository";
   const studioEntryDisabled = React.useMemo(() => {
     if (!activeKey) return false;
     return (
-      activeKey.startsWith('baseline:') ||
-      activeKey.startsWith('plateau:') ||
-      activeKey.startsWith('roadmap:')
+      activeKey.startsWith("baseline:") ||
+      activeKey.startsWith("plateau:") ||
+      activeKey.startsWith("roadmap:")
     );
   }, [activeKey]);
   const canEnterStudio = React.useCallback(() => {
     if (!eaRepository || !metadata) {
       message.warning(
-        'No repository loaded. Create or open a repository first.',
+        "No repository loaded. Create or open a repository first.",
       );
       return false;
     }
 
     if (studioEntryDisabled) {
       message.warning(
-        'Architecture Studio is unavailable in Baseline / Roadmap / Plateau context.',
+        "Architecture Studio is unavailable in Baseline / Roadmap / Plateau context.",
       );
       return false;
     }
 
     if (!canModel) {
       message.error(
-        'Repository is read-only for your role. Modeling is not allowed.',
+        "Repository is read-only for your role. Modeling is not allowed.",
       );
       return false;
     }
@@ -1554,14 +1566,14 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       const next: DesignWorkspace = {
         id: detail.id ?? generateWorkspaceId(),
         repositoryName,
-        name: (detail.name ?? '').trim() || 'Untitled Workspace',
-        description: detail.description ?? '',
-        status: 'DRAFT',
-        createdBy: currentUserLabel || 'unknown',
+        name: (detail.name ?? "").trim() || "Untitled Workspace",
+        description: detail.description ?? "",
+        status: "DRAFT" as const,
+        createdBy: currentUserLabel || "unknown",
         createdAt: now,
         updatedAt: now,
-        repositoryUpdatedAt: metadata?.updatedAt,
-        mode: 'ITERATIVE',
+        repositoryUpdatedAt: metadata?.createdAt,
+        mode: "ITERATIVE" as const,
         stagedElements: [],
         stagedRelationships: [],
         layout: {
@@ -1573,20 +1585,20 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       DesignWorkspaceStore.save(repositoryName, next);
       setActiveWorkspace(next);
       setStudioMode(true);
-      setPanelMode('properties');
+      setPanelMode("properties");
     };
 
-    window.addEventListener('ea:studio.open', onStudioOpen as EventListener);
+    window.addEventListener("ea:studio.open", onStudioOpen as EventListener);
     return () =>
       window.removeEventListener(
-        'ea:studio.open',
+        "ea:studio.open",
         onStudioOpen as EventListener,
       );
   }, [
     canEnterStudio,
     currentUserLabel,
     generateWorkspaceId,
-    metadata?.updatedAt,
+    metadata?.createdAt,
     repositoryName,
   ]);
 
@@ -1599,12 +1611,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         replay?: boolean;
       }>;
       if (e.detail?.replay) return;
-      const viewId = (e.detail?.viewId ?? e.detail?.view?.id ?? '').trim();
+      const viewId = (e.detail?.viewId ?? e.detail?.view?.id ?? "").trim();
       if (!viewId) return;
       if (!canEnterStudio()) return;
       if (studioMode) return;
       setStudioMode(true);
-      setPanelMode('properties');
+      setPanelMode("properties");
       setPropertiesReadOnly(false);
       setPendingStudioViewOpen({
         viewId,
@@ -1614,12 +1626,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     };
 
     window.addEventListener(
-      'ea:studio.view.open',
+      "ea:studio.view.open",
       onStudioViewOpen as EventListener,
     );
     return () =>
       window.removeEventListener(
-        'ea:studio.view.open',
+        "ea:studio.view.open",
         onStudioViewOpen as EventListener,
       );
   }, [
@@ -1639,7 +1651,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         view,
         repositoryName,
         currentUserLabel,
-        repositoryUpdatedAt: metadata?.updatedAt,
+        repositoryUpdatedAt: metadata?.createdAt,
         readOnly,
       });
       DesignWorkspaceStore.save(repositoryName, nextWorkspace);
@@ -1648,12 +1660,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     setPendingStudioViewOpen(null);
     try {
       window.dispatchEvent(
-        new CustomEvent('ea:studio.view.open', {
+        new CustomEvent("ea:studio.view.open", {
           detail: {
             viewId,
             view,
             readOnly,
-            openMode: 'new',
+            openMode: "new",
             replay: true,
           },
         }),
@@ -1663,15 +1675,15 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     }
   }, [
     currentUserLabel,
-    metadata?.updatedAt,
+    metadata?.createdAt,
     pendingStudioViewOpen,
     repositoryName,
     studioMode,
   ]);
   const sidebarTitleNode: React.ReactNode =
-    activity === 'metamodel' ? (
-      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
-        <span style={{ fontStyle: 'italic' }}>{sidebarTitleText}</span>
+    activity === "metamodel" ? (
+      <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontStyle: "italic" }}>{sidebarTitleText}</span>
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
           Advanced
         </Typography.Text>
@@ -1684,21 +1696,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     (i) => i.key === activity,
   )
     ? activity
-    : 'explorer';
+    : "explorer";
   const catalogBody = sidebars?.catalog ?? (
-    <div style={{ display: 'grid', gap: 8, padding: 12 }}>
+    <div style={{ display: "grid", gap: 8, padding: 12 }}>
       <Typography.Text type="secondary">Catalog domains</Typography.Text>
-      <Button onClick={() => openRouteTab('/catalog/business')}>
+      <Button onClick={() => openRouteTab("/catalog/business")}>
         Business
       </Button>
-      <Button onClick={() => openRouteTab('/catalog/application')}>
+      <Button onClick={() => openRouteTab("/catalog/application")}>
         Application
       </Button>
-      <Button onClick={() => openRouteTab('/catalog/data')}>Data</Button>
-      <Button onClick={() => openRouteTab('/catalog/technology')}>
+      <Button onClick={() => openRouteTab("/catalog/data")}>Data</Button>
+      <Button onClick={() => openRouteTab("/catalog/technology")}>
         Technology
       </Button>
-      <Button onClick={() => openRouteTab('/catalog/implementation')}>
+      <Button onClick={() => openRouteTab("/catalog/implementation")}>
         Implementation
       </Button>
     </div>
@@ -1720,15 +1732,15 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   );
 
   const sidebarBody =
-    activeSidebarKey === 'catalog' ? (
+    activeSidebarKey === "catalog" ? (
       <div className={styles.sidebarPanelSection}>{catalogBody}</div>
-    ) : activeSidebarKey === 'explorer' ? (
+    ) : activeSidebarKey === "explorer" ? (
       <div className={styles.sidebarPanelSectionExplorer}>{explorerBody}</div>
-    ) : activeSidebarKey === 'diagrams' ? (
+    ) : activeSidebarKey === "diagrams" ? (
       <div className={styles.sidebarPanelSection}>{diagramsBody}</div>
-    ) : activeSidebarKey === 'analysis' ? (
+    ) : activeSidebarKey === "analysis" ? (
       <div className={styles.sidebarPanelSection}>{analysisBody}</div>
-    ) : activeSidebarKey === 'metamodel' ? (
+    ) : activeSidebarKey === "metamodel" ? (
       <div className={styles.sidebarPanelSection}>{metamodelBody}</div>
     ) : (
       <div className={styles.sidebarPanelSection}>{settingsBody}</div>
@@ -1737,10 +1749,10 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const shouldRenderDesktopHeader = isDesktop;
   const shouldRenderWebHeader = !isDesktop;
   const statusBarText = project?.name
-    ? `Project: ${project.name}${metadata?.repositoryName ? ` • Repository: ${metadata.repositoryName}` : ''}`
+    ? `Project: ${project.name}${metadata?.repositoryName ? ` • Repository: ${metadata.repositoryName}` : ""}`
     : metadata?.repositoryName
       ? `Repository: ${metadata.repositoryName}`
-      : 'No project/repository loaded';
+      : "No project/repository loaded";
 
   React.useEffect(() => {
     if (!isDesktop) return;
@@ -1757,12 +1769,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   React.useEffect(() => {
     if (shouldRenderDesktopHeader && shouldRenderWebHeader) {
       console.warn(
-        '[IDE] Header sanity check failed: both desktop and web headers are set to render.',
+        "[IDE] Header sanity check failed: both desktop and web headers are set to render.",
       );
     }
     if (!isDesktop && !shouldRenderWebHeader) {
       console.warn(
-        '[IDE] Header sanity check failed: web runtime has no custom header.',
+        "[IDE] Header sanity check failed: web runtime has no custom header.",
       );
     }
   }, [isDesktop, shouldRenderDesktopHeader, shouldRenderWebHeader]);
@@ -1770,21 +1782,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const headerContent = (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        height: '100%',
-        width: '100%',
+        display: "flex",
+        alignItems: "center",
+        height: "100%",
+        width: "100%",
         minWidth: 0,
       }}
     >
       <div
         style={{
           width: activityBarWidth,
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRight: 'none',
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRight: "none",
         }}
       >
         <Tooltip title="Home" placement="bottom">
@@ -1792,14 +1804,14 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
             type="text"
             className={styles.logoButton}
             aria-label="Go to Home"
-            onClick={() => openRouteTab('/')}
+            onClick={() => openRouteTab("/")}
             style={{
               width: logoSize,
               height: logoSize,
               padding: 0,
               borderRadius: 8,
-              display: 'grid',
-              placeItems: 'center',
+              display: "grid",
+              placeItems: "center",
             }}
           >
             <Avatar
@@ -1809,7 +1821,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               alt="Logo"
               size={logoSize}
               style={{
-                background: 'transparent',
+                background: "transparent",
                 borderRadius: 6,
               }}
             />
@@ -1821,21 +1833,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         style={{
           flex: 1,
           minHeight: 0,
-          overflow: 'hidden',
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
-          width: '100%',
+          overflow: "hidden",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          width: "100%",
         }}
       >
-        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ minWidth: 0, overflow: "hidden" }}>
           <IdeMenuBar />
         </div>
         <div
           style={{
             paddingInline: 8,
-            display: 'flex',
-            justifyContent: 'center',
+            display: "flex",
+            justifyContent: "center",
           }}
         >
           <div className={styles.headerSearchWrap}>
@@ -1853,11 +1865,11 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         <div
           style={{
             paddingInline: 10,
-            display: 'flex',
-            justifyContent: 'flex-end',
+            display: "flex",
+            justifyContent: "flex-end",
             gap: 8,
             minWidth: 0,
-            alignItems: 'center',
+            alignItems: "center",
           }}
         >
           <ThemeToggleButton />
@@ -1877,17 +1889,17 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     try {
       const keys = Object.keys(localStorage);
       for (const k of keys) {
-        if (k.startsWith('ide.')) localStorage.removeItem(k);
+        if (k.startsWith("ide.")) localStorage.removeItem(k);
       }
     } catch {
       // Best-effort.
     }
 
     setSidebarOpen(true);
-    setActivity('explorer');
+    setActivity("explorer");
     setSidebarWidth(280);
     setBottomPanelOpen(false);
-    setPanelDock('bottom');
+    setPanelDock("bottom");
     setRightPanelWidth(RIGHT_PANEL_DEFAULT_WIDTH);
   }, []);
 
@@ -1908,7 +1920,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   );
 
   const resetTabs = React.useCallback(() => {
-    setTabs([{ key: pathname, label: titleForPath(pathname), kind: 'route' }]);
+    setTabs([{ key: pathname, label: titleForPath(pathname), kind: "route" }]);
     setActiveKey(pathname);
   }, [pathname]);
 
@@ -1918,28 +1930,28 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       const cmd = e.detail;
       if (!cmd) return;
 
-      if (cmd.type === 'view.toggleSidebar') {
+      if (cmd.type === "view.toggleSidebar") {
         setSidebarOpen((v) => !v);
         return;
       }
 
-      if (cmd.type === 'view.showActivity') {
+      if (cmd.type === "view.showActivity") {
         setActivity(cmd.activity as ActivityKey);
         setSidebarOpen(true);
         return;
       }
 
-      if (cmd.type === 'view.toggleBottomPanel') {
+      if (cmd.type === "view.toggleBottomPanel") {
         setBottomPanelOpen((v) => !v);
         return;
       }
 
-      if (cmd.type === 'view.resetLayout') {
+      if (cmd.type === "view.resetLayout") {
         resetLayout();
         return;
       }
 
-      if (cmd.type === 'view.fullscreen.toggle') {
+      if (cmd.type === "view.fullscreen.toggle") {
         const doc = document as any;
         const isFs = Boolean(doc.fullscreenElement);
 
@@ -1974,22 +1986,22 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         return;
       }
 
-      if (cmd.type === 'navigation.openRoute') {
+      if (cmd.type === "navigation.openRoute") {
         openRouteTab(cmd.path);
         return;
       }
 
-      if (cmd.type === 'navigation.openWorkspace') {
+      if (cmd.type === "navigation.openWorkspace") {
         openWorkspaceTab(cmd.args);
         return;
       }
 
-      if (cmd.type === 'workspace.closeMatchingTabs') {
+      if (cmd.type === "workspace.closeMatchingTabs") {
         closeMatchingTabs(cmd.prefix);
         return;
       }
 
-      if (cmd.type === 'workspace.resetTabs') {
+      if (cmd.type === "workspace.resetTabs") {
         resetTabs();
         return;
       }
@@ -2021,12 +2033,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     };
 
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
 
   const beginBottomResize: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -2041,12 +2053,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     };
 
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
 
   const beginRightResize: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -2064,12 +2076,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
     };
 
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
 
   const ctxValue = React.useMemo<IdeShellApi>(
@@ -2100,8 +2112,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
   const activeElementName = React.useMemo(() => {
     const raw = (activeElement?.attributes as any)?.name;
-    if (typeof raw === 'string' && raw.trim()) return raw.trim();
-    return activeElement?.id ?? activeElementId ?? '';
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    return activeElement?.id ?? activeElementId ?? "";
   }, [activeElement?.attributes, activeElement?.id, activeElementId]);
 
   const renderPanelBody = React.useCallback(() => {
@@ -2122,16 +2134,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
     return (
       <div
-        className={`${styles.bottomPanelBody} ${panelMode === 'properties' ? styles.bottomPanelBodyStatic : ''}`}
+        className={`${styles.bottomPanelBody} ${panelMode === "properties" ? styles.bottomPanelBodyStatic : ""}`}
       >
         <div
           className={styles.bottomPanelScrollable}
-          style={{ display: panelMode === 'console' ? 'block' : 'none' }}
+          style={{ display: panelMode === "console" ? "block" : "none" }}
         >
           <EAConsolePanel />
         </div>
-        {panelMode === 'properties' ? propertiesBody : null}
-        {panelMode === 'agent' ? <ArchitectureAgentPanel /> : null}
+        {panelMode === "properties" ? propertiesBody : null}
+        {panelMode === "agent" ? <ArchitectureAgentPanel /> : null}
       </div>
     );
   }, [
@@ -2143,13 +2155,13 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   ]);
 
   const renderBottomPaletteContent = React.useCallback(() => {
-    if (bottomPanelMode === 'console') return <EAConsolePanel />;
-    if (bottomPanelMode === 'agent') return <ArchitectureAgentPanel />;
+    if (bottomPanelMode === "console") return <EAConsolePanel />;
+    if (bottomPanelMode === "agent") return <ArchitectureAgentPanel />;
     return <CatalogInspectorGrid />;
   }, [bottomPanelMode]);
 
   const renderStudioPanelBody = React.useCallback(() => {
-    if (panelMode === 'properties') {
+    if (panelMode === "properties") {
       if (!activeElementId || !activeElementType) {
         return (
           <WorkspaceEmptyState
@@ -2180,9 +2192,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const exitStudioMode = React.useCallback(() => {
     setStudioMode(false);
     try {
-      window.dispatchEvent(new Event('ea:repositoryChanged'));
-      window.dispatchEvent(new Event('ea:relationshipsChanged'));
-      window.dispatchEvent(new Event('ea:viewsChanged'));
+      window.dispatchEvent(new Event("ea:repositoryChanged"));
+      window.dispatchEvent(new Event("ea:relationshipsChanged"));
+      window.dispatchEvent(new Event("ea:viewsChanged"));
     } catch {
       // Best-effort only.
     }
@@ -2198,21 +2210,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         <CreateViewController />
         <Layout
           className={styles.layoutRoot}
-          style={{ background: 'var(--ide-bg-layout)' }}
+          style={{ background: "var(--ide-bg-layout)" }}
         >
           {shouldRenderDesktopHeader ? (
             <div
               className={`${styles.topHeader} ${styles.titleBar}`}
               style={{
-                height: 'var(--ide-topbar-height)',
-                lineHeight: 'var(--ide-topbar-height)',
+                height: "var(--ide-topbar-height)",
+                lineHeight: "var(--ide-topbar-height)",
                 paddingInline: 0,
                 paddingBlock: 0,
                 background: token.colorBgElevated,
-                borderBottom: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                minHeight: 'var(--ide-topbar-height)',
+                borderBottom: "none",
+                display: "flex",
+                alignItems: "center",
+                minHeight: "var(--ide-topbar-height)",
               }}
             >
               {headerContent}
@@ -2221,15 +2233,15 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
             <Layout.Header
               className={styles.topHeader}
               style={{
-                height: 'var(--ide-topbar-height)',
-                lineHeight: 'var(--ide-topbar-height)',
+                height: "var(--ide-topbar-height)",
+                lineHeight: "var(--ide-topbar-height)",
                 paddingInline: 0,
                 paddingBlock: 0,
                 background: token.colorBgElevated,
-                borderBottom: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                minHeight: 'var(--ide-topbar-height)',
+                borderBottom: "none",
+                display: "flex",
+                alignItems: "center",
+                minHeight: "var(--ide-topbar-height)",
               }}
             >
               {headerContent}
@@ -2238,7 +2250,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
           <Layout
             className={styles.mainRow}
-            style={{ background: 'var(--ide-bg-layout)' }}
+            style={{ background: "var(--ide-bg-layout)" }}
           >
             <Layout.Sider
               className={styles.activitySider}
@@ -2248,26 +2260,26 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               trigger={null}
               collapsible={false}
               style={{
-                background: 'var(--ide-bg-sidebar)',
-                borderRight: '1px solid var(--ide-border)',
+                background: "var(--ide-bg-sidebar)",
+                borderRight: "1px solid var(--ide-border)",
               }}
             >
               <div
                 style={{
-                  height: '100%',
+                  height: "100%",
                   minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   paddingBlock: isDesktop ? 4 : token.paddingXXS,
                   gap: isDesktop ? 6 : 9,
                 }}
               >
                 <div
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
                     gap: isDesktop ? 6 : 9,
                   }}
                 >
@@ -2275,8 +2287,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                     <Tooltip
                       title={
                         studioEntryDisabled
-                          ? 'Architecture Studio unavailable in Baseline / Roadmap / Plateau.'
-                          : 'Architecture Studio'
+                          ? "Architecture Studio unavailable in Baseline / Roadmap / Plateau."
+                          : "Architecture Studio"
                       }
                       placement="right"
                     >
@@ -2288,7 +2300,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                         onClick={() => {
                           if (!canEnterStudio()) return;
                           setStudioMode(true);
-                          setPanelMode('properties');
+                          setPanelMode("properties");
                           setPropertiesReadOnly(false);
                         }}
                         style={{
@@ -2300,7 +2312,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                             : token.colorTextSecondary,
                           border: studioMode
                             ? `1px solid ${token.colorWarning}`
-                            : '1px solid transparent',
+                            : "1px solid transparent",
                         }}
                         icon={
                           <BuildOutlined
@@ -2310,7 +2322,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                       />
                     </Tooltip>
                   ) : null}
-                  {ACTIVITY_ITEMS.filter((i) => i.key !== 'settings').map(
+                  {ACTIVITY_ITEMS.filter((i) => i.key !== "settings").map(
                     (item) => {
                       const selected = item.key === activity;
                       return (
@@ -2333,10 +2345,10 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                               }
                               setActivity(item.key);
                               if (
-                                item.key === 'catalog' &&
-                                !pathname.startsWith('/catalog')
+                                item.key === "catalog" &&
+                                !pathname.startsWith("/catalog")
                               ) {
-                                openRouteTab('/catalog/business');
+                                openRouteTab("/catalog/business");
                               }
                               setSidebarOpen(true);
                             }}
@@ -2347,16 +2359,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                     width: activityHitSize,
                                     height: activityHitSize,
                                     minWidth: activityHitSize,
-                                    background: 'var(--ide-rail-active-bg)',
-                                    color: 'var(--ide-rail-icon-active)',
-                                    border: '1px solid var(--ide-border)',
+                                    background: "var(--ide-rail-active-bg)",
+                                    color: "var(--ide-rail-icon-active)",
+                                    border: "1px solid var(--ide-border)",
                                   }
                                 : {
                                     width: activityHitSize,
                                     height: activityHitSize,
                                     minWidth: activityHitSize,
-                                    color: 'var(--ide-rail-icon)',
-                                    border: '1px solid transparent',
+                                    color: "var(--ide-rail-icon)",
+                                    border: "1px solid transparent",
                                   }
                             }
                             icon={React.cloneElement(item.icon as any, {
@@ -2371,10 +2383,10 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
                 <div
                   style={{
-                    marginTop: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    marginTop: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
                     gap: isDesktop ? 6 : 9,
                   }}
                 >
@@ -2387,8 +2399,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                         height: activityHitSize,
                         minWidth: activityHitSize,
                         padding: 0,
-                        display: 'grid',
-                        placeItems: 'center',
+                        display: "grid",
+                        placeItems: "center",
                       }}
                     >
                       <Avatar
@@ -2403,7 +2415,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   </Tooltip>
 
                   {(() => {
-                    const selected = activity === 'settings';
+                    const selected = activity === "settings";
                     return (
                       <Tooltip title="Settings" placement="right">
                         <Button
@@ -2418,7 +2430,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                               setSidebarOpen((v) => !v);
                               return;
                             }
-                            setActivity('settings');
+                            setActivity("settings");
                             setSidebarOpen(true);
                           }}
                           aria-label="Settings"
@@ -2428,16 +2440,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                   width: activityHitSize,
                                   height: activityHitSize,
                                   minWidth: activityHitSize,
-                                  background: 'var(--ide-rail-active-bg)',
-                                  color: 'var(--ide-rail-icon-active)',
-                                  border: '1px solid var(--ide-border)',
+                                  background: "var(--ide-rail-active-bg)",
+                                  color: "var(--ide-rail-icon-active)",
+                                  border: "1px solid var(--ide-border)",
                                 }
                               : {
                                   width: activityHitSize,
                                   height: activityHitSize,
                                   minWidth: activityHitSize,
-                                  color: 'var(--ide-rail-icon)',
-                                  border: '1px solid transparent',
+                                  color: "var(--ide-rail-icon)",
+                                  border: "1px solid transparent",
                                 }
                           }
                           icon={
@@ -2462,35 +2474,35 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               trigger={null}
               collapsible={false}
               style={{
-                background: 'var(--ide-bg-sidebar)',
-                borderRight: '1px solid var(--ide-border)',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
+                background: "var(--ide-bg-sidebar)",
+                borderRight: "1px solid var(--ide-border)",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
                 minHeight: 0,
               }}
             >
               <div
                 style={{
                   height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: "flex",
+                  alignItems: "center",
                   paddingInline: token.paddingSM,
-                  background: 'var(--ide-bg-sidebar)',
-                  borderBottom: '1px solid var(--ide-border)',
+                  background: "var(--ide-bg-sidebar)",
+                  borderBottom: "1px solid var(--ide-border)",
                 }}
               >
                 <Typography.Text className={styles.sidebarHeaderText}>
                   {sidebarTitleNode}
                 </Typography.Text>
-                <div style={{ marginLeft: 'auto' }}>
+                <div style={{ marginLeft: "auto" }}>
                   <Button
                     type="text"
                     size="small"
                     aria-label="Collapse side panel"
                     onClick={() => setSidebarOpen(false)}
                     icon={<DoubleLeftOutlined />}
-                    style={{ color: 'var(--ide-text-secondary)' }}
+                    style={{ color: "var(--ide-text-secondary)" }}
                   />
                 </div>
               </div>
@@ -2506,23 +2518,23 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               aria-valuenow={sidebarWidth}
               tabIndex={0}
               onMouseDown={beginSidebarResize}
-              style={{ background: 'var(--ide-bg-layout)' }}
+              style={{ background: "var(--ide-bg-layout)" }}
             />
 
             <Layout.Content
               className={styles.editorColumn}
               style={{
-                background: 'var(--ide-bg-container)',
-                borderLeft: '1px solid var(--ide-border)',
+                background: "var(--ide-bg-container)",
+                borderLeft: "1px solid var(--ide-border)",
               }}
             >
               <div
                 className={styles.editorRow}
-                style={{ background: 'var(--ide-bg-container)' }}
+                style={{ background: "var(--ide-bg-container)" }}
               >
                 <div
                   className={styles.editorArea}
-                  style={{ background: 'var(--ide-bg-container)' }}
+                  style={{ background: "var(--ide-bg-container)" }}
                 >
                   {studioMode ? (
                     activeWorkspace ? (
@@ -2534,7 +2546,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                           pendingStudioViewSwitch ? (
                             <Space
                               direction="vertical"
-                              style={{ width: '100%' }}
+                              style={{ width: "100%" }}
                               size="middle"
                             >
                               <div>
@@ -2565,7 +2577,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                   </Descriptions.Item>
                                   <Descriptions.Item label="Description">
                                     {pendingStudioViewSwitch.view.description ||
-                                      'No description'}
+                                      "No description"}
                                   </Descriptions.Item>
                                 </Descriptions>
                               ) : (
@@ -2610,7 +2622,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                 <Button
                                   type="primary"
                                   onClick={() =>
-                                    openPendingStudioViewSwitch('replace')
+                                    openPendingStudioViewSwitch("replace")
                                   }
                                   disabled={!pendingStudioViewSwitch.view}
                                 >
@@ -2618,7 +2630,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                 </Button>
                                 <Button
                                   onClick={() =>
-                                    openPendingStudioViewSwitch('new')
+                                    openPendingStudioViewSwitch("new")
                                   }
                                   disabled={!pendingStudioViewSwitch.view}
                                 >
@@ -2660,12 +2672,18 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                 className={styles.editorCanvas}
                                 bordered
                                 bodyStyle={{
-                                  height: '100%',
-                                  padding: t.key === 'analysis:impact' ? '0 16px 16px 16px' : 16,
-                                  overflowY: 'auto',
-                                  overflowX: t.key === 'analysis:impact' ? 'hidden' : 'auto',
+                                  height: "100%",
+                                  padding:
+                                    t.key === "analysis:impact"
+                                      ? "0 16px 16px 16px"
+                                      : 16,
+                                  overflowY: "auto",
+                                  overflowX:
+                                    t.key === "analysis:impact"
+                                      ? "hidden"
+                                      : "auto",
                                 }}
-                                style={{ height: '100%' }}
+                                style={{ height: "100%" }}
                               >
                                 {(() => {
                                   if (shellOnly) {
@@ -2678,12 +2696,12 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                   }
 
                                   const activeWorkspace =
-                                    t.kind === 'workspace' &&
+                                    t.kind === "workspace" &&
                                     t.key === activeKey
                                       ? t.content
                                       : null;
                                   const activeRoute =
-                                    t.kind === 'route' && t.key === pathname
+                                    t.kind === "route" && t.key === pathname
                                       ? children
                                       : null;
 
@@ -2698,7 +2716,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                         }))}
                         onChange={(key: string) => {
                           setActiveKey(key);
-                          if (key.startsWith('/') && key !== pathname)
+                          if (key.startsWith("/") && key !== pathname)
                             history.push(key);
                         }}
                         onEdit={(
@@ -2706,10 +2724,10 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                             | string
                             | React.MouseEvent
                             | React.KeyboardEvent,
-                          action: 'add' | 'remove',
+                          action: "add" | "remove",
                         ) => {
-                          if (action !== 'remove') return;
-                          if (typeof targetKey !== 'string') return;
+                          if (action !== "remove") return;
+                          if (typeof targetKey !== "string") return;
                           closeTab(targetKey);
                         }}
                       />
@@ -2721,9 +2739,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   )}
                 </div>
 
-                {panelDock === 'right' &&
+                {panelDock === "right" &&
                   bottomPanelOpen &&
-                  (!studioMode || panelMode === 'console') && (
+                  (!studioMode || panelMode === "console") && (
                     <>
                       <hr
                         className={styles.rightResizer}
@@ -2734,21 +2752,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                         aria-valuemax={RIGHT_PANEL_MAX_WIDTH}
                         aria-valuenow={rightPanelWidth}
                         onMouseDown={beginRightResize}
-                        style={{ background: 'var(--ide-bg-layout)' }}
+                        style={{ background: "var(--ide-bg-layout)" }}
                       />
                       <div
                         className={styles.rightPanel}
                         style={{
                           width: rightPanelWidth,
-                          background: 'var(--ide-bg-panel)',
-                          borderLeft: '1px solid var(--ide-border)',
+                          background: "var(--ide-bg-panel)",
+                          borderLeft: "1px solid var(--ide-border)",
                         }}
                       >
                         <div className={styles.bottomPanelHeader}>
                           <div
                             style={{
-                              display: 'flex',
-                              flexDirection: 'column',
+                              display: "flex",
+                              flexDirection: "column",
                               gap: 2,
                             }}
                           >
@@ -2756,54 +2774,54 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                               <button
                                 type="button"
                                 className={
-                                  panelMode === 'properties'
+                                  panelMode === "properties"
                                     ? styles.panelTabActive
                                     : styles.panelTab
                                 }
-                                onClick={() => setPanelMode('properties')}
+                                onClick={() => setPanelMode("properties")}
                               >
                                 Properties
                               </button>
                               <button
                                 type="button"
                                 className={
-                                  panelMode === 'agent'
+                                  panelMode === "agent"
                                     ? styles.panelTabActive
                                     : styles.panelTab
                                 }
-                                onClick={() => setPanelMode('agent')}
+                                onClick={() => setPanelMode("agent")}
                               >
                                 Architecture Agent
                               </button>
                               <button
                                 type="button"
                                 className={
-                                  panelMode === 'console'
+                                  panelMode === "console"
                                     ? styles.panelTabActive
                                     : styles.panelTab
                                 }
-                                onClick={() => setPanelMode('console')}
+                                onClick={() => setPanelMode("console")}
                               >
                                 EA Console
                               </button>
                             </div>
-                            {panelMode === 'properties' && (
+                            {panelMode === "properties" && (
                               <div className={styles.panelMeta}>
                                 <span>
-                                  Selected:{' '}
+                                  Selected:{" "}
                                   {activeElementId
                                     ? activeElementName || activeElementId
-                                    : 'None'}
+                                    : "None"}
                                 </span>
-                                <span>Type: {activeElementType || '-'}</span>
+                                <span>Type: {activeElementType || "-"}</span>
                               </div>
                             )}
                           </div>
                           <div
                             style={{
-                              marginLeft: 'auto',
-                              display: 'flex',
-                              alignItems: 'center',
+                              marginLeft: "auto",
+                              display: "flex",
+                              alignItems: "center",
                               gap: 4,
                             }}
                           >
@@ -2812,8 +2830,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                                 type="button"
                                 className={styles.iconButton}
                                 aria-label="Dock panel to bottom"
-                                onClick={() => setPanelDock('bottom')}
-                                style={{ color: 'var(--ide-text-secondary)' }}
+                                onClick={() => setPanelDock("bottom")}
+                                style={{ color: "var(--ide-text-secondary)" }}
                               >
                                 <ArrowsAltOutlined />
                               </button>
@@ -2823,7 +2841,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                               className={styles.iconButton}
                               aria-label="Collapse panel"
                               onClick={() => setBottomPanelOpen(false)}
-                              style={{ color: 'var(--ide-text-secondary)' }}
+                              style={{ color: "var(--ide-text-secondary)" }}
                             >
                               <CaretDownOutlined />
                             </button>
@@ -2834,20 +2852,20 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                     </>
                   )}
 
-                {panelDock === 'right' &&
+                {panelDock === "right" &&
                   !bottomPanelOpen &&
-                  (!studioMode || panelMode === 'console') && (
+                  (!studioMode || panelMode === "console") && (
                     <div className={styles.rightCollapsedBar}>
                       <button
                         type="button"
                         className={styles.iconButton}
                         aria-label={
-                          panelMode === 'properties'
-                            ? 'Expand catalog inspector panel'
-                            : 'Expand EA console'
+                          panelMode === "properties"
+                            ? "Expand catalog inspector panel"
+                            : "Expand EA console"
                         }
                         onClick={() => setBottomPanelOpen(true)}
-                        style={{ color: 'var(--ide-text-secondary)' }}
+                        style={{ color: "var(--ide-text-secondary)" }}
                       >
                         <CaretUpOutlined />
                       </button>
@@ -2855,7 +2873,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   )}
               </div>
 
-              {panelDock === 'bottom' && bottomPanelOpen && (
+              {panelDock === "bottom" && bottomPanelOpen && (
                 <>
                   <hr
                     className={styles.bottomResizer}
@@ -2866,7 +2884,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                     aria-valuenow={bottomPanelHeight}
                     tabIndex={0}
                     onMouseDown={beginBottomResize}
-                    style={{ background: 'var(--ide-bg-layout)' }}
+                    style={{ background: "var(--ide-bg-layout)" }}
                   />
                   <div
                     className={styles.bottomPaletteContainer}
@@ -2877,8 +2895,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                     <div className={styles.bottomPaletteHeader}>
                       <div
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
+                          display: "flex",
+                          flexDirection: "column",
                           gap: 2,
                         }}
                       >
@@ -2886,33 +2904,33 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                           <button
                             type="button"
                             className={
-                              bottomPanelMode === 'inspector'
+                              bottomPanelMode === "inspector"
                                 ? styles.panelTabActive
                                 : styles.panelTab
                             }
-                            onClick={() => setBottomPanelMode('inspector')}
+                            onClick={() => setBottomPanelMode("inspector")}
                           >
                             Inspector
                           </button>
                           <button
                             type="button"
                             className={
-                              bottomPanelMode === 'console'
+                              bottomPanelMode === "console"
                                 ? styles.panelTabActive
                                 : styles.panelTab
                             }
-                            onClick={() => setBottomPanelMode('console')}
+                            onClick={() => setBottomPanelMode("console")}
                           >
                             EA Console
                           </button>
                           <button
                             type="button"
                             className={
-                              bottomPanelMode === 'agent'
+                              bottomPanelMode === "agent"
                                 ? styles.panelTabActive
                                 : styles.panelTab
                             }
-                            onClick={() => setBottomPanelMode('agent')}
+                            onClick={() => setBottomPanelMode("agent")}
                           >
                             AI Agent
                           </button>
@@ -2920,9 +2938,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                       </div>
                       <div
                         style={{
-                          marginLeft: 'auto',
-                          display: 'flex',
-                          alignItems: 'center',
+                          marginLeft: "auto",
+                          display: "flex",
+                          alignItems: "center",
                           gap: 4,
                         }}
                       >
@@ -2931,8 +2949,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                             type="button"
                             className={styles.iconButton}
                             aria-label="Dock panel to right"
-                            onClick={() => setPanelDock('right')}
-                            style={{ color: 'var(--ide-text-secondary)' }}
+                            onClick={() => setPanelDock("right")}
+                            style={{ color: "var(--ide-text-secondary)" }}
                           >
                             <ArrowsAltOutlined />
                           </button>
@@ -2942,7 +2960,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                           className={styles.iconButton}
                           aria-label="Collapse panel"
                           onClick={() => setBottomPanelOpen(false)}
-                          style={{ color: 'var(--ide-text-secondary)' }}
+                          style={{ color: "var(--ide-text-secondary)" }}
                         >
                           <CaretDownOutlined />
                         </button>
@@ -2957,20 +2975,20 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 </>
               )}
 
-              {panelDock === 'bottom' && !bottomPanelOpen && (
+              {panelDock === "bottom" && !bottomPanelOpen && (
                 <div className={styles.bottomCollapsedBar}>
                   <button
                     type="button"
                     className={styles.iconButton}
                     aria-label={
-                      bottomPanelMode === 'inspector'
-                        ? 'Expand inspector panel'
-                        : bottomPanelMode === 'agent'
-                          ? 'Expand AI agent panel'
-                          : 'Expand EA console'
+                      bottomPanelMode === "inspector"
+                        ? "Expand inspector panel"
+                        : bottomPanelMode === "agent"
+                          ? "Expand AI agent panel"
+                          : "Expand EA console"
                     }
                     onClick={() => setBottomPanelOpen(true)}
-                    style={{ color: 'var(--ide-text-secondary)' }}
+                    style={{ color: "var(--ide-text-secondary)" }}
                   >
                     <CaretUpOutlined />
                   </button>
@@ -2985,21 +3003,21 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
               lineHeight: `${STATUS_BAR_HEIGHT}px`,
               paddingInline: token.paddingSM,
               paddingBlock: 0,
-              background: 'var(--ide-bg-panel)',
-              borderTop: '1px solid var(--ide-border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              overflow: 'hidden',
+              background: "var(--ide-bg-panel)",
+              borderTop: "1px solid var(--ide-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              overflow: "hidden",
             }}
           >
             <Typography.Text
               type="secondary"
               style={{
                 fontSize: 12,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {statusBarText}
@@ -3007,8 +3025,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
 
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: token.marginXXS,
               }}
             >
@@ -3017,9 +3035,9 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 size="small"
                 icon={<ClusterOutlined />}
                 onClick={() => {
-                  setPanelMode('console');
+                  setPanelMode("console");
                   setBottomPanelOpen(true);
-                  setPanelDock('bottom');
+                  setPanelDock("bottom");
                 }}
               />
               <Button
@@ -3027,7 +3045,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                 size="small"
                 icon={<SettingOutlined />}
                 onClick={() => {
-                  setActivity('settings');
+                  setActivity("settings");
                   setSidebarOpen(true);
                 }}
               />

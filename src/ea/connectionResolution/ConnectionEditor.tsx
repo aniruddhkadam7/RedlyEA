@@ -11,8 +11,12 @@
 
 import React from 'react';
 import type { RelationshipType } from '@/pages/dependency-view/utils/eaMetaModel';
-import type { ConnectionEditAction, CreatedConnection, IndirectPath } from './types';
 import { CONNECTION_FEEDBACK_COLORS } from './connectionVisualFeedback';
+import type {
+  ConnectionEditAction,
+  CreatedConnection,
+  IndirectPath,
+} from './types';
 
 // ─── Types ───────────────────────────────────────────────────────────
 export type ConnectionEditorProps = {
@@ -42,7 +46,8 @@ const EDITOR_STYLES = {
     display: 'grid' as const,
     gap: 6,
     pointerEvents: 'auto' as const,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   sectionLabel: {
     fontSize: 10,
@@ -114,7 +119,10 @@ export const ConnectionEditor: React.FC<ConnectionEditorProps> = ({
   // Click-outside + Escape dismiss.
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         onDismiss();
       }
     };
@@ -173,7 +181,9 @@ export const ConnectionEditor: React.FC<ConnectionEditorProps> = ({
               )
             }
           >
-            {connection.collapsed ? '⊕ Expand intermediates' : '⊖ Collapse to single edge'}
+            {connection.collapsed
+              ? '⊕ Expand intermediates'
+              : '⊖ Collapse to single edge'}
           </button>
         </>
       )}

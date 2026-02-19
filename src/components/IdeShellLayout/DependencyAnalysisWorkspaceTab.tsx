@@ -1,9 +1,18 @@
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Form,
+  InputNumber,
+  Select,
+  Space,
+  Typography,
+} from 'antd';
 import React from 'react';
-import { Alert, Button, Card, Divider, Form, InputNumber, Select, Space, Typography } from 'antd';
-
-import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
-import type { BaseArchitectureRelationship } from '../../../backend/repository/BaseArchitectureRelationship';
-import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
+import { createAnalysisResult } from '@/analysis/analysisResultsStore';
+import { message } from '@/ea/eaConsole';
+import { getAllRelationships } from '@/services/ea/relationships';
 
 import {
   getRepositoryApplications,
@@ -12,10 +21,10 @@ import {
   getRepositoryProgrammes,
   getRepositoryTechnologies,
 } from '@/services/ea/repository';
-import { getAllRelationships } from '@/services/ea/relationships';
-import { createAnalysisResult } from '@/analysis/analysisResultsStore';
+import { RELATIONSHIP_ENDPOINT_RULES } from '../../../backend/relationships/RelationshipSemantics';
+import type { BaseArchitectureElement } from '../../../backend/repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../../../backend/repository/BaseArchitectureRelationship';
 import { useIdeShell } from './index';
-import { message } from '@/ea/eaConsole';
 
 type ElementOption = {
   id: string;
@@ -26,9 +35,14 @@ type ElementOption = {
 const normalizeId = (v: string) => (v ?? '').trim();
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(compareStrings);
+const relationshipTypeOptions = Object.keys(RELATIONSHIP_ENDPOINT_RULES).sort(
+  compareStrings,
+);
 
-const directionOptions: Array<{ label: string; value: 'Downstream' | 'Upstream' }> = [
+const directionOptions: Array<{
+  label: string;
+  value: 'Downstream' | 'Upstream';
+}> = [
   { label: 'Downstream (source → target)', value: 'Downstream' },
   { label: 'Upstream (target → source)', value: 'Upstream' },
 ];
@@ -59,7 +73,10 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
   const [form] = Form.useForm();
 
   const [elements, setElements] = React.useState<ElementOption[]>([]);
-  const elementById = React.useMemo(() => new Map(elements.map((e) => [e.id, e])), [elements]);
+  const elementById = React.useMemo(
+    () => new Map(elements.map((e) => [e.id, e])),
+    [elements],
+  );
 
   const [loadingElements, setLoadingElements] = React.useState(false);
   const [running, setRunning] = React.useState(false);
@@ -85,7 +102,11 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
       if (progs?.success) all.push(...(progs.data ?? []));
 
       const next = all
-        .map((e) => ({ id: normalizeId(e.id), name: e.name || e.id, elementType: e.elementType }))
+        .map((e) => ({
+          id: normalizeId(e.id),
+          name: e.name || e.id,
+          elementType: e.elementType,
+        }))
         .filter((e) => e.id.length > 0)
         .sort(
           (a, b) =>
@@ -96,7 +117,9 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
 
       setElements(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load repository elements.');
+      setError(
+        e instanceof Error ? e.message : 'Failed to load repository elements.',
+      );
       setElements([]);
     } finally {
       setLoadingElements(false);
@@ -122,15 +145,24 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
       const rootElementId = normalizeId(values.rootElementId);
       const direction = values.direction as 'Downstream' | 'Upstream';
       const maxDepth = Number(values.maxDepth);
-      const includedRelationshipTypes = (values.includedRelationshipTypes as string[]).slice().sort(compareStrings);
+      const includedRelationshipTypes = (
+        values.includedRelationshipTypes as string[]
+      )
+        .slice()
+        .sort(compareStrings);
 
       const root = elementById.get(rootElementId);
       const rootLabel = root?.name ? root.name : rootElementId;
 
       const relResp = await getAllRelationships();
-      if (!relResp?.success) throw new Error(relResp?.errorMessage || 'Failed to load relationships.');
+      if (!relResp?.success)
+        throw new Error(
+          relResp?.errorMessage || 'Failed to load relationships.',
+        );
 
-      const filteredRels = (relResp.data ?? []).filter((r) => includedRelationshipTypes.includes(r.relationshipType));
+      const filteredRels = (relResp.data ?? []).filter((r) =>
+        includedRelationshipTypes.includes(r.relationshipType),
+      );
       const { outgoing, incoming } = buildAdjacency(filteredRels);
       const neighbors = direction === 'Downstream' ? outgoing : incoming;
 
@@ -138,7 +170,9 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
       visited.add(rootElementId);
 
       let edgesConsidered = 0;
-      const queue: Array<{ id: string; depth: number }> = [{ id: rootElementId, depth: 0 }];
+      const queue: Array<{ id: string; depth: number }> = [
+        { id: rootElementId, depth: 0 },
+      ];
 
       while (queue.length > 0) {
         const cur = queue.shift();
@@ -169,7 +203,9 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
 
       const toTop = (m: Map<string, number>) =>
         [...m.entries()]
-          .sort((a, b) => (b[1] - a[1] ? b[1] - a[1] : compareStrings(a[0], b[0])))
+          .sort((a, b) =>
+            b[1] - a[1] ? b[1] - a[1] : compareStrings(a[0], b[0]),
+          )
           .slice(0, 10)
           .map(([elementId, count]) => ({ elementId, count }));
 
@@ -240,11 +276,21 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item label="Direction" name="direction" rules={[{ required: true }]} style={{ minWidth: 240 }}>
+            <Form.Item
+              label="Direction"
+              name="direction"
+              rules={[{ required: true }]}
+              style={{ minWidth: 240 }}
+            >
               <Select options={directionOptions} />
             </Form.Item>
 
-            <Form.Item label="Max depth" name="maxDepth" rules={[{ required: true }]} style={{ width: 140 }}>
+            <Form.Item
+              label="Max depth"
+              name="maxDepth"
+              rules={[{ required: true }]}
+              style={{ width: 140 }}
+            >
               <InputNumber min={1} max={25} />
             </Form.Item>
           </Space>
@@ -252,18 +298,38 @@ const DependencyAnalysisWorkspaceTab: React.FC = () => {
           <Form.Item
             label="Allowed relationship types"
             name="includedRelationshipTypes"
-            rules={[{ required: true, message: 'Select at least one relationship type' }]}
+            rules={[
+              {
+                required: true,
+                message: 'Select at least one relationship type',
+              },
+            ]}
           >
             <Select
               mode="multiple"
               placeholder="Select relationship types"
-              options={relationshipTypeOptions.map((t) => ({ value: t, label: t }))}
+              options={relationshipTypeOptions.map((t) => ({
+                value: t,
+                label: t,
+              }))}
             />
           </Form.Item>
 
-          {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} /> : null}
+          {error ? (
+            <Alert
+              type="error"
+              showIcon
+              message={error}
+              style={{ marginBottom: 12 }}
+            />
+          ) : null}
 
-          <Button type="primary" onClick={() => void runAnalysis()} loading={running} disabled={loadingElements}>
+          <Button
+            type="primary"
+            onClick={() => void runAnalysis()}
+            loading={running}
+            disabled={loadingElements}
+          >
             Run analysis
           </Button>
         </Form>

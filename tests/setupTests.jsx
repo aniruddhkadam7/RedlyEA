@@ -45,7 +45,7 @@ if (typeof global.MessageChannel === 'undefined') {
   // rc-field-form uses MessageChannel for scheduling in some environments.
   try {
     // eslint-disable-next-line global-require
-    const { MessageChannel } = require('worker_threads');
+    const { MessageChannel } = require('node:worker_threads');
     global.MessageChannel = MessageChannel;
   } catch {
     // Fallback: very small polyfill that satisfies the API shape.
@@ -113,7 +113,10 @@ Object.defineProperty(global.window.console, 'error', {
     ) {
       return;
     }
-    if (logStr.includes('An update to') && logStr.includes('inside a test was not wrapped in act(...)')) {
+    if (
+      logStr.includes('An update to') &&
+      logStr.includes('inside a test was not wrapped in act(...)')
+    ) {
       return;
     }
     errorLog(...rest);

@@ -1,12 +1,18 @@
-import type { GraphAbstractionLayer } from './GraphAbstractionLayer';
-import { RepositoryGraphAbstractionLayer } from './RepositoryGraphAbstractionLayer';
-import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
-import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
-import { getRepository, getRepositoryRevision } from '../repository/RepositoryStore';
-import { getRelationshipRepository, getRelationshipRepositoryRevision } from '../repository/RelationshipRepositoryStore';
 import { CACHE_POLICY } from '../cache/CachePolicy';
 import { RevisionedTtlCache } from '../cache/RevisionedTtlCache';
+import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../repository/BaseArchitectureRelationship';
+import {
+  getRelationshipRepository,
+  getRelationshipRepositoryRevision,
+} from '../repository/RelationshipRepositoryStore';
+import {
+  getRepository,
+  getRepositoryRevision,
+} from '../repository/RepositoryStore';
 import { telemetry } from '../telemetry/Telemetry';
+import type { GraphAbstractionLayer } from './GraphAbstractionLayer';
+import { RepositoryGraphAbstractionLayer } from './RepositoryGraphAbstractionLayer';
 
 /**
  * Default runtime GAL.
@@ -16,22 +22,29 @@ import { telemetry } from '../telemetry/Telemetry';
  * - This ensures transactional repository swaps are immediately visible to graph consumers.
  */
 class StoreBackedGraphAbstractionLayer implements GraphAbstractionLayer {
-  private readonly outgoingCache = new RevisionedTtlCache<readonly BaseArchitectureRelationship[]>({
+  private readonly outgoingCache = new RevisionedTtlCache<
+    readonly BaseArchitectureRelationship[]
+  >({
     ttlMs: CACHE_POLICY.graphQuery.ttlMs,
     maxEntries: CACHE_POLICY.graphQuery.maxEntries,
   });
 
-  private readonly incomingCache = new RevisionedTtlCache<readonly BaseArchitectureRelationship[]>({
+  private readonly incomingCache = new RevisionedTtlCache<
+    readonly BaseArchitectureRelationship[]
+  >({
     ttlMs: CACHE_POLICY.graphQuery.ttlMs,
     maxEntries: CACHE_POLICY.graphQuery.maxEntries,
   });
 
-  private readonly nodeCache = new RevisionedTtlCache<BaseArchitectureElement | null>({
-    ttlMs: CACHE_POLICY.graphQuery.ttlMs,
-    maxEntries: Math.min(50_000, CACHE_POLICY.graphQuery.maxEntries),
-  });
+  private readonly nodeCache =
+    new RevisionedTtlCache<BaseArchitectureElement | null>({
+      ttlMs: CACHE_POLICY.graphQuery.ttlMs,
+      maxEntries: Math.min(50_000, CACHE_POLICY.graphQuery.maxEntries),
+    });
 
-  private readonly nodesByTypeCache = new RevisionedTtlCache<readonly BaseArchitectureElement[]>({
+  private readonly nodesByTypeCache = new RevisionedTtlCache<
+    readonly BaseArchitectureElement[]
+  >({
     ttlMs: CACHE_POLICY.graphQuery.ttlMs,
     maxEntries: 1_000,
   });

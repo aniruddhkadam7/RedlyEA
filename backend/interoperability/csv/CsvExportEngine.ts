@@ -1,7 +1,16 @@
-import type { Project } from '../../project/project';
 import { projectStore } from '../../project/ProjectStore';
+import type { Project } from '../../project/project';
+import type { ArchitectureRepository } from '../../repository/ArchitectureRepository';
+import type { BaseArchitectureElement } from '../../repository/BaseArchitectureElement';
+import type { BaseArchitectureRelationship } from '../../repository/BaseArchitectureRelationship';
+import type { RelationshipRepository } from '../../repository/RelationshipRepository';
+import { getRelationshipRepository } from '../../repository/RelationshipRepositoryStore';
+import { getRepository } from '../../repository/RepositoryStore';
 import type { ExportScope } from '../ExportScope';
-import type { CsvImportSourceEntity, CsvSchemaSpec } from './CsvImportSpecification';
+import type {
+  CsvImportSourceEntity,
+  CsvSchemaSpec,
+} from './CsvImportSpecification';
 import {
   APPLICATIONS_CSV_SCHEMA,
   BUSINESS_PROCESSES_CSV_SCHEMA,
@@ -10,13 +19,6 @@ import {
   RELATIONSHIPS_CSV_SCHEMA,
   TECHNOLOGIES_CSV_SCHEMA,
 } from './CsvImportSpecification';
-
-import type { ArchitectureRepository } from '../../repository/ArchitectureRepository';
-import type { BaseArchitectureElement } from '../../repository/BaseArchitectureElement';
-import type { RelationshipRepository } from '../../repository/RelationshipRepository';
-import type { BaseArchitectureRelationship } from '../../repository/BaseArchitectureRelationship';
-import { getRepository } from '../../repository/RepositoryStore';
-import { getRelationshipRepository } from '../../repository/RelationshipRepositoryStore';
 
 export type CsvExportEngineFileName =
   | 'Capabilities.csv'
@@ -30,7 +32,12 @@ export type CsvExportEngineSuccess = {
   ok: true;
 
   /** Exported CSV strings by entity. */
-  files: Partial<Record<CsvImportSourceEntity, { fileName: CsvExportEngineFileName; csvText: string }>>;
+  files: Partial<
+    Record<
+      CsvImportSourceEntity,
+      { fileName: CsvExportEngineFileName; csvText: string }
+    >
+  >;
 
   exportedElementsCount: number;
   exportedRelationshipsCount: number;
@@ -46,7 +53,9 @@ export type CsvExportEngineFailure = {
   errors: string[];
 };
 
-export type CsvExportEngineResult = CsvExportEngineSuccess | CsvExportEngineFailure;
+export type CsvExportEngineResult =
+  | CsvExportEngineSuccess
+  | CsvExportEngineFailure;
 
 export type CsvExportEngineOptions = {
   /** If omitted, uses ProjectStore. */
@@ -66,14 +75,15 @@ const schemaByEntity: Record<CsvImportSourceEntity, CsvSchemaSpec> = {
   Relationships: RELATIONSHIPS_CSV_SCHEMA,
 };
 
-const fileNameByEntity: Record<CsvImportSourceEntity, CsvExportEngineFileName> = {
-  Capabilities: 'Capabilities.csv',
-  BusinessProcesses: 'BusinessProcesses.csv',
-  Applications: 'Applications.csv',
-  Technologies: 'Technologies.csv',
-  Programmes: 'Programmes.csv',
-  Relationships: 'Relationships.csv',
-};
+const fileNameByEntity: Record<CsvImportSourceEntity, CsvExportEngineFileName> =
+  {
+    Capabilities: 'Capabilities.csv',
+    BusinessProcesses: 'BusinessProcesses.csv',
+    Applications: 'Applications.csv',
+    Technologies: 'Technologies.csv',
+    Programmes: 'Programmes.csv',
+    Relationships: 'Relationships.csv',
+  };
 
 const normalizeList = (values: readonly string[]) =>
   Array.from(
@@ -86,9 +96,9 @@ const normalizeList = (values: readonly string[]) =>
 
 const csvEscape = (value: string): string => {
   // RFC4180-ish. Quote if it contains comma, quote or newline.
-  const needsQuotes = /[\n\r,\"]/g.test(value);
+  const needsQuotes = /[\n\r,"]/g.test(value);
   if (!needsQuotes) return value;
-  return `"${value.replace(/\"/g, '""')}"`;
+  return `"${value.replace(/"/g, '""')}"`;
 };
 
 const toCellString = (value: unknown, columnName: string): string => {
@@ -111,9 +121,13 @@ const toCellString = (value: unknown, columnName: string): string => {
   }
 };
 
-const buildHeader = (schema: CsvSchemaSpec): string => schema.columns.map((c) => csvEscape(c.name)).join(',');
+const buildHeader = (schema: CsvSchemaSpec): string =>
+  schema.columns.map((c) => csvEscape(c.name)).join(',');
 
-const buildRow = (schema: CsvSchemaSpec, record: Record<string, unknown>): string => {
+const buildRow = (
+  schema: CsvSchemaSpec,
+  record: Record<string, unknown>,
+): string => {
   const cells = schema.columns.map((c) => {
     const raw = record[c.name];
     const str = toCellString(raw, c.name);
@@ -122,15 +136,20 @@ const buildRow = (schema: CsvSchemaSpec, record: Record<string, unknown>): strin
   return cells.join(',');
 };
 
-const isBlank = (v: unknown) => typeof v !== 'string' || v.trim().length === 0;
+const _isBlank = (v: unknown) => typeof v !== 'string' || v.trim().length === 0;
 
 const uuidRegex =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 
 // Strict-enough ISO 8601 check (date or timestamp with Z).
-const iso8601Regex = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z)?$/;
+const iso8601Regex =
+  /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z)?$/;
 
-const validateCellImportCompatible = (schema: CsvSchemaSpec, colName: string, cell: string): string | null => {
+const validateCellImportCompatible = (
+  schema: CsvSchemaSpec,
+  colName: string,
+  cell: string,
+): string | null => {
   const col = schema.columns.find((c) => c.name === colName);
   if (!col) return null;
 
@@ -144,7 +163,8 @@ const validateCellImportCompatible = (schema: CsvSchemaSpec, colName: string, ce
     col.requiredCell === undefined;
 
   if (blank) {
-    if (col.requiredCell && !allowBlank) return `Missing required value for column "${col.name}".`;
+    if (col.requiredCell && !allowBlank)
+      return `Missing required value for column "${col.name}".`;
     // Blank optional cell is import-compatible.
     return null;
   }
@@ -155,28 +175,40 @@ const validateCellImportCompatible = (schema: CsvSchemaSpec, colName: string, ce
       return null;
 
     case 'uuid':
-      return uuidRegex.test(v) ? null : `Invalid UUID for column "${col.name}".`;
+      return uuidRegex.test(v)
+        ? null
+        : `Invalid UUID for column "${col.name}".`;
 
     case 'nullable-uuid':
       if (v.toLowerCase() === 'null') return null;
-      return uuidRegex.test(v) ? null : `Invalid UUID/null for column "${col.name}".`;
+      return uuidRegex.test(v)
+        ? null
+        : `Invalid UUID/null for column "${col.name}".`;
 
     case 'iso8601':
     case 'optional-iso8601':
-      return iso8601Regex.test(v) ? null : `Invalid ISO-8601 date/timestamp for column "${col.name}".`;
+      return iso8601Regex.test(v)
+        ? null
+        : `Invalid ISO-8601 date/timestamp for column "${col.name}".`;
 
     case 'number':
     case 'optional-number': {
       const n = Number(v);
-      return Number.isFinite(n) ? null : `Invalid number for column "${col.name}".`;
+      return Number.isFinite(n)
+        ? null
+        : `Invalid number for column "${col.name}".`;
     }
 
     case 'boolean':
-      return v === 'true' || v === 'false' ? null : `Invalid boolean (true/false) for column "${col.name}".`;
+      return v === 'true' || v === 'false'
+        ? null
+        : `Invalid boolean (true/false) for column "${col.name}".`;
 
     case 'enum': {
       const allowed = col.enumValues ?? [];
-      return allowed.includes(v) ? null : `Invalid enum value for column "${col.name}".`;
+      return allowed.includes(v)
+        ? null
+        : `Invalid enum value for column "${col.name}".`;
     }
 
     default:
@@ -184,7 +216,10 @@ const validateCellImportCompatible = (schema: CsvSchemaSpec, colName: string, ce
   }
 };
 
-const validateRowReimportable = (schema: CsvSchemaSpec, record: Record<string, unknown>): string[] => {
+const validateRowReimportable = (
+  schema: CsvSchemaSpec,
+  record: Record<string, unknown>,
+): string[] => {
   const errors: string[] = [];
 
   for (const col of schema.columns) {
@@ -198,15 +233,22 @@ const validateRowReimportable = (schema: CsvSchemaSpec, record: Record<string, u
 };
 
 const sortElements = (a: BaseArchitectureElement, b: BaseArchitectureElement) =>
-  a.elementType.localeCompare(b.elementType) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  a.elementType.localeCompare(b.elementType) ||
+  a.name.localeCompare(b.name) ||
+  a.id.localeCompare(b.id);
 
-const sortRelationships = (a: BaseArchitectureRelationship, b: BaseArchitectureRelationship) =>
+const sortRelationships = (
+  a: BaseArchitectureRelationship,
+  b: BaseArchitectureRelationship,
+) =>
   a.relationshipType.localeCompare(b.relationshipType) ||
   a.sourceElementId.localeCompare(b.sourceElementId) ||
   a.targetElementId.localeCompare(b.targetElementId) ||
   a.id.localeCompare(b.id);
 
-const toEntity = (elementType: string): Exclude<CsvImportSourceEntity, 'Relationships'> | null => {
+const toEntity = (
+  elementType: string,
+): Exclude<CsvImportSourceEntity, 'Relationships'> | null => {
   switch ((elementType ?? '').trim()) {
     case 'Capability':
       return 'Capabilities';
@@ -228,7 +270,8 @@ const resolveProject = (options?: CsvExportEngineOptions): Project | null =>
 
 const resolveRepositories = (options?: CsvExportEngineOptions) => ({
   repository: options?.repository ?? getRepository(),
-  relationshipRepository: options?.relationshipRepository ?? getRelationshipRepository(),
+  relationshipRepository:
+    options?.relationshipRepository ?? getRelationshipRepository(),
 });
 
 /**
@@ -255,24 +298,35 @@ export function exportRepositoryToCsv(
   if (!project) {
     return {
       ok: false,
-      errors: ['No project available. Create one in ProjectStore or pass options.project.'],
+      errors: [
+        'No project available. Create one in ProjectStore or pass options.project.',
+      ],
     };
   }
 
   if (scope.exportType !== 'Repository' && scope.exportType !== 'FullProject') {
     return {
       ok: false,
-      errors: [`CsvExportEngine supports exportType Repository|FullProject (got "${scope.exportType}").`],
+      errors: [
+        `CsvExportEngine supports exportType Repository|FullProject (got "${scope.exportType}").`,
+      ],
     };
   }
 
   // No defaults: caller must provide explicit lists (possibly empty).
   const includedElementTypes = normalizeList(scope.includedElementTypes);
-  const includedRelationshipTypes = normalizeList(scope.includedRelationshipTypes);
+  const includedRelationshipTypes = normalizeList(
+    scope.includedRelationshipTypes,
+  );
 
   const { repository, relationshipRepository } = resolveRepositories(options);
 
-  const files: Partial<Record<CsvImportSourceEntity, { fileName: CsvExportEngineFileName; csvText: string }>> = {};
+  const files: Partial<
+    Record<
+      CsvImportSourceEntity,
+      { fileName: CsvExportEngineFileName; csvText: string }
+    >
+  > = {};
 
   // Collect elements by entity.
   const elementRowsByEntity: Record<
@@ -295,7 +349,11 @@ export function exportRepositoryToCsv(
   ];
 
   for (const e of allElements) {
-    if (includedElementTypes.length > 0 && !includedElementTypes.includes(e.elementType)) continue;
+    if (
+      includedElementTypes.length > 0 &&
+      !includedElementTypes.includes(e.elementType)
+    )
+      continue;
     const entity = toEntity(e.elementType);
     if (!entity) continue;
     elementRowsByEntity[entity].push(e);
@@ -303,7 +361,9 @@ export function exportRepositoryToCsv(
 
   // Export element CSVs.
   let exportedElementsCount = 0;
-  for (const entity of Object.keys(elementRowsByEntity) as Array<Exclude<CsvImportSourceEntity, 'Relationships'>>) {
+  for (const entity of Object.keys(elementRowsByEntity) as Array<
+    Exclude<CsvImportSourceEntity, 'Relationships'>
+  >) {
     const schema = schemaByEntity[entity];
     const rows = elementRowsByEntity[entity].slice().sort(sortElements);
 
@@ -319,13 +379,20 @@ export function exportRepositoryToCsv(
               ? 'Technology'
               : 'Programme';
 
-    if (includedElementTypes.length > 0 && !includedElementTypes.includes(impliedType)) continue;
+    if (
+      includedElementTypes.length > 0 &&
+      !includedElementTypes.includes(impliedType)
+    )
+      continue;
 
     const header = buildHeader(schema);
     const lines: string[] = [header];
 
     for (const element of rows) {
-      const rowErrors = validateRowReimportable(schema, element as unknown as Record<string, unknown>);
+      const rowErrors = validateRowReimportable(
+        schema,
+        element as unknown as Record<string, unknown>,
+      );
       if (rowErrors.length > 0) {
         errors.push(
           `${entity}: element ${element.elementType} "${element.name}" (${element.id}) is not exportable: ${rowErrors.join(' ')}`,
@@ -333,13 +400,15 @@ export function exportRepositoryToCsv(
         continue;
       }
 
-      lines.push(buildRow(schema, element as unknown as Record<string, unknown>));
+      lines.push(
+        buildRow(schema, element as unknown as Record<string, unknown>),
+      );
       exportedElementsCount += 1;
     }
 
     files[entity] = {
       fileName: fileNameByEntity[entity],
-      csvText: lines.join('\n') + '\n',
+      csvText: `${lines.join('\n')}\n`,
     };
   }
 
@@ -348,19 +417,32 @@ export function exportRepositoryToCsv(
   const relationshipSchema = schemaByEntity.Relationships;
   const relationships = relationshipRepository
     .getAllRelationships()
-    .filter((r) => (includedRelationshipTypes.length > 0 ? includedRelationshipTypes.includes(r.relationshipType) : true))
+    .filter((r) =>
+      includedRelationshipTypes.length > 0
+        ? includedRelationshipTypes.includes(r.relationshipType)
+        : true,
+    )
     .slice()
     .sort(sortRelationships);
 
-  if (includedRelationshipTypes.length > 0 || scope.exportType === 'FullProject') {
+  if (
+    includedRelationshipTypes.length > 0 ||
+    scope.exportType === 'FullProject'
+  ) {
     // Validate that relationship endpoints exist within the exported element set.
     const exportedElementIdSet = new Set<string>();
-    for (const entity of Object.keys(elementRowsByEntity) as Array<Exclude<CsvImportSourceEntity, 'Relationships'>>) {
-      for (const e of elementRowsByEntity[entity]) exportedElementIdSet.add(e.id);
+    for (const entity of Object.keys(elementRowsByEntity) as Array<
+      Exclude<CsvImportSourceEntity, 'Relationships'>
+    >) {
+      for (const e of elementRowsByEntity[entity])
+        exportedElementIdSet.add(e.id);
     }
 
     for (const r of relationships) {
-      if (!exportedElementIdSet.has(r.sourceElementId) || !exportedElementIdSet.has(r.targetElementId)) {
+      if (
+        !exportedElementIdSet.has(r.sourceElementId) ||
+        !exportedElementIdSet.has(r.targetElementId)
+      ) {
         errors.push(
           `Relationships: cannot export relationship ${r.relationshipType} (${r.id}) because its endpoints are outside the export scope (${r.sourceElementId} -> ${r.targetElementId}).`,
         );
@@ -371,7 +453,10 @@ export function exportRepositoryToCsv(
     const lines: string[] = [header];
 
     for (const r of relationships) {
-      const rowErrors = validateRowReimportable(relationshipSchema, r as unknown as Record<string, unknown>);
+      const rowErrors = validateRowReimportable(
+        relationshipSchema,
+        r as unknown as Record<string, unknown>,
+      );
       if (rowErrors.length > 0) {
         errors.push(
           `Relationships: relationship ${r.relationshipType} (${r.id}) is not exportable: ${rowErrors.join(' ')}`,
@@ -379,19 +464,23 @@ export function exportRepositoryToCsv(
         continue;
       }
 
-      lines.push(buildRow(relationshipSchema, r as unknown as Record<string, unknown>));
+      lines.push(
+        buildRow(relationshipSchema, r as unknown as Record<string, unknown>),
+      );
       exportedRelationshipsCount += 1;
     }
 
     files.Relationships = {
       fileName: fileNameByEntity.Relationships,
-      csvText: lines.join('\n') + '\n',
+      csvText: `${lines.join('\n')}\n`,
     };
   }
 
   // Views/governance artifacts are intentionally not exported here (CSV spec is entity-only).
   if (scope.includeViews) {
-    warnings.push('includeViews=true was requested, but CsvExportEngine currently exports repository entities only.');
+    warnings.push(
+      'includeViews=true was requested, but CsvExportEngine currently exports repository entities only.',
+    );
   }
   if (scope.includeGovernanceArtifacts) {
     warnings.push(

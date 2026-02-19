@@ -1,7 +1,16 @@
-import type { EaLayer, EaRelationshipTypeDefinition, ObjectType } from '@/pages/dependency-view/utils/eaMetaModel';
+import type {
+  EaLayer,
+  EaRelationshipTypeDefinition,
+  ObjectType,
+} from '@/pages/dependency-view/utils/eaMetaModel';
 import { RELATIONSHIP_TYPE_DEFINITIONS } from '@/pages/dependency-view/utils/eaMetaModel';
 
-type EaVisualShape = 'round-rectangle' | 'rectangle' | 'ellipse' | 'diamond' | 'hexagon';
+type EaVisualShape =
+  | 'round-rectangle'
+  | 'rectangle'
+  | 'ellipse'
+  | 'diamond'
+  | 'hexagon';
 
 type EaShapeVisualStyle = {
   width: number;
@@ -32,8 +41,10 @@ const drawioContext = (require as { context: Function }).context(
   false,
   /\.svg$/,
 );
-const svgPath = (fileName: string) => archimateContext(`./${fileName}`) as string;
-const drawioPath = (fileName: string) => drawioContext(`./${fileName}`) as string;
+const svgPath = (fileName: string) =>
+  archimateContext(`./${fileName}`) as string;
+const drawioPath = (fileName: string) =>
+  drawioContext(`./${fileName}`) as string;
 
 const DEFAULT_STYLE: EaShapeVisualStyle = {
   width: 180,
@@ -677,12 +688,15 @@ const RAW_EA_SHAPE_REGISTRY: Omit<EaShapeRegistryEntry, 'style'>[] = [
   },
 ];
 
-export const EA_SHAPE_REGISTRY: EaShapeRegistryEntry[] = RAW_EA_SHAPE_REGISTRY.map((entry) => ({
-  ...entry,
-  style: DEFAULT_STYLE,
-}));
+export const EA_SHAPE_REGISTRY: EaShapeRegistryEntry[] =
+  RAW_EA_SHAPE_REGISTRY.map((entry) => ({
+    ...entry,
+    style: DEFAULT_STYLE,
+  }));
 
-export const EA_SHAPE_REGISTRY_BY_KIND = new Map(EA_SHAPE_REGISTRY.map((entry) => [entry.kind, entry] as const));
+export const EA_SHAPE_REGISTRY_BY_KIND = new Map(
+  EA_SHAPE_REGISTRY.map((entry) => [entry.kind, entry] as const),
+);
 
 export const EA_SHAPE_REGISTRY_BY_TYPE = (() => {
   const map = new Map<ObjectType, EaShapeRegistryEntry[]>();
@@ -694,7 +708,8 @@ export const EA_SHAPE_REGISTRY_BY_TYPE = (() => {
   return map;
 })();
 
-export const EA_CONNECTOR_REGISTRY: readonly EaRelationshipTypeDefinition[] = Object.values(RELATIONSHIP_TYPE_DEFINITIONS);
+export const EA_CONNECTOR_REGISTRY: readonly EaRelationshipTypeDefinition[] =
+  Object.values(RELATIONSHIP_TYPE_DEFINITIONS);
 
 export const hasRegisteredEaShape = (type: ObjectType) =>
   Boolean(EA_SHAPE_REGISTRY_BY_TYPE.get(type)?.length);

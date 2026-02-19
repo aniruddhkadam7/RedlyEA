@@ -86,7 +86,10 @@ const ACTION_TO_PERMISSION: Record<ExplorerAction, string> = {
 /**
  * Check if the current user role is allowed to perform the given explorer action.
  */
-export function canPerform(role: RepositoryRole, action: ExplorerAction): boolean {
+export function canPerform(
+  role: RepositoryRole,
+  action: ExplorerAction,
+): boolean {
   const permission = ACTION_TO_PERMISSION[action];
   if (!permission) return false;
   return hasRepositoryPermission(role, permission);
@@ -95,7 +98,11 @@ export function canPerform(role: RepositoryRole, action: ExplorerAction): boolea
 /**
  * Guard: throws if unauthorized. Use for mutation paths.
  */
-export function assertCanPerform(role: RepositoryRole, action: ExplorerAction, context?: string): void {
+export function assertCanPerform(
+  role: RepositoryRole,
+  action: ExplorerAction,
+  context?: string,
+): void {
   if (!canPerform(role, action)) {
     const msg = context
       ? `Unauthorized: cannot ${action} — ${context}`
@@ -108,11 +115,10 @@ export function assertCanPerform(role: RepositoryRole, action: ExplorerAction, c
  * Filter a list of context menu items by removing those the user cannot perform.
  * Each item should have an `action` field matching ExplorerAction.
  */
-export function filterMenuByPermission<T extends { requiredAction?: ExplorerAction }>(
-  items: T[],
-  role: RepositoryRole,
-): T[] {
-  return items.filter(item => {
+export function filterMenuByPermission<
+  T extends { requiredAction?: ExplorerAction },
+>(items: T[], role: RepositoryRole): T[] {
+  return items.filter((item) => {
     if (!item.requiredAction) return true; // no restriction
     return canPerform(role, item.requiredAction);
   });

@@ -4,20 +4,19 @@ import {
   FolderOpenOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
+import { useLocation } from '@umijs/max';
 import { Button, Dropdown, Input, Modal } from 'antd';
 import React from 'react';
-import { useLocation } from '@umijs/max';
+import { setViewDragPayload } from '@/diagram-studio/drag-drop/DragDropConstants';
+import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
+import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
+import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
+import { message } from '@/ea/eaConsole';
+import { useIdeSelection } from '@/ide/IdeSelectionContext';
 import { useIdeShell } from './index';
 import NavigationSidebar, {
   type NavigationSidebarGroup,
 } from './NavigationSidebar';
-import { useIdeSelection } from '@/ide/IdeSelectionContext';
-import { message } from '@/ea/eaConsole';
-import { setViewDragPayload } from '@/diagram-studio/drag-drop/DragDropConstants';
-
-import { ViewStore } from '@/diagram-studio/view-runtime/ViewStore';
-import { ViewpointRegistry } from '@/diagram-studio/viewpoints/ViewpointRegistry';
-import type { ViewInstance } from '@/diagram-studio/viewpoints/ViewInstance';
 
 const getSavedViews = (views: ViewInstance[]): ViewInstance[] =>
   views

@@ -43,11 +43,18 @@ const increment = (obj: Record<string, number>, key: string) => {
   obj[key] = (obj[key] ?? 0) + 1;
 };
 
-const isBlank = (value: unknown): boolean => typeof value !== 'string' || value.trim().length === 0;
+const isBlank = (value: unknown): boolean =>
+  typeof value !== 'string' || value.trim().length === 0;
 
-const makeFindingId = (checkId: RelationshipValidationCheckId, subjectId: string) => `${checkId}:${subjectId}`;
+const makeFindingId = (
+  checkId: RelationshipValidationCheckId,
+  subjectId: string,
+) => `${checkId}:${subjectId}`;
 
-const getElement = (repo: ArchitectureRepository, id: string): BaseArchitectureElement | null => repo.getElementById(id);
+const getElement = (
+  repo: ArchitectureRepository,
+  id: string,
+): BaseArchitectureElement | null => repo.getElementById(id);
 
 /**
  * Passive, read-only governance checks over relationships + select cross-cutting linkage rules.
@@ -65,8 +72,9 @@ export function validateRelationshipRepository(
 
   const findings: RelationshipValidationFinding[] = [];
 
-  const applicationDependencyRelationships = ([] as BaseArchitectureRelationship[])
-    .concat(relationships.getRelationshipsByType('INTEGRATES_WITH'));
+  const applicationDependencyRelationships = (
+    [] as BaseArchitectureRelationship[]
+  ).concat(relationships.getRelationshipsByType('INTEGRATES_WITH'));
 
   // 1) Application depends on itself => invalid (Error)
   for (const rel of applicationDependencyRelationships) {
@@ -99,7 +107,7 @@ export function validateRelationshipRepository(
         id: makeFindingId('PROCESS_MISSING_CAPABILITY_PARENT', process.id),
         checkId: 'PROCESS_MISSING_CAPABILITY_PARENT',
         severity: 'Error',
-        message: `BusinessProcess is invalid: missing parent Capability id.` ,
+        message: `BusinessProcess is invalid: missing parent Capability id.`,
         observedAt,
         subjectKind: 'Element',
         subjectId: process.id,
@@ -125,7 +133,9 @@ export function validateRelationshipRepository(
 
   // 3) Application dependency without dependencyStrength => warning
   for (const rel of applicationDependencyRelationships) {
-    const dependencyStrength = (rel as unknown as { dependencyStrength?: unknown }).dependencyStrength;
+    const dependencyStrength = (
+      rel as unknown as { dependencyStrength?: unknown }
+    ).dependencyStrength;
     if (isBlank(dependencyStrength)) {
       findings.push({
         id: makeFindingId('APPLICATION_DEPENDENCY_MISSING_STRENGTH', rel.id),
@@ -173,7 +183,11 @@ export function validateRelationshipRepository(
     }
   }
 
-  const bySeverity: Record<RelationshipValidationSeverity, number> = { Info: 0, Warning: 0, Error: 0 };
+  const bySeverity: Record<RelationshipValidationSeverity, number> = {
+    Info: 0,
+    Warning: 0,
+    Error: 0,
+  };
   const byCheckId: Partial<Record<RelationshipValidationCheckId, number>> = {};
 
   for (const finding of findings) {

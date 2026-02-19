@@ -13,12 +13,16 @@ const isJest =
   process.env.NODE_ENV === 'test' ||
   process.env.JEST_WORKER_ID !== undefined;
 
+// Detect if building for Electron (set ELECTRON_BUILD=1 when running desktop:build)
+const isElectronBuild = process.env.ELECTRON_BUILD === '1';
+
 /**
  * @name 使用公共路径
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
+ * @note For Electron file:// protocol, must use './' instead of '/'
  */
-const PUBLIC_PATH: string = '/';
+const PUBLIC_PATH: string = isElectronBuild ? './' : '/';
 
 export default defineConfig({
   ...(UMI_ENV === 'dev' ? { mfsu: false } : {}),
@@ -31,6 +35,27 @@ export default defineConfig({
   hash: true,
 
   publicPath: PUBLIC_PATH,
+
+  // Required when using relative publicPath for Electron file:// protocol
+  runtimePublicPath: isElectronBuild ? {} : undefined,
+
+  // Inject publicPath for Electron file:// protocol before any other scripts
+  // Must set both globalThis.publicPath AND window.publicPath because webpack
+  // runtime checks: (typeof globalThis!="undefined"?globalThis:window).publicPath||"/"
+  headScripts: isElectronBuild
+    ? [
+        {
+          content: `(function(){var p='./';if(typeof globalThis!=='undefined')globalThis.publicPath=p;window.publicPath=p;})();`,
+        },
+      ]
+    : [],
+
+  /**
+   * @name History 模式
+   * @description Electron file:// protocol requires hash history, not browser history
+   * @doc https://umijs.org/docs/api/config#history
+   */
+  history: isElectronBuild ? { type: 'hash' } : { type: 'browser' },
 
   /**
    * @name 兼容性设置

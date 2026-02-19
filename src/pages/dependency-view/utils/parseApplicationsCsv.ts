@@ -17,11 +17,14 @@ export type ApplicationsCsvParseFailure = {
   errors: string[];
 };
 
-export type ApplicationsCsvParseResult = ApplicationsCsvParseSuccess | ApplicationsCsvParseFailure;
+export type ApplicationsCsvParseResult =
+  | ApplicationsCsvParseSuccess
+  | ApplicationsCsvParseFailure;
 
 const normalizeHeader = (value: string) => value.trim().toLowerCase();
 
-const stripBom = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const stripBom = (text: string) =>
+  text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
 // Minimal CSV parser that supports:
 // - commas
@@ -97,25 +100,39 @@ const parseCsv = (inputText: string): string[][] => {
   pushRow();
 
   // Drop trailing completely empty rows (common if file ends in newline)
-  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === '')) rows.pop();
+  while (rows.length > 0 && rows[rows.length - 1].every((c) => c.trim() === ''))
+    rows.pop();
 
   return rows;
 };
 
-export function parseAndValidateApplicationsCsv(csvText: string): ApplicationsCsvParseResult {
+export function parseAndValidateApplicationsCsv(
+  csvText: string,
+): ApplicationsCsvParseResult {
   const errors: string[] = [];
 
   const rows = parseCsv(csvText);
   if (rows.length === 0) return { ok: false, errors: ['CSV is empty.'] };
 
   const header = rows[0].map(normalizeHeader);
-  const requiredColumns = ['id', 'name', 'criticality', 'lifecycle', 'lifecycle_state'] as const;
+  const requiredColumns = [
+    'id',
+    'name',
+    'criticality',
+    'lifecycle',
+    'lifecycle_state',
+  ] as const;
 
   const indexByColumn = new Map<string, number>();
   header.forEach((h, idx) => {
     if (!h) return;
-    if (h === 'lifecyclestate' || h === 'lifecycle state' || h === 'lifecycle_state') {
-      if (!indexByColumn.has('lifecycle_state')) indexByColumn.set('lifecycle_state', idx);
+    if (
+      h === 'lifecyclestate' ||
+      h === 'lifecycle state' ||
+      h === 'lifecycle_state'
+    ) {
+      if (!indexByColumn.has('lifecycle_state'))
+        indexByColumn.set('lifecycle_state', idx);
       return;
     }
     indexByColumn.set(h, idx);
@@ -138,25 +155,37 @@ export function parseAndValidateApplicationsCsv(csvText: string): ApplicationsCs
     // Skip blank lines
     if (row.every((c) => c.trim() === '')) continue;
 
-    const rawId = (row[indexByColumn.get('id')!] ?? '').trim();
-    const rawName = (row[indexByColumn.get('name')!] ?? '').trim();
-    const rawCriticality = (row[indexByColumn.get('criticality')!] ?? '').trim().toLowerCase();
-    const rawLifecycle = (row[indexByColumn.get('lifecycle')!] ?? '').trim();
-    const rawLifecycleState = (row[indexByColumn.get('lifecycle_state')!] ?? '').trim();
+    const rawId = (row[indexByColumn.get('id') ?? 0] ?? '').trim();
+    const rawName = (row[indexByColumn.get('name') ?? 0] ?? '').trim();
+    const rawCriticality = (row[indexByColumn.get('criticality') ?? 0] ?? '')
+      .trim()
+      .toLowerCase();
+    const rawLifecycle = (
+      row[indexByColumn.get('lifecycle') ?? 0] ?? ''
+    ).trim();
+    const rawLifecycleState = (
+      row[indexByColumn.get('lifecycle_state') ?? 0] ?? ''
+    ).trim();
 
     const displayRow = r + 1; // 1-based CSV line number
 
     if (!rawId) errors.push(`Row ${displayRow}: id is required.`);
     if (!rawName) errors.push(`Row ${displayRow}: name is required.`);
     if (!rawLifecycle) errors.push(`Row ${displayRow}: lifecycle is required.`);
-    if (!rawLifecycleState) errors.push(`Row ${displayRow}: lifecycle_state is required.`);
+    if (!rawLifecycleState)
+      errors.push(`Row ${displayRow}: lifecycle_state is required.`);
 
     if (rawId) {
-      if (seenIds.has(rawId)) errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
+      if (seenIds.has(rawId))
+        errors.push(`Row ${displayRow}: duplicate id "${rawId}".`);
       else seenIds.add(rawId);
     }
 
-    if (rawCriticality !== 'high' && rawCriticality !== 'medium' && rawCriticality !== 'low') {
+    if (
+      rawCriticality !== 'high' &&
+      rawCriticality !== 'medium' &&
+      rawCriticality !== 'low'
+    ) {
       errors.push(
         `Row ${displayRow}: criticality must be one of high | medium | low (got "${rawCriticality || '(blank)'}").`,
       );
@@ -167,7 +196,9 @@ export function parseAndValidateApplicationsCsv(csvText: string): ApplicationsCs
       rawName &&
       rawLifecycle &&
       rawLifecycleState &&
-      (rawCriticality === 'high' || rawCriticality === 'medium' || rawCriticality === 'low')
+      (rawCriticality === 'high' ||
+        rawCriticality === 'medium' ||
+        rawCriticality === 'low')
     ) {
       applications.push({
         id: rawId,
@@ -181,7 +212,8 @@ export function parseAndValidateApplicationsCsv(csvText: string): ApplicationsCs
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  if (applications.length === 0) return { ok: false, errors: ['No application rows found.'] };
+  if (applications.length === 0)
+    return { ok: false, errors: ['No application rows found.'] };
 
   return { ok: true, applications };
 }

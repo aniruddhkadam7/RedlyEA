@@ -7,17 +7,30 @@ type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 export const loadActiveLocalUser = (): Result<LocalUser> => {
   try {
     const raw = localStorage.getItem(ACTIVE_KEY);
-    if (!raw) return { ok: false, error: 'No active user. Exactly one LocalUser must be active.' };
+    if (!raw)
+      return {
+        ok: false,
+        error: 'No active user. Exactly one LocalUser must be active.',
+      };
     const parsed = JSON.parse(raw) as unknown;
-    if (!isLocalUser(parsed)) return { ok: false, error: 'Invalid active user. Exactly one LocalUser must be active.' };
+    if (!isLocalUser(parsed))
+      return {
+        ok: false,
+        error: 'Invalid active user. Exactly one LocalUser must be active.',
+      };
     return { ok: true, value: parsed };
   } catch {
-    return { ok: false, error: 'Failed to load active user. Exactly one LocalUser must be active.' };
+    return {
+      ok: false,
+      error:
+        'Failed to load active user. Exactly one LocalUser must be active.',
+    };
   }
 };
 
 export const setActiveLocalUser = (user: LocalUser): Result<LocalUser> => {
-  if (!isLocalUser(user)) return { ok: false, error: 'Active user must be a valid LocalUser.' };
+  if (!isLocalUser(user))
+    return { ok: false, error: 'Active user must be a valid LocalUser.' };
   try {
     localStorage.setItem(ACTIVE_KEY, JSON.stringify(user));
     return { ok: true, value: user };

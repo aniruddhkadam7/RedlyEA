@@ -12,9 +12,42 @@
  */
 
 export { default as ExplorerTree } from './ExplorerTree';
-export { EXPLORER_KEYS, getObjectTypesByCategory, getObjectTypesByMetamodelLayer, getRelationshipTypesByCategory, resolveArchitectureName, getDefaultExpandedKeys } from './explorerNodeRegistry';
-export { buildExplorerTree, type ExplorerTreeInput, type ExplorerTreeResult } from './explorerTreeBuilder';
-export { buildContextMenu, classifyNodeKey, type ExplorerMenuAction } from './explorerContextMenu';
-export { emitExplorerEvent, onExplorerEvent, bridgeLegacyEvents, type ExplorerEvent } from './explorerEventBus';
-export { writeAuditEntry, auditObjectMutation, queryAuditLog, getObjectAuditTrail, clearAuditLog, type AuditEntry, type AuditActionType } from './explorerAuditLog';
-export { canPerform, assertCanPerform, filterMenuByPermission, type ExplorerAction } from './explorerPermissions';
+export {
+  type AuditActionType,
+  type AuditEntry,
+  auditObjectMutation,
+  clearAuditLog,
+  getObjectAuditTrail,
+  queryAuditLog,
+  writeAuditEntry,
+} from './explorerAuditLog';
+export {
+  buildContextMenu,
+  classifyNodeKey,
+  type ExplorerMenuAction,
+} from './explorerContextMenu';
+export {
+  bridgeLegacyEvents,
+  type ExplorerEvent,
+  emitExplorerEvent,
+  onExplorerEvent,
+} from './explorerEventBus';
+export {
+  EXPLORER_KEYS,
+  getDefaultExpandedKeys,
+  getObjectTypesByCategory,
+  getObjectTypesByMetamodelLayer,
+  getRelationshipTypesByCategory,
+  resolveArchitectureName,
+} from './explorerNodeRegistry';
+export {
+  assertCanPerform,
+  canPerform,
+  type ExplorerAction,
+  filterMenuByPermission,
+} from './explorerPermissions';
+export {
+  buildExplorerTree,
+  type ExplorerTreeInput,
+  type ExplorerTreeResult,
+} from './explorerTreeBuilder';

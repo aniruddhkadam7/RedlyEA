@@ -11,7 +11,11 @@
  *   - NEVER show red on hover — this is not a validator
  */
 
-import type { ConnectionResolution, ConnectionVisualFeedback, ConnectionFeedbackKind } from './types';
+import type {
+  ConnectionFeedbackKind,
+  ConnectionResolution,
+  ConnectionVisualFeedback,
+} from './types';
 
 // ─── CSS Class Names (applied to Cytoscape nodes) ───────────────────
 export const CONNECTION_FEEDBACK_CLASSES = {
@@ -25,25 +29,28 @@ export const CONNECTION_FEEDBACK_CLASSES = {
 
 // ─── Colors ──────────────────────────────────────────────────────────
 export const CONNECTION_FEEDBACK_COLORS = {
-  directValid: '#52c41a',   // Green — direct path available
+  directValid: '#52c41a', // Green — direct path available
   indirectValid: '#1890ff', // Blue — indirect path available
-  neutral: 'transparent',   // No outline — no path, but no error either
+  neutral: 'transparent', // No outline — no path, but no error either
 } as const;
 
 // ─── Main Feedback Function ──────────────────────────────────────────
 /**
  * Determine visual feedback for a target node based on connection resolution.
  */
-export function getConnectionFeedback(resolution: ConnectionResolution): ConnectionVisualFeedback {
+export function getConnectionFeedback(
+  resolution: ConnectionResolution,
+): ConnectionVisualFeedback {
   if (resolution.directRelationships.length > 0) {
     const count = resolution.directRelationships.length;
     return {
       kind: 'direct-valid' as ConnectionFeedbackKind,
       cssClass: CONNECTION_FEEDBACK_CLASSES.directValid,
       outlineColor: CONNECTION_FEEDBACK_COLORS.directValid,
-      tooltip: count === 1
-        ? `Connect: ${resolution.directRelationships[0].label}`
-        : `${count} connection types available`,
+      tooltip:
+        count === 1
+          ? `Connect: ${resolution.directRelationships[0].label}`
+          : `${count} connection types available`,
     };
   }
 
@@ -55,9 +62,10 @@ export function getConnectionFeedback(resolution: ConnectionResolution): Connect
       kind: 'indirect-valid' as ConnectionFeedbackKind,
       cssClass: CONNECTION_FEEDBACK_CLASSES.indirectValid,
       outlineColor: CONNECTION_FEEDBACK_COLORS.indirectValid,
-      tooltip: count === 1
-        ? `Connect via ${via}`
-        : `${count} indirect paths available (via ${via})`,
+      tooltip:
+        count === 1
+          ? `Connect via ${via}`
+          : `${count} indirect paths available (via ${via})`,
     };
   }
 
@@ -74,7 +82,10 @@ export function getConnectionFeedback(resolution: ConnectionResolution): Connect
  * Returns Cytoscape stylesheet entries for connection feedback classes.
  * These should be merged into the Cytoscape style array.
  */
-export function getConnectionFeedbackStyles(): Array<{ selector: string; style: Record<string, unknown> }> {
+export function getConnectionFeedbackStyles(): Array<{
+  selector: string;
+  style: Record<string, unknown>;
+}> {
   return [
     {
       selector: `.${CONNECTION_FEEDBACK_CLASSES.directValid}`,
@@ -126,7 +137,7 @@ export function getConnectionFeedbackStyles(): Array<{ selector: string; style: 
       style: {
         'line-style': 'dashed',
         'line-dash-pattern': [6, 3],
-        'opacity': 0.7,
+        opacity: 0.7,
       },
     },
     // Collapsed compound edges get a double-line effect.
@@ -134,7 +145,7 @@ export function getConnectionFeedbackStyles(): Array<{ selector: string; style: 
       selector: 'edge[?compoundCollapsed]',
       style: {
         'line-style': 'solid',
-        'width': 3,
+        width: 3,
         'line-color': CONNECTION_FEEDBACK_COLORS.indirectValid,
         'target-arrow-color': CONNECTION_FEEDBACK_COLORS.indirectValid,
       },
@@ -145,7 +156,9 @@ export function getConnectionFeedbackStyles(): Array<{ selector: string; style: 
 /**
  * Remove all connection feedback classes from a Cytoscape node.
  */
-export function clearConnectionFeedbackClasses(node: { removeClass: (cls: string) => void }): void {
+export function clearConnectionFeedbackClasses(node: {
+  removeClass: (cls: string) => void;
+}): void {
   node.removeClass(CONNECTION_FEEDBACK_CLASSES.directValid);
   node.removeClass(CONNECTION_FEEDBACK_CLASSES.indirectValid);
   node.removeClass(CONNECTION_FEEDBACK_CLASSES.neutral);

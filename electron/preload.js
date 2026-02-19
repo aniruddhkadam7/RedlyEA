@@ -25,4 +25,19 @@ contextBridge.exposeInMainWorld('eaDesktop', {
     ipcRenderer.invoke('ea:importLegacyProjectAtPath', { filePath }),
   openDevTools: () => ipcRenderer.invoke('ea:openDevTools'),
   setTitleBarTheme: (args) => ipcRenderer.invoke('ea:setTitleBarTheme', args),
+
+  // Auto-updater methods
+  checkForUpdates: () => ipcRenderer.invoke('ea:checkForUpdates'),
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    getVersion: () => ipcRenderer.invoke('updater:getVersion'),
+    onStatus: (handler) => {
+      ipcRenderer.on('updater:status', (_event, data) => handler(data));
+    },
+    offStatus: (handler) => {
+      ipcRenderer.removeListener('updater:status', handler);
+    },
+  },
 });

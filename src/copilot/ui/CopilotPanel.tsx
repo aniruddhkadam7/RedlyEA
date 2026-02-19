@@ -1,21 +1,39 @@
-import React from 'react';
-
-import { Alert, Collapse, Divider, List, Space, Tag, Typography } from 'antd';
-import { Button, Input, Select, Tooltip } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-
-import { COPILOT_SAFETY_RULES, COPILOT_TRUST_BANNER } from '@/copilot/safetyRules';
+import {
+  Alert,
+  Button,
+  Collapse,
+  Divider,
+  Input,
+  List,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
+import React from 'react';
 import { useCopilotContext } from '@/copilot/CopilotContextProvider';
-import type { CopilotExpectedOutputType, CopilotInteractionContract, CopilotUserIntent } from '@/copilot/contracts';
+import type {
+  CopilotExpectedOutputType,
+  CopilotInteractionContract,
+  CopilotUserIntent,
+} from '@/copilot/contracts';
+import {
+  COPILOT_SAFETY_RULES,
+  COPILOT_TRUST_BANNER,
+} from '@/copilot/safetyRules';
 
 const DISABLED_INTENTS: Array<{ title: string; description: string }> = [
   {
     title: 'Explain this application',
-    description: 'Summarize purpose, dependencies, and responsibilities (read-only).',
+    description:
+      'Summarize purpose, dependencies, and responsibilities (read-only).',
   },
   {
     title: 'Simulate outage impact',
-    description: 'Define a what-if scenario and outline affected scope (no execution).',
+    description:
+      'Define a what-if scenario and outline affected scope (no execution).',
   },
   {
     title: 'Check governance compliance',
@@ -23,15 +41,19 @@ const DISABLED_INTENTS: Array<{ title: string; description: string }> = [
   },
   {
     title: 'Suggest missing relationships',
-    description: 'Propose candidate relationships for review (no auto-creation).',
+    description:
+      'Propose candidate relationships for review (no auto-creation).',
   },
 ];
 
 const CopilotPanel: React.FC = () => {
   const { snapshot } = useCopilotContext();
   const [query, setQuery] = React.useState('');
-  const [intent, setIntent] = React.useState<CopilotUserIntent>('explain_application');
-  const [expectedOutputType, setExpectedOutputType] = React.useState<CopilotExpectedOutputType>('explanation');
+  const [intent, setIntent] = React.useState<CopilotUserIntent>(
+    'explain_application',
+  );
+  const [expectedOutputType, setExpectedOutputType] =
+    React.useState<CopilotExpectedOutputType>('explanation');
   const [details, setDetails] = React.useState('');
 
   const snapshotText = React.useMemo(() => {
@@ -64,18 +86,29 @@ const CopilotPanel: React.FC = () => {
   const filteredIntents = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return DISABLED_INTENTS;
-    return DISABLED_INTENTS.filter((i) => `${i.title} ${i.description}`.toLowerCase().includes(q));
+    return DISABLED_INTENTS.filter((i) =>
+      `${i.title} ${i.description}`.toLowerCase().includes(q),
+    );
   }, [query]);
 
   const INTENT_OPTIONS: Array<{ value: CopilotUserIntent; label: string }> = [
     { value: 'explain_application', label: 'Explain this application' },
     { value: 'simulate_outage_impact', label: 'Simulate outage impact' },
-    { value: 'check_governance_compliance', label: 'Check governance compliance' },
-    { value: 'suggest_missing_relationships', label: 'Suggest missing relationships' },
+    {
+      value: 'check_governance_compliance',
+      label: 'Check governance compliance',
+    },
+    {
+      value: 'suggest_missing_relationships',
+      label: 'Suggest missing relationships',
+    },
     { value: 'what_if_scenario', label: 'What-if scenario' },
   ];
 
-  const OUTPUT_OPTIONS: Array<{ value: CopilotExpectedOutputType; label: string }> = [
+  const OUTPUT_OPTIONS: Array<{
+    value: CopilotExpectedOutputType;
+    label: string;
+  }> = [
     { value: 'explanation', label: 'Explanation' },
     { value: 'suggestion', label: 'Suggestion' },
     { value: 'warning', label: 'Warning' },
@@ -92,7 +125,8 @@ const CopilotPanel: React.FC = () => {
           </Space>
 
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            IDE-side assistant for enterprise architects. Proposes, never executes.
+            IDE-side assistant for enterprise architects. Proposes, never
+            executes.
           </Typography.Paragraph>
 
           <Alert
@@ -127,7 +161,12 @@ const CopilotPanel: React.FC = () => {
                 label: 'Context snapshot (read-only)',
                 children: (
                   <Typography.Paragraph
-                    style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+                    style={{
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    }}
                   >
                     {snapshotText}
                   </Typography.Paragraph>
@@ -138,7 +177,12 @@ const CopilotPanel: React.FC = () => {
                 label: 'Interaction contract (structured)',
                 children: (
                   <Typography.Paragraph
-                    style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+                    style={{
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    }}
                   >
                     {contractText}
                   </Typography.Paragraph>
@@ -155,7 +199,9 @@ const CopilotPanel: React.FC = () => {
               dataSource={COPILOT_SAFETY_RULES}
               renderItem={(rule) => (
                 <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
-                  <Typography.Text type="secondary">{rule.statement}</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {rule.statement}
+                  </Typography.Text>
                 </List.Item>
               )}
             />

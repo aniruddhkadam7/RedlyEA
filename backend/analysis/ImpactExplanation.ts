@@ -1,6 +1,6 @@
-import type { ImpactPath } from './ImpactPath';
-import { getRepository } from '../repository/RepositoryStore';
 import type { BaseArchitectureElement } from '../repository/BaseArchitectureElement';
+import { getRepository } from '../repository/RepositoryStore';
+import type { ImpactPath } from './ImpactPath';
 
 export type ImpactExplanationNode = {
   elementId: string;
@@ -25,9 +25,13 @@ export type ImpactExplanationResult =
 const normalizeId = (value: string) => (value ?? '').trim();
 const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-const pathTieKey = (p: ImpactPath) => `${p.pathLength}|${p.orderedElementIds.join('>')}|${p.orderedRelationshipIds.join('>')}|${p.pathId}`;
+const pathTieKey = (p: ImpactPath) =>
+  `${p.pathLength}|${p.orderedElementIds.join('>')}|${p.orderedRelationshipIds.join('>')}|${p.pathId}`;
 
-const resolveElement = (repo: { getElementById(id: string): BaseArchitectureElement | null }, id: string) => {
+const resolveElement = (
+  repo: { getElementById(id: string): BaseArchitectureElement | null },
+  id: string,
+) => {
   const element = repo.getElementById(id);
   if (!element) {
     return { elementId: id, name: id } satisfies ImpactExplanationNode;
@@ -60,29 +64,51 @@ export class ImpactExplanation {
     const impactedId = normalizeId(params.impactedElementId);
 
     if (!rootId) return { ok: false, error: 'rootElementId is required.' };
-    if (!impactedId) return { ok: false, error: 'impactedElementId is required.' };
-    if (impactedId === rootId) return { ok: false, error: 'impactedElementId must not equal rootElementId.' };
+    if (!impactedId)
+      return { ok: false, error: 'impactedElementId is required.' };
+    if (impactedId === rootId)
+      return {
+        ok: false,
+        error: 'impactedElementId must not equal rootElementId.',
+      };
 
     // Prefer paths where the selected impacted element is the leaf.
     // ImpactPathEnumerator emits prefixes, so every reached element should appear as a leaf of some path.
     const leafPaths = (params.paths ?? []).filter((p) => {
       const ordered = p.orderedElementIds ?? [];
-      return ordered.length > 0 && normalizeId(ordered[ordered.length - 1] ?? '') === impactedId;
+      return (
+        ordered.length > 0 &&
+        normalizeId(ordered[ordered.length - 1] ?? '') === impactedId
+      );
     });
 
     if (leafPaths.length === 0) {
-      return { ok: false, error: `No impact path found ending at impacted element "${impactedId}".` };
+      return {
+        ok: false,
+        error: `No impact path found ending at impacted element "${impactedId}".`,
+      };
     }
 
     const hardCandidates = leafPaths
       .filter((p) => p.containsHardDependency)
       .slice()
-      .sort((a, b) => a.pathLength - b.pathLength || compareStrings(pathTieKey(a), pathTieKey(b)));
+      .sort(
+        (a, b) =>
+          a.pathLength - b.pathLength ||
+          compareStrings(pathTieKey(a), pathTieKey(b)),
+      );
 
     const softOnlyCandidates = leafPaths
-      .filter((p) => !p.containsHardDependency && p.weakestDependencyStrength === 'Soft')
+      .filter(
+        (p) =>
+          !p.containsHardDependency && p.weakestDependencyStrength === 'Soft',
+      )
       .slice()
-      .sort((a, b) => a.pathLength - b.pathLength || compareStrings(pathTieKey(a), pathTieKey(b)));
+      .sort(
+        (a, b) =>
+          a.pathLength - b.pathLength ||
+          compareStrings(pathTieKey(a), pathTieKey(b)),
+      );
 
     const chosen = hardCandidates[0] ?? softOnlyCandidates[0];
     if (!chosen) {
@@ -93,7 +119,8 @@ export class ImpactExplanation {
       };
     }
 
-    const selectionPolicy: 'ShortestHard' | 'ShortestSoftOnly' = hardCandidates[0] ? 'ShortestHard' : 'ShortestSoftOnly';
+    const selectionPolicy: 'ShortestHard' | 'ShortestSoftOnly' =
+      hardCandidates[0] ? 'ShortestHard' : 'ShortestSoftOnly';
 
     const repo = getRepository();
     const explanationNodes = (chosen.orderedElementIds ?? [])
