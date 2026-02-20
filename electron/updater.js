@@ -101,13 +101,43 @@ function registerUpdaterIpc() {
 
     // The renderer shows a "Restarting..." overlay before calling this.
     // We delay quitAndInstall by 800 ms so the user sees the overlay.
-    // quitAndInstall(true, true):
-    //   isSilent=true         — NSIS runs silently (no wizard UI)
-    //   isForceRunAfter=true  — relaunches the app after install
-    //
-    // quitAndInstall internally closes all windows, quits the app,
-    // and spawns the NSIS installer.  Do NOT manually destroy windows.
     setTimeout(() => {
+      // --- Failsafe relaunch watchdog (Windows only) ---
+      // NSIS --force-run is supposed to relaunch the app after a silent
+      // install, but it doesn't work reliably with oneClick:true.
+      // We spawn a tiny detached cmd process that waits ~12 seconds
+      // (plenty for NSIS to finish), then starts the exe.
+      //
+      // If NSIS *did* relaunch successfully, the watchdog-started
+      // instance hits requestSingleInstanceLock() in main.js and
+      // silently exits — so there is never a duplicate.
+      if (process.platform === "win32") {
+        try {
+          const exePath = app.getPath("exe");
+          const { spawn } = require("node:child_process");
+          const watchdog = spawn(
+            "cmd.exe",
+            ["/c", `ping -n 13 127.0.0.1 >nul 2>&1 & start "" "${exePath}"`],
+            { detached: true, stdio: "ignore", windowsHide: true },
+          );
+          watchdog.unref();
+          console.log(
+            "[Updater] Relaunch watchdog spawned — will start app in ~12 s if needed",
+          );
+        } catch (e) {
+          console.error(
+            "[Updater] Failed to spawn relaunch watchdog:",
+            e.message,
+          );
+        }
+      }
+
+      // quitAndInstall(true, true):
+      //   isSilent=true         — NSIS runs silently (no wizard UI)
+      //   isForceRunAfter=true  — relaunches the app after install
+      //
+      // quitAndInstall internally closes all windows, quits the app,
+      // and spawns the NSIS installer.  Do NOT manually destroy windows.
       autoUpdater.quitAndInstall(true, true);
     }, 800);
 
