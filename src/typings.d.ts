@@ -151,15 +151,16 @@ declare global {
         height?: number;
       }) => Promise<{ ok: true } | { ok: false; error: string }>;
       closeDevTools: () => Promise<{ ok: true } | { ok: false; error: string }>;
-      // Manual update check
-      checkForUpdates: () => Promise<
-        { ok: true } | { ok: false; error: string }
-      >;
       // Updater API
       updater: {
         check: () => Promise<
-          | { ok: true; updateInfo?: { version: string; releaseDate?: string } }
-          | { ok: false; error: string }
+          | {
+              ok: true;
+              currentVersion: string;
+              updateAvailable: boolean;
+              updateInfo?: { version: string; releaseDate?: string };
+            }
+          | { ok: false; currentVersion: string; error: string }
         >;
         download: () => Promise<{ ok: true } | { ok: false; error: string }>;
         install: () => { ok: true } | { ok: false; error: string };

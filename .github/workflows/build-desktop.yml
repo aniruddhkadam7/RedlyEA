@@ -1,4 +1,4 @@
-# GitHub Actions workflow for building RedlyAI Electron app on main branch
+# GitHub Actions workflow for building RedlyEA Electron app on main branch
 # Triggers on push to main branch
 # Builds Windows .exe installer and portable executables
 
@@ -40,8 +40,56 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and package Electron app for Windows
-        run: pnpm run release:win
+      - name: Build web assets
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+          ELECTRON_BUILD: "1"
+
+      - name: Validate build output
+        run: pnpm run validate:build
+
+      - name: Generate icons
+        run: pnpm run desktop:icons
+        continue-on-error: true
+
+      - name: Ensure build icons exist
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "build/icons")) {
+            New-Item -ItemType Directory -Path "build/icons" -Force | Out-Null
+          }
+          if (-not (Test-Path "build/icons/icon.png")) {
+            if (Test-Path "public/icons/icon-512x512.png") {
+              Copy-Item "public/icons/icon-512x512.png" "build/icons/icon.png" -Force
+              Copy-Item "public/icons/icon-512x512.png" "build/icons/eapkg-icon.png" -Force
+            }
+          }
+          if (-not (Test-Path "build/icons/icon.ico")) {
+            node -e @"
+              const fs = require('fs');
+              const png = fs.readFileSync('public/icons/icon-512x512.png');
+              const w = png.readUInt32BE(16), h = png.readUInt32BE(20);
+              const sz = Math.min(Math.max(w,1),256); const ico_sz = sz>=256?0:sz;
+              const hdr=6, ent=16, off=hdr+ent, buf=Buffer.alloc(off+png.length);
+              let o=0;
+              buf.writeUInt16LE(0,o); o+=2; buf.writeUInt16LE(1,o); o+=2; buf.writeUInt16LE(1,o); o+=2;
+              buf.writeUInt8(ico_sz,o); o+=1; buf.writeUInt8(ico_sz,o); o+=1;
+              buf.writeUInt8(0,o); o+=1; buf.writeUInt8(0,o); o+=1;
+              buf.writeUInt16LE(1,o); o+=2; buf.writeUInt16LE(32,o); o+=2;
+              buf.writeUInt32LE(png.length,o); o+=4; buf.writeUInt32LE(off,o);
+              png.copy(buf, off);
+              fs.writeFileSync('build/icons/icon.ico', buf);
+              fs.writeFileSync('build/icons/eapkg-icon.ico', buf);
+              console.log('Generated ICO fallback from PNG');
+          "@
+          }
+          Get-ChildItem -Path "build/icons" -ErrorAction SilentlyContinue
+
+      - name: Build Windows installer and portable exe
+        shell: pwsh
+        run: |
+          npx electron-builder --config electron-builder.json --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

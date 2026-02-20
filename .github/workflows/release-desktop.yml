@@ -1,4 +1,4 @@
-# GitHub Actions workflow for building and publishing RedlyAI Electron app
+# GitHub Actions workflow for building and publishing RedlyEA Electron app
 # Triggers on version tags (v1.0.0, v1.0.1, etc.)
 # Builds Windows .exe and uploads to GitHub Releases
 #
@@ -70,12 +70,34 @@ jobs:
             New-Item -ItemType Directory -Path "build/icons" -Force | Out-Null
             Write-Host "Created build/icons directory"
           }
-          # If icon.ico was not generated, copy the PNG as fallback
-          if (-not (Test-Path "build/icons/icon.ico")) {
+          # Always ensure icon.png exists (electron-builder can use it)
+          if (-not (Test-Path "build/icons/icon.png")) {
             if (Test-Path "public/icons/icon-512x512.png") {
               Copy-Item "public/icons/icon-512x512.png" "build/icons/icon.png" -Force
-              Write-Host "WARNING: icon.ico not found, copied PNG fallback"
+              Copy-Item "public/icons/icon-512x512.png" "build/icons/eapkg-icon.png" -Force
+              Write-Host "Copied PNG fallbacks to build/icons/"
             }
+          }
+          # If icon.ico was not generated, create one by wrapping the PNG in an ICO container
+          if (-not (Test-Path "build/icons/icon.ico")) {
+            Write-Host "icon.ico not found — generating from PNG via Node.js..."
+            node -e @"
+              const fs = require('fs');
+              const png = fs.readFileSync('public/icons/icon-512x512.png');
+              const w = png.readUInt32BE(16), h = png.readUInt32BE(20);
+              const sz = Math.min(Math.max(w,1),256); const ico_sz = sz>=256?0:sz;
+              const hdr=6, ent=16, off=hdr+ent, buf=Buffer.alloc(off+png.length);
+              let o=0;
+              buf.writeUInt16LE(0,o); o+=2; buf.writeUInt16LE(1,o); o+=2; buf.writeUInt16LE(1,o); o+=2;
+              buf.writeUInt8(ico_sz,o); o+=1; buf.writeUInt8(ico_sz,o); o+=1;
+              buf.writeUInt8(0,o); o+=1; buf.writeUInt8(0,o); o+=1;
+              buf.writeUInt16LE(1,o); o+=2; buf.writeUInt16LE(32,o); o+=2;
+              buf.writeUInt32LE(png.length,o); o+=4; buf.writeUInt32LE(off,o);
+              png.copy(buf, off);
+              fs.writeFileSync('build/icons/icon.ico', buf);
+              fs.writeFileSync('build/icons/eapkg-icon.ico', buf);
+              console.log('Generated icon.ico and eapkg-icon.ico from PNG');
+          "@
           }
           Write-Host "Icons directory contents:"
           Get-ChildItem -Path "build/icons" -ErrorAction SilentlyContinue
@@ -112,8 +134,6 @@ jobs:
         with:
           files: |
             release/*.exe
-            release/*.blockmap
-            release/latest.yml
           fail_on_unmatched_files: false
           generate_release_notes: true
         env:

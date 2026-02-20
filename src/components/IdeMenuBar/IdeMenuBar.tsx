@@ -2569,22 +2569,37 @@ const IdeMenuBar: React.FC = () => {
     const hideLoading = message.loading("Checking for updates...", 0);
 
     try {
-      const result = await window.eaDesktop?.updater?.check();
+      const result = await window.eaDesktop.updater.check();
       hideLoading();
 
       if (!result?.ok) {
         // Graceful message for dev mode or when updater isn't available
+        const currentVersion = (result as any)?.currentVersion ?? "unknown";
         Modal.info({
           title: "Updates",
-          content: result.error || "Could not check for updates.",
+          content: (
+            <div>
+              <p>{(result as any)?.error || "Could not check for updates."}</p>
+              <p style={{ color: "#888", fontSize: 12 }}>
+                Current version: <strong>v{currentVersion}</strong>
+              </p>
+            </div>
+          ),
         });
         return;
       }
 
-      if (result.updateInfo?.version) {
-        const versionResult = await window.eaDesktop.updater.getVersion();
-        const currentVersion = versionResult?.version ?? "unknown";
+      const currentVersion = (result as any).currentVersion ?? "unknown";
+      const remoteVersion = result.updateInfo?.version ?? "";
+      // Normalize versions (strip leading "v") for reliable comparison
+      const normCurrent = String(currentVersion).replace(/^v/i, "");
+      const normRemote = String(remoteVersion).replace(/^v/i, "");
+      const updateAvailable =
+        (result as any).updateAvailable === true &&
+        normRemote !== "" &&
+        normRemote !== normCurrent;
 
+      if (updateAvailable && result.updateInfo?.version) {
         Modal.confirm({
           title: "Update Available",
           content: (
@@ -2605,13 +2620,33 @@ const IdeMenuBar: React.FC = () => {
               <p>Would you like to download and install it?</p>
             </div>
           ),
-          okText: "Download",
+          okText: "Download & Install",
           cancelText: "Later",
           onOk: async () => {
-            const hideDownloading = message.loading("Downloading update...", 0);
+            let hideDownloading = message.loading(
+              "Downloading update... 0%",
+              0,
+            );
+
+            // Listen for download progress events from the main process
+            const statusHandler = (data: any) => {
+              if (data?.status === "downloading" && data?.percent != null) {
+                const pct = Math.round(data.percent);
+                // Close previous message and show updated one
+                if (typeof hideDownloading === "function") hideDownloading();
+                hideDownloading = message.loading(
+                  `Downloading update... ${pct}%`,
+                  0,
+                );
+              }
+            };
+            window.eaDesktop?.updater?.onStatus?.(statusHandler);
+
             try {
               const dlResult = await window.eaDesktop?.updater?.download();
-              hideDownloading();
+              // Unsubscribe from progress events
+              window.eaDesktop?.updater?.offStatus?.(statusHandler);
+              if (typeof hideDownloading === "function") hideDownloading();
               if (dlResult?.ok) {
                 Modal.confirm({
                   title: "Update Ready",
@@ -2632,7 +2667,8 @@ const IdeMenuBar: React.FC = () => {
                 });
               }
             } catch (dlErr) {
-              hideDownloading();
+              window.eaDesktop?.updater?.offStatus?.(statusHandler);
+              if (typeof hideDownloading === "function") hideDownloading();
               Modal.error({
                 title: "Download Failed",
                 content:
@@ -2644,9 +2680,21 @@ const IdeMenuBar: React.FC = () => {
           },
         });
       } else {
+        // No update available — show current + latest version
+        const latestVersion = result.updateInfo?.version ?? currentVersion;
         Modal.info({
-          title: "No Updates Available",
-          content: "You are running the latest version.",
+          title: "You're Up to Date",
+          content: (
+            <div>
+              <p>
+                Current version: <strong>v{currentVersion}</strong>
+              </p>
+              <p>
+                Latest release: <strong>v{latestVersion}</strong>
+              </p>
+              <p>You are running the latest version.</p>
+            </div>
+          ),
         });
       }
     } catch (err) {

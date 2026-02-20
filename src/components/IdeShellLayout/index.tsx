@@ -3025,6 +3025,16 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   setPanelDock("bottom");
                 }}
               />
+              <Typography.Text
+                style={{
+                  fontSize: 11,
+                  color: token.colorPrimary,
+                  opacity: 0.8,
+                  marginRight: 4,
+                }}
+              >
+                v{window.eaDesktop?.updater?.getVersion ? "1.0.7" : "dev"}
+              </Typography.Text>
               <Button
                 type="text"
                 size="small"

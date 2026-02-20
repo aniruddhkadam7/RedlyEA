@@ -1,12 +1,12 @@
 {
   "name": "redly-ea",
-  "version": "1.0.3",
+  "version": "0.0.1",
   "private": true,
   "main": "electron/main.js",
   "description": "An enterprise architecture visualization, impact analysis and asset management tool",
   "author": {
-    "name": "RedlyAI",
-    "email": "support@redlyai.com"
+    "name": "RedlyEA",
+    "email": "support@redlyea.com"
   },
   "homepage": "https://github.com/YOUR_GITHUB_USERNAME/RedlyEA",
   "repository": {

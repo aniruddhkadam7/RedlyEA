@@ -74,9 +74,11 @@ const titleForObjectType = (type: ObjectType): string => {
 };
 
 const iconAsset = (src: string, key?: string): React.ReactNode => {
-  const preferredSrc = src;
+  // Convert absolute paths to relative so they resolve correctly under
+  // Electron's file:// protocol where publicPath is './' (not '/').
+  const preferredSrc = src.startsWith("/") ? `.${src}` : src;
   const fallbackSrc = src.endsWith(".svg")
-    ? src.replace(/\.svg$/i, ".png")
+    ? (src.startsWith("/") ? "." : "") + src.replace(/\.svg$/i, ".png")
     : undefined;
   return React.createElement("img", {
     src: preferredSrc,

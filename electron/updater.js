@@ -1,5 +1,5 @@
 /**
- * Auto-updater module for RedlyAI Electron app.
+ * Auto-updater module for RedlyEA Electron app.
  * Uses electron-updater with GitHub Releases as the update server.
  *
  * Architecture:
@@ -35,9 +35,11 @@ let isRendererTriggeredDownload = false;
  */
 function registerUpdaterIpc() {
   ipcMain.handle("updater:check", async () => {
+    const currentVersion = app.getVersion();
     if (!autoUpdater) {
       return {
         ok: false,
+        currentVersion,
         error: "Auto-updates are only available in the packaged desktop app.",
       };
     }
@@ -45,9 +47,22 @@ function registerUpdaterIpc() {
       // Suppress native dialogs for renderer-triggered checks
       isRendererTriggeredCheck = true;
       const result = await autoUpdater.checkForUpdates();
-      return { ok: true, updateInfo: result?.updateInfo ?? null };
+      const updateInfo = result?.updateInfo ?? null;
+      // Determine whether the remote version is actually newer than current.
+      const remoteVersion = updateInfo?.version ?? null;
+      // Normalize both versions (strip leading "v") before comparison to
+      // avoid false positives due to prefix mismatch (v1.0.3 vs 1.0.3).
+      const normalizedRemote = remoteVersion
+        ? String(remoteVersion).replace(/^v/i, "")
+        : null;
+      const normalizedCurrent = String(currentVersion).replace(/^v/i, "");
+      const updateAvailable =
+        normalizedRemote != null &&
+        normalizedRemote !== normalizedCurrent &&
+        isNewerVersion(normalizedRemote, normalizedCurrent);
+      return { ok: true, currentVersion, updateAvailable, updateInfo };
     } catch (err) {
-      return { ok: false, error: err.message };
+      return { ok: false, currentVersion, error: err.message };
     } finally {
       // Reset after a tick so the event handler can read the flag
       setTimeout(() => {
@@ -83,13 +98,34 @@ function registerUpdaterIpc() {
         error: "Auto-updates are only available in the packaged desktop app.",
       };
     }
-    autoUpdater.quitAndInstall(false, true);
+    // isSilent=true  → run NSIS installer silently (no wizard UI)
+    // isForceRunAfter=true → relaunch the app after install completes
+    // Use setImmediate so the IPC response reaches the renderer before quit
+    setImmediate(() => {
+      autoUpdater.quitAndInstall(true, true);
+    });
     return { ok: true };
   });
 
   ipcMain.handle("updater:getVersion", () => {
     return { version: app.getVersion() };
   });
+}
+
+/**
+ * Simple semver comparison: returns true if a > b.
+ * Handles the common "major.minor.patch" format.
+ */
+function isNewerVersion(a, b) {
+  const pa = String(a).replace(/^v/, "").split(".").map(Number);
+  const pb = String(b).replace(/^v/, "").split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na > nb) return true;
+    if (na < nb) return false;
+  }
+  return false;
 }
 
 // Register IPC handlers immediately so they are available before app.ready
@@ -149,6 +185,18 @@ function initAutoUpdater(mainWindow, options = {}) {
   autoUpdater.on("update-available", (info) => {
     console.log("[Updater] Update available:", info.version);
     sendStatusToWindow(mainWindow, "available", info);
+
+    // Verify the remote version is actually newer than what we're running.
+    // electron-updater fires "update-available" when versions differ (not
+    // strictly newer), so we need our own semver check.
+    const remoteVer = String(info.version || "").replace(/^v/i, "");
+    const currentVer = String(app.getVersion()).replace(/^v/i, "");
+    if (!isNewerVersion(remoteVer, currentVer)) {
+      console.log(
+        `[Updater] Remote ${remoteVer} is not newer than current ${currentVer} — skipping dialog`,
+      );
+      return;
+    }
 
     // Only show native dialog for automatic/background checks.
     // When the renderer triggered the check, it will show its own UI.
@@ -251,7 +299,7 @@ function showUpdateAvailableDialog(mainWindow, info) {
     defaultId: 0,
     cancelId: 1,
     title: "Update Available",
-    message: `A new version of RedlyAI is available!`,
+    message: `A new version of RedlyEA is available!`,
     detail: `Version ${info.version} is ready to download.\n\nCurrent version: ${app.getVersion()}\n\n${releaseNotes ? `What's new:\n${releaseNotes.substring(0, 500)}` : ""}`,
   };
 
