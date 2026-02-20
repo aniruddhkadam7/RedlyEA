@@ -139,6 +139,7 @@ const registerEaFileTypes = () => {
       const nameArg = valueName ? `/v "${valueName}"` : "/ve";
       execSync(`reg add "${key}" ${nameArg} /t ${type} /d "${data}" /f`, {
         stdio: "ignore",
+        windowsHide: true,
       });
     };
 
@@ -167,7 +168,7 @@ const registerEaFileTypes = () => {
       // Use a lighter-weight approach: just call SHChangeNotify via a tiny PowerShell snippet
       execSync(
         'powershell -NoProfile -Command "& { Add-Type -TypeDefinition \\"using System; using System.Runtime.InteropServices; public class ShellNotify { [DllImport(\\\\\\"shell32.dll\\\\\\")] public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2); }\\" -Language CSharp; [ShellNotify]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero) }"',
-        { stdio: "ignore" },
+        { stdio: "ignore", windowsHide: true },
       );
     } catch {
       // Not critical — icon may not refresh until next Explorer restart

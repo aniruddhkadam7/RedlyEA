@@ -1,6 +1,6 @@
 {
   "name": "redly-ea",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "main": "electron/main.js",
   "description": "An enterprise architecture visualization, impact analysis and asset management tool",
