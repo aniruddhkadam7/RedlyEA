@@ -100,7 +100,7 @@ type PanelDock = "bottom" | "right";
 // NOTE: This intentionally exceeds VS Code's default header height.
 const TOP_MENU_BAR_HEIGHT_WEB = 44;
 const TOP_MENU_BAR_HEIGHT_DESKTOP = 34;
-const DESKTOP_HEADER_BG_LIGHT = "#1b2a55";
+const DESKTOP_HEADER_BG_LIGHT = "#cc0000";
 const DESKTOP_HEADER_FG_LIGHT = "#f3f6ff";
 const DESKTOP_HEADER_BG_DARK = "#111827";
 const DESKTOP_HEADER_FG_DARK = "#e5e7eb";
@@ -630,7 +630,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
         "--ide-border": "#e3e6ea",
         "--ide-border-subtle": "#e8ecf1",
         "--ide-header-bg": "#ffffff",
-        "--ide-rail-bg": "#1b2a55",
+        "--ide-rail-bg": "#cc0000",
         "--ide-control-hover": "#eef2f6",
         "--ide-resizer-hover": "#e8ecf1",
         "--ide-tab-inactive-bg": "#f3f5f8",
