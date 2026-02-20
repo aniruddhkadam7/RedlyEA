@@ -7,6 +7,9 @@ const { execSync } = require("node:child_process");
 // Auto-updater module
 const { initAutoUpdater, checkForUpdatesInteractive } = require("./updater");
 
+// Flag to allow window close during update install / quit.
+let isQuitting = false;
+
 // Detect if running in packaged mode
 const isPackaged = app.isPackaged;
 
@@ -954,6 +957,12 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+// When the updater (or the user) triggers a quit, set the flag so the
+// window-close handler does not prevent the close.
+app.on("before-quit", () => {
+  isQuitting = true;
 });
 
 app.on("window-all-closed", () => {

@@ -65,7 +65,6 @@ import { getBaselineById } from "../../../backend/baselines/BaselineStore";
 import { getPlateauById } from "../../../backend/roadmap/PlateauStore";
 import { getRoadmapById } from "../../../backend/roadmap/RoadmapStore";
 import { getViewRepository } from "../../../backend/views/ViewRepositoryStore";
-import logoUrl from "../../../logo.png";
 import AnalysisResultTab from "./AnalysisResultTab";
 import AnalysisTab, { type AnalysisKind } from "./AnalysisTab";
 import ArchitectureAgentPanel from "./ArchitectureAgentPanel";
@@ -1804,7 +1803,7 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
             <Avatar
               className={styles.headerLogo}
               shape="square"
-              src={logoUrl}
+              src="./icons/icon-128x128.png"
               alt="Logo"
               size={logoSize}
               style={{
@@ -3025,16 +3024,6 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
                   setPanelDock("bottom");
                 }}
               />
-              <Typography.Text
-                style={{
-                  fontSize: 11,
-                  color: token.colorPrimary,
-                  opacity: 0.8,
-                  marginRight: 4,
-                }}
-              >
-                v{window.eaDesktop?.updater?.getVersion ? "1.0.7" : "dev"}
-              </Typography.Text>
               <Button
                 type="text"
                 size="small"

@@ -2651,10 +2651,40 @@ const IdeMenuBar: React.FC = () => {
                 Modal.confirm({
                   title: "Update Ready",
                   content:
-                    "The update has been downloaded. Restart now to install?",
+                    "The update has been downloaded. The app will restart to install the update.",
                   okText: "Restart Now",
                   cancelText: "Later",
                   onOk: () => {
+                    // Show a full-screen overlay so the user knows the app is
+                    // restarting — not crashed. The main process waits 800 ms
+                    // before calling quitAndInstall so this overlay is visible.
+                    Modal.destroyAll();
+                    const overlay = document.createElement("div");
+                    overlay.id = "update-restart-overlay";
+                    overlay.innerHTML = `
+                      <div style="
+                        position: fixed; inset: 0; z-index: 99999;
+                        display: flex; flex-direction: column;
+                        align-items: center; justify-content: center;
+                        background: rgba(0,0,0,0.85); color: #fff;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      ">
+                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">
+                          Installing Update…
+                        </div>
+                        <div style="font-size: 14px; opacity: 0.7;">
+                          The app will restart automatically. Please wait.
+                        </div>
+                        <div style="margin-top: 24px; width: 48px; height: 48px;
+                          border: 3px solid rgba(255,255,255,0.2);
+                          border-top-color: #fff; border-radius: 50%;
+                          animation: updater-spin 0.8s linear infinite;
+                        "></div>
+                        <style>@keyframes updater-spin{to{transform:rotate(360deg)}}</style>
+                      </div>
+                    `;
+                    document.body.appendChild(overlay);
+                    // Trigger the install (main process waits 800 ms then quits)
                     window.eaDesktop?.updater?.install();
                   },
                 });

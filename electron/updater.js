@@ -98,12 +98,19 @@ function registerUpdaterIpc() {
         error: "Auto-updates are only available in the packaged desktop app.",
       };
     }
-    // isSilent=true  → run NSIS installer silently (no wizard UI)
-    // isForceRunAfter=true → relaunch the app after install completes
-    // Use setImmediate so the IPC response reaches the renderer before quit
-    setImmediate(() => {
+
+    // The renderer shows a "Restarting..." overlay before calling this.
+    // We delay quitAndInstall by 800 ms so the user sees the overlay.
+    // quitAndInstall(true, true):
+    //   isSilent=true         — NSIS runs silently (no wizard UI)
+    //   isForceRunAfter=true  — relaunches the app after install
+    //
+    // quitAndInstall internally closes all windows, quits the app,
+    // and spawns the NSIS installer.  Do NOT manually destroy windows.
+    setTimeout(() => {
       autoUpdater.quitAndInstall(true, true);
-    });
+    }, 800);
+
     return { ok: true };
   });
 
@@ -162,7 +169,7 @@ function initAutoUpdater(mainWindow, options = {}) {
 
   // Configure updater
   autoUpdater.autoDownload = false; // Don't download automatically, wait for user
-  autoUpdater.autoInstallOnAppQuit = true; // Install when app quits
+  autoUpdater.autoInstallOnAppQuit = false; // Only install via explicit user action (quitAndInstall)
   autoUpdater.allowDowngrade = false; // Don't allow downgrade to older versions
 
   // Logging
@@ -327,8 +334,9 @@ function showUpdateDownloadedDialog(mainWindow, info) {
 
   dialog.showMessageBox(mainWindow, dialogOpts).then((result) => {
     if (result.response === 0) {
-      // User clicked "Restart Now"
-      autoUpdater.quitAndInstall(false, true);
+      // User clicked "Restart Now" — silent install + force relaunch.
+      // Let quitAndInstall handle window closing natively (no manual destroy).
+      autoUpdater.quitAndInstall(true, true);
     }
   });
 }
