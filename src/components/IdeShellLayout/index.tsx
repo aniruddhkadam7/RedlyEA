@@ -5,6 +5,7 @@ import {
   CaretUpOutlined,
   ClusterOutlined,
   DeploymentUnitOutlined,
+  DesktopOutlined,
   DoubleLeftOutlined,
   FolderOpenOutlined,
   FundOutlined,
@@ -85,6 +86,7 @@ type ActivityKey =
   | "diagrams"
   | "analysis"
   | "metamodel"
+  | "inventory"
   | "settings";
 
 type TabItem = {
@@ -242,6 +244,7 @@ const ACTIVITY_ITEMS: Array<{
   { key: "diagrams", title: "Diagrams", icon: <DeploymentUnitOutlined /> },
   { key: "analysis", title: "Analysis", icon: <FundOutlined /> },
   { key: "metamodel", title: "Metamodel", icon: <NodeIndexOutlined /> },
+  { key: "inventory", title: "Live Inventory", icon: <DesktopOutlined /> },
   { key: "settings", title: "Settings", icon: <SettingOutlined /> },
 ];
 
@@ -249,6 +252,9 @@ const ROUTE_TITLES: Record<string, string> = {
   "/applications": "Applications",
   "/governance": "Governance & Assurance",
   "/impact-analysis": "Impact Analysis",
+  "/live-inventory": "Live Inventory",
+  "/software-insights": "Software Insights",
+  "/agent-management": "Agent Management",
   "/diagrams/application-dependency": "Application Dependency Views",
   "/diagrams/application-landscape": "Application Landscape",
   "/diagrams/capability-map": "Capability Map",
@@ -1713,6 +1719,33 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
   const metamodelBody = sidebars?.metamodel ?? (
     <PlaceholderPanel title="Metamodel" />
   );
+  const inventoryBody = sidebars?.inventory ?? (
+    <div style={{ display: "grid", gap: 8, padding: 12 }}>
+      <Typography.Text type="secondary">Live Inventory</Typography.Text>
+      <Button onClick={() => openRouteTab("/live-inventory")}>
+        Open Inventory Dashboard
+      </Button>
+      <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4 }}>
+        View machines, installed apps, and running processes reported by agents.
+      </Typography.Text>
+      <div style={{ borderTop: "1px solid var(--ant-color-border, #f0f0f0)", marginTop: 8, paddingTop: 8 }} />
+      <Typography.Text type="secondary">Software Insights</Typography.Text>
+      <Button onClick={() => openRouteTab("/software-insights")}>
+        Open Software Insights
+      </Button>
+      <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4 }}>
+        Application usage analytics computed from agent process snapshots.
+      </Typography.Text>
+      <div style={{ borderTop: "1px solid var(--ant-color-border, #f0f0f0)", marginTop: 8, paddingTop: 8 }} />
+      <Typography.Text type="secondary">Agents</Typography.Text>
+      <Button onClick={() => openRouteTab("/agent-management")}>
+        Agent Management
+      </Button>
+      <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4 }}>
+        Download and distribute the Redly Agent installer to company machines.
+      </Typography.Text>
+    </div>
+  );
   const settingsBody = sidebars?.settings ?? (
     <PlaceholderPanel title="Settings" />
   );
@@ -1728,6 +1761,8 @@ const IdeShellLayout: React.FC<IdeShellLayoutProps> = ({
       <div className={styles.sidebarPanelSection}>{analysisBody}</div>
     ) : activeSidebarKey === "metamodel" ? (
       <div className={styles.sidebarPanelSection}>{metamodelBody}</div>
+    ) : activeSidebarKey === "inventory" ? (
+      <div className={styles.sidebarPanelSection}>{inventoryBody}</div>
     ) : (
       <div className={styles.sidebarPanelSection}>{settingsBody}</div>
     );

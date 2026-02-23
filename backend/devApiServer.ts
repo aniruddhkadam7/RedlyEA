@@ -8,8 +8,13 @@ import express, {
 } from 'express';
 
 import { initNeo4jGraphFromEnv } from './graph/Neo4jBootstrap';
+import { createAgentDistributionRouter } from './modules/agent-distribution/agentDistribution.routes';
 import { createCatalogRouter } from './modules/catalog/catalog.routes';
 import { createImportRouter } from './modules/catalog/import/import.routes';
+import { createAgentLifecycleRouter } from './modules/live-inventory/agentLifecycle.routes';
+import { createCommandRouter } from './modules/live-inventory/command.routes';
+import { createLiveInventoryRouter } from './modules/live-inventory/liveInventory.routes';
+import { createUsageRouter } from './modules/live-inventory/usage.routes';
 
 type Handler = (req: Request, res: Response, next?: NextFunction) => unknown;
 
@@ -27,6 +32,14 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 
 app.use((req, res, next) => {
+  if (
+    req.path === '/agent/download/windows' ||
+    req.path === '/api/agent/download/windows'
+  ) {
+    next();
+    return;
+  }
+
   const timer = setTimeout(() => {
     if (res.headersSent) return;
     res.status(504).json({ success: false, errorMessage: 'Gateway Timeout' });
@@ -112,6 +125,11 @@ const bootstrap = async () => {
 
   app.use('/api', createImportRouter());
   app.use('/api', createCatalogRouter());
+  app.use('/api', createLiveInventoryRouter());
+  app.use('/api', createCommandRouter());
+  app.use('/api', createUsageRouter());
+  app.use('/api', createAgentLifecycleRouter());
+  app.use(createAgentDistributionRouter());
 
   // Fallback 404 for any unhandled /api route.
   app.use('/api', (_req, res) => {

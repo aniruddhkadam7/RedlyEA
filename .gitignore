@@ -42,3 +42,7 @@ build
 
 # Electron build output
 release/
+
+# Agent installer cache & dev signing certs
+agent-installer/.cache/
+.certs/

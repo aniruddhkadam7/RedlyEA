@@ -3162,6 +3162,14 @@ const IdeMenuBar: React.FC = () => {
           },
           { type: "divider" as const },
           {
+            key: "view.liveInventory",
+            label: "Live Inventory",
+            onClick: () => {
+              dispatchIdeCommand({ type: "navigation.openRoute", path: "/live-inventory" });
+            },
+          },
+          { type: "divider" as const },
+          {
             key: "view.reset",
             label: "Reset Layout",
             onClick: handleResetLayout,

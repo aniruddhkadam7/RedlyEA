@@ -84,6 +84,18 @@
     redirect: "/workspace",
   },
   {
+    path: "/live-inventory",
+    component: "./live-inventory",
+  },
+  {
+    path: "/software-insights",
+    component: "./software-insights",
+  },
+  {
+    path: "/agent-management",
+    component: "./agent-management",
+  },
+  {
     component: "404",
     layout: false,
     path: "/404",
