@@ -1,9 +1,10 @@
-import { Router, type Request, type Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import {
   getMachineDetail,
   ingestMachineInventory,
   listMachines,
 } from './liveInventory.service';
+import { syncLocalOsqueryMachineIfNeeded } from './osquerySnapshot';
 
 export const createLiveInventoryRouter = () => {
   const router = Router();
@@ -20,14 +21,22 @@ export const createLiveInventoryRouter = () => {
 
   /** List all known machines. */
   router.get('/inventory/machines', (_req: Request, res: Response) => {
+    syncLocalOsqueryMachineIfNeeded();
     res.json({ success: true, data: listMachines() });
   });
 
   /** Get detail for a single machine by hostname. */
   router.get('/inventory/machines/:hostname', (req: Request, res: Response) => {
-    const machine = getMachineDetail(req.params.hostname);
+    syncLocalOsqueryMachineIfNeeded();
+    let machine = getMachineDetail(req.params.hostname);
     if (!machine) {
-      res.status(404).json({ success: false, errorMessage: 'Machine not found' });
+      syncLocalOsqueryMachineIfNeeded(true);
+      machine = getMachineDetail(req.params.hostname);
+    }
+    if (!machine) {
+      res
+        .status(404)
+        .json({ success: false, errorMessage: 'Machine not found' });
       return;
     }
     res.json({ success: true, data: machine });

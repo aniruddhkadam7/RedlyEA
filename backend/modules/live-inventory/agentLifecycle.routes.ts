@@ -1,15 +1,28 @@
-import { Router, type Request, type Response } from 'express';
-import { upsertMachine, getMachineByHostname, getAllMachines } from './liveInventory.store';
-import { enqueueCommand, generateCommandId, getPendingCommands } from './commandStore';
+import { type Request, type Response, Router } from 'express';
+import {
+  enqueueCommand,
+  generateCommandId,
+  getPendingCommands,
+} from './commandStore';
+import {
+  getAllMachines,
+  getMachineByHostname,
+  upsertMachine,
+} from './liveInventory.store';
+import { syncLocalOsqueryMachineIfNeeded } from './osquerySnapshot';
 
 // ── Policy store (in-memory) ──
 
 export interface Policy {
   id: string;
-  type: 'prohibited_software' | 'required_software' | 'service_state' | 'firewall_required';
-  target: string;          // e.g. "anydesk.exe", "Notepad++", "wuauserv"
-  action: string;          // e.g. "kill_process", "report", "restart_service"
-  desiredState?: string;   // for service_state: "running" | "stopped"
+  type:
+    | 'prohibited_software'
+    | 'required_software'
+    | 'service_state'
+    | 'firewall_required';
+  target: string; // e.g. "anydesk.exe", "Notepad++", "wuauserv"
+  action: string; // e.g. "kill_process", "report", "restart_service"
+  desiredState?: string; // for service_state: "running" | "stopped"
   enabled: boolean;
   createdAt: number;
 }
@@ -39,15 +52,24 @@ function isOnline(lastSeen: unknown): boolean {
   return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
 }
 
+function maybeSeedLocalOsqueryMachine(): void {
+  syncLocalOsqueryMachineIfNeeded();
+}
+
 /**
  * Evaluate policies against a machine's latest inventory.
  * Automatically enqueues commands when violations are found.
  */
-function evaluatePolicies(hostname: string, machine: Record<string, unknown>): void {
+function evaluatePolicies(
+  hostname: string,
+  machine: Record<string, unknown>,
+): void {
   const processes = machine.processes as Array<{ name?: string }> | undefined;
   if (!Array.isArray(processes)) return;
 
-  const processNames = new Set(processes.map((p) => (p.name ?? '').toLowerCase()));
+  const processNames = new Set(
+    processes.map((p) => (p.name ?? '').toLowerCase()),
+  );
 
   for (const policy of policies) {
     if (!policy.enabled) continue;
@@ -58,7 +80,9 @@ function evaluatePolicies(hostname: string, machine: Record<string, unknown>): v
         // Check: don't double-queue if an identical command is already pending
         const pending = getPendingCommands(hostname);
         const alreadyQueued = pending.some(
-          (c) => c.action === policy.action && (c.payload as Record<string, unknown>)?.name === policy.target,
+          (c) =>
+            c.action === policy.action &&
+            (c.payload as Record<string, unknown>)?.name === policy.target,
         );
         if (!alreadyQueued) {
           enqueueCommand(hostname, {
@@ -85,7 +109,9 @@ export function createAgentLifecycleRouter(): Router {
   router.post('/agent/register', (req: Request, res: Response) => {
     const { hostname, username, os, agentVersion, ipAddress } = req.body ?? {};
     if (!hostname || typeof hostname !== 'string') {
-      res.status(400).json({ registered: false, errorMessage: 'Missing hostname' });
+      res
+        .status(400)
+        .json({ registered: false, errorMessage: 'Missing hostname' });
       return;
     }
 
@@ -110,7 +136,9 @@ export function createAgentLifecycleRouter(): Router {
   router.post('/agent/heartbeat', (req: Request, res: Response) => {
     const { hostname } = req.body ?? {};
     if (!hostname || typeof hostname !== 'string') {
-      res.status(400).json({ success: false, errorMessage: 'Missing hostname' });
+      res
+        .status(400)
+        .json({ success: false, errorMessage: 'Missing hostname' });
       return;
     }
 
@@ -130,6 +158,7 @@ export function createAgentLifecycleRouter(): Router {
   // ═══════════════════════════════════════════════
 
   router.get('/machines/status', (_req: Request, res: Response) => {
+    maybeSeedLocalOsqueryMachine();
     const machines = getAllMachines().map((m) => ({
       ...m,
       status: isOnline(m.lastSeen) ? 'online' : 'offline',
@@ -150,7 +179,10 @@ export function createAgentLifecycleRouter(): Router {
   router.post('/policies', (req: Request, res: Response) => {
     const { type, target, action, enabled, desiredState } = req.body ?? {};
     if (!type || !target || !action) {
-      res.status(400).json({ success: false, errorMessage: 'Missing type, target, or action' });
+      res.status(400).json({
+        success: false,
+        errorMessage: 'Missing type, target, or action',
+      });
       return;
     }
 
@@ -172,7 +204,9 @@ export function createAgentLifecycleRouter(): Router {
   router.post('/policies/:policyId/toggle', (req: Request, res: Response) => {
     const pol = policies.find((p) => p.id === req.params.policyId);
     if (!pol) {
-      res.status(404).json({ success: false, errorMessage: 'Policy not found' });
+      res
+        .status(404)
+        .json({ success: false, errorMessage: 'Policy not found' });
       return;
     }
     pol.enabled = !pol.enabled;
@@ -183,7 +217,9 @@ export function createAgentLifecycleRouter(): Router {
   router.delete('/policies/:policyId', (req: Request, res: Response) => {
     const idx = policies.findIndex((p) => p.id === req.params.policyId);
     if (idx === -1) {
-      res.status(404).json({ success: false, errorMessage: 'Policy not found' });
+      res
+        .status(404)
+        .json({ success: false, errorMessage: 'Policy not found' });
       return;
     }
     policies.splice(idx, 1);
@@ -196,7 +232,10 @@ export function createAgentLifecycleRouter(): Router {
    */
   router.post('/internal/evaluate-policies', (req: Request, res: Response) => {
     const { hostname } = req.body ?? {};
-    if (!hostname) { res.json({ evaluated: false }); return; }
+    if (!hostname) {
+      res.json({ evaluated: false });
+      return;
+    }
     const machine = getMachineByHostname(hostname);
     if (machine) evaluatePolicies(hostname, machine);
     res.json({ evaluated: true });
@@ -210,7 +249,10 @@ export function createAgentLifecycleRouter(): Router {
   router.post('/agent/policy-violations', (req: Request, res: Response) => {
     const { hostname, violations, timestamp } = req.body ?? {};
     if (!hostname || !Array.isArray(violations)) {
-      res.status(400).json({ success: false, errorMessage: 'Missing hostname or violations array' });
+      res.status(400).json({
+        success: false,
+        errorMessage: 'Missing hostname or violations array',
+      });
       return;
     }
     for (const v of violations) {
@@ -233,7 +275,8 @@ export function createAgentLifecycleRouter(): Router {
 
   /** List recent policy violations. */
   router.get('/policy-violations', (req: Request, res: Response) => {
-    const hostname = typeof req.query.hostname === 'string' ? req.query.hostname : undefined;
+    const hostname =
+      typeof req.query.hostname === 'string' ? req.query.hostname : undefined;
     let data = policyViolations;
     if (hostname) {
       data = data.filter((v) => v.hostname === hostname);

@@ -1,15 +1,19 @@
-import { Router, type Request, type Response } from 'express';
-import path from 'path';
+import { execFile } from 'child_process';
+import crypto from 'crypto';
+import { type Request, type Response, Router } from 'express';
 import fs from 'fs';
 import os from 'os';
-import crypto from 'crypto';
-import { execFile } from 'child_process';
+import path from 'path';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
 const workspaceRoot = path.resolve(__dirname, '..', '..', '..');
-const installerScriptPath = path.join(workspaceRoot, 'agent-installer', 'setup.iss');
+const installerScriptPath = path.join(
+  workspaceRoot,
+  'agent-installer',
+  'setup.iss',
+);
 const cacheDir = path.join(workspaceRoot, 'agent-installer', '.cache');
 const certDir = path.join(workspaceRoot, '.certs');
 
@@ -49,7 +53,14 @@ function resolveInnoCompilerPath(): string | null {
     localAppData
       ? path.join(localAppData, 'Programs', 'Inno Setup 6', 'ISCC.exe')
       : undefined,
-    path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'Inno Setup 6', 'ISCC.exe'),
+    path.join(
+      os.homedir(),
+      'AppData',
+      'Local',
+      'Programs',
+      'Inno Setup 6',
+      'ISCC.exe',
+    ),
   ].filter(Boolean) as string[];
 
   for (const c of candidates) {
@@ -163,12 +174,16 @@ async function ensureDevSigningCert(): Promise<string | null> {
   if (fs.existsSync(thumbprintFile) && fs.existsSync(pfxFile)) {
     const thumbprint = fs.readFileSync(thumbprintFile, 'utf8').trim();
     try {
-      const { stdout } = await execFileAsync('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        `Get-ChildItem "Cert:\\CurrentUser\\My\\${thumbprint}" -ErrorAction Stop | Select-Object -ExpandProperty Thumbprint`,
-      ], { windowsHide: true, timeout: 10000 });
+      const { stdout } = await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `Get-ChildItem "Cert:\\CurrentUser\\My\\${thumbprint}" -ErrorAction Stop | Select-Object -ExpandProperty Thumbprint`,
+        ],
+        { windowsHide: true, timeout: 10000 },
+      );
       if (stdout.trim()) return thumbprint;
     } catch {
       // Cert was removed from store — recreate below
@@ -201,18 +216,24 @@ async function ensureDevSigningCert(): Promise<string | null> {
   fs.writeFileSync(scriptPath, psScript, 'utf8');
 
   try {
-    const { stdout } = await execFileAsync('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
-      scriptPath,
-    ], { windowsHide: true, timeout: 30000 });
+    const { stdout } = await execFileAsync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptPath,
+      ],
+      { windowsHide: true, timeout: 30000 },
+    );
 
     const thumbprint = stdout.trim().split(/\r?\n/).pop()!.trim();
     fs.writeFileSync(thumbprintFile, thumbprint, 'utf8');
-    console.log(`[agent-dist] Created dev code-signing certificate: ${thumbprint}`);
+    console.log(
+      `[agent-dist] Created dev code-signing certificate: ${thumbprint}`,
+    );
     return thumbprint;
   } catch (error) {
     console.warn('[agent-dist] Failed to create dev signing cert:', error);
@@ -295,13 +316,14 @@ async function signWithPowerShell(
     `Set-AuthenticodeSignature -FilePath '${exeEscaped}' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256 | Out-Null`,
   ].join('; ');
 
-  await execFileAsync('powershell.exe', [
-    '-NoProfile',
-    '-NonInteractive',
-    '-Command',
-    cmd,
-  ], { windowsHide: true, timeout: 30000 });
-  console.log('[agent-dist] Installer signed with dev certificate (PowerShell)');
+  await execFileAsync(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', cmd],
+    { windowsHide: true, timeout: 30000 },
+  );
+  console.log(
+    '[agent-dist] Installer signed with dev certificate (PowerShell)',
+  );
 }
 
 function resolveSignToolPath(): string | null {
@@ -362,6 +384,26 @@ export function createAgentDistributionRouter(): Router {
 
     const sourceDir = resolveAgentSourceDir();
     if (!sourceDir) {
+      const prebuiltCandidates = [
+        path.join(
+          workspaceRoot,
+          'agent-build',
+          'windows',
+          'RedlyAgentSetup.exe',
+        ),
+        path.join(
+          workspaceRoot,
+          'agent-build',
+          'windows',
+          'RedlyAgentSetup.zip',
+        ),
+      ];
+      const prebuilt = prebuiltCandidates.find((p) => fs.existsSync(p));
+      if (prebuilt) {
+        sendInstaller(res, prebuilt);
+        return;
+      }
+
       res.status(500).json({
         success: false,
         errorMessage:
@@ -413,7 +455,9 @@ export function createAgentDistributionRouter(): Router {
     };
 
     try {
-      console.log('[agent-dist] Building installer (first request or source changed)…');
+      console.log(
+        '[agent-dist] Building installer (first request or source changed)…',
+      );
 
       stageAgentSource(sourceDir, stagedAgentDir);
       fs.mkdirSync(outputDir, { recursive: true });
@@ -445,7 +489,10 @@ export function createAgentDistributionRouter(): Router {
       try {
         await signInstaller(installerPath);
       } catch (signErr) {
-        console.warn('[agent-dist] Signing failed (continuing unsigned):', signErr);
+        console.warn(
+          '[agent-dist] Signing failed (continuing unsigned):',
+          signErr,
+        );
       }
 
       // Cache the built + signed installer for future requests
@@ -460,7 +507,9 @@ export function createAgentDistributionRouter(): Router {
     } catch (error) {
       cleanup();
       const message =
-        error instanceof Error ? error.message : 'Failed to build Windows installer';
+        error instanceof Error
+          ? error.message
+          : 'Failed to build Windows installer';
       if (!res.headersSent) {
         res.status(500).json({ success: false, errorMessage: message });
       }
@@ -479,10 +528,16 @@ export function createAgentDistributionRouter(): Router {
 
 function sendInstaller(res: Response, filePath: string): void {
   const stat = fs.statSync(filePath);
-  res.setHeader('Content-Type', 'application/octet-stream');
+  const ext = path.extname(filePath).toLowerCase();
+  const downloadName =
+    ext === '.zip' ? 'RedlyAgentSetup.zip' : 'RedlyAgentSetup.exe';
+  const contentType =
+    ext === '.zip' ? 'application/zip' : 'application/octet-stream';
+
+  res.setHeader('Content-Type', contentType);
   res.setHeader(
     'Content-Disposition',
-    'attachment; filename="RedlyAgentSetup.exe"',
+    `attachment; filename="${downloadName}"`,
   );
   res.setHeader('Content-Length', stat.size);
   res.setHeader(
